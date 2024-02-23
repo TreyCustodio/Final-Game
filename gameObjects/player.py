@@ -78,8 +78,10 @@ class Player(Drawable):
     def handleCollision(self, other):
         ##  Player handles collision based on the type of object they collide with  ##
         if type(other) == NonPlayer: #Change when npc class complete
-            self.vel = vec(0,0)
+            #print("yup")
             self.set_Sprite(1)
+            self.vel = vec(0,0)
+            
             if self.direction == 0:    #Down
                 self.position = (self.position[0], self.position[1]-1)
 

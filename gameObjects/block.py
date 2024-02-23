@@ -3,13 +3,18 @@ from utils import vec, SpriteManager
 import pygame
 
 class Block(NonPlayer):
-    def __init__(self, position=vec(0,0)):
+    def __init__(self, position=vec(0,0), heavy=False):
         super().__init__(position, "Objects.png", (1,0))
         self.vel = vec(0,0)
         self.pushing = False
+        self.heavy = heavy
     
     def push(self):
-        self.pushing = True
+        if self.heavy:
+            #Check to see if player has required strength
+            pass
+        else:
+            self.pushing = True
 
     def update(self, seconds, player, direction):
         # (0 down), (2 up)
