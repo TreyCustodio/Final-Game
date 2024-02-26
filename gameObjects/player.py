@@ -8,6 +8,7 @@ class Player(Drawable):
         self.vel = vec(0,0)
         self.speed = 100
         self.direction = direction # (0 down), (1 right), (2 up), (3 left)
+        self.colliding = -1
     
     def getSpeed(self):
         return self.speed
@@ -32,26 +33,40 @@ class Player(Drawable):
         ##  Key pressed down    ##
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
-                # move up
-                self.direction = 2
-                self.set_Sprite(0)
-                self.vel[1] = -self.speed
-            elif event.key == pygame.K_DOWN:
-                # move down
-                self.direction = 0
-                self.set_Sprite(0)
-                self.vel[1] = self.speed
-            elif event.key == pygame.K_LEFT:
-                    # move left!
-                self.direction = 3
-                self.set_Sprite(0)
-                self.vel[0] = -self.speed
-            elif event.key == pygame.K_RIGHT:
-                    # move right!
-                self.direction = 1
-                self.set_Sprite(0)
-                self.vel[0] = self.speed
+                if self.colliding != 2:
+                    # move up
+                    self.direction = 2
+                    self.set_Sprite(0)
+                    self.vel[1] = -self.speed
+                else:
+                    self.set_Sprite(1)
 
+            elif event.key == pygame.K_DOWN:
+                if self.colliding != 0:
+                    # move up
+                    self.direction = 0
+                    self.set_Sprite(0)
+                    self.vel[1] = self.speed
+                else:
+                    self.set_Sprite(1)
+
+
+            elif event.key == pygame.K_LEFT:
+                if self.colliding != 3:
+                    self.direction = 3
+                    self.set_Sprite(0)
+                    self.vel[0] = -self.speed
+                else:
+                    self.set_Sprite(1)
+                
+
+            elif event.key == pygame.K_RIGHT:
+                if self.colliding != 1:
+                    self.direction = 1
+                    self.set_Sprite(0)
+                    self.vel[0] = self.speed
+                else:
+                    self.set_Sprite(1)
 
         ## Handle if a key is released  ##
         elif event.type == pygame.KEYUP:
@@ -77,11 +92,11 @@ class Player(Drawable):
 
     def handleCollision(self, other):
         ##  Player handles collision based on the type of object they collide with  ##
-        if type(other) == NonPlayer: #Change when npc class complete
+        if type(other) == Enemy: #Change when npc class complete
+            pass
+        else:
             #print("yup")
-            self.set_Sprite(1)
-            self.vel = vec(0,0)
-            
+
             if self.direction == 0:    #Down
                 self.position = (self.position[0], self.position[1]-1)
 
@@ -93,9 +108,7 @@ class Player(Drawable):
 
             elif self.direction == 3:   #Left
                 self.position = (self.position[0]+1, self.position[1])
-        elif type(other) == Enemy:
-            pass
-                
+            
 
     def update(self, seconds):
         self.position += self.vel * seconds

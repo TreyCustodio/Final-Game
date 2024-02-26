@@ -13,7 +13,9 @@ class TextEntry(Drawable):
        "default" : pygame.font.Font(os.path.join(FONT_FOLDER,
                                     DEFAULT_FONT), DEFAULT_SIZE),
        "default8" : pygame.font.Font(os.path.join(FONT_FOLDER,
-                                    DEFAULT_FONT), 8)
+                                    DEFAULT_FONT), 8),
+        "zelda"   : pygame.font.Font(os.path.join(FONT_FOLDER,
+                                    "ReturnofGanon.ttf"), 20)
     }
   
     def __init__(self, position, text, font="default",

@@ -1,26 +1,19 @@
 import pygame
 
-from . import (Drawable, Player, Enemy, NonPlayer, Switch, 
-               WeightedSwitch, LightSwitch, TimedSwitch, LockedSwitch, Block, 
-               PushableBlock, Animated)
+from . import Drawable, Player, Enemy, NonPlayer, Switch, WeightedSwitch, LightSwitch, TimedSwitch, LockedSwitch, Block
 
 from utils import vec, RESOLUTION
 
 class GameEngine(object):
     import pygame
 
-    def __init__(self):
-        """
-        Initialize all of the room's objects
-        """   
+    def __init__(self):   
         #Player
         self.link = Player((RESOLUTION[0]/2, RESOLUTION[1]/2), "Link.png", 2)
         self.link.position = (self.link.position[0] - self.link.image.get_size()[0]/2,
                               self.link.position[1] - self.link.image.get_size()[1]/2)
-        self.link2 = Animated((50,80), "Link.png")
         #Puzzle Objects
-        self.block = Block((150,100))
-        self.blockP = PushableBlock((100,100))
+        self.block = Block((100,100))
         self.switch = Switch((100,150))
         self.weightedSwitch = WeightedSwitch((50,150))
         self.lightSwitch = LightSwitch((150,150))
@@ -30,21 +23,16 @@ class GameEngine(object):
         #Enemies
         self.stalfos = Enemy((RESOLUTION[0]/2, (RESOLUTION[1]/2)-50), "Stalfos.png")
         
-        #Switches array
+        #Switches/puzzle object array
         self.switches = [self.switch, self.weightedSwitch, self.lightSwitch, self.timedSwitch, self.lockedSwitch]
         #Blocks, enemies, and npcs
-        self.npcs = [self.blockP, self.link2, self.stalfos]
-        #Spawning/Despawning objects
-        self.spawning = []
+        self.npcs = [self.block, self.stalfos]
+        self.chests = []
 
         #Screen and background
         self.size = vec(*RESOLUTION)
         self.background = Drawable((0,0), "test.png")
     
-
-
-
-
 
     def draw(self, drawSurface):
         """
@@ -54,32 +42,24 @@ class GameEngine(object):
         self.background.draw(drawSurface)
 
         #Puzzle rewards
-        if self.spawning:
-            for n in self.spawning:
-                n.draw(drawSurface)
-        
+        """ if self.weightedSwitch.pressed:
+            self.chests.append(self.chest) """
+        """ elif self.chest in self.npcs:
+            self.npcs.pop(self.npcs.index(self.chest)) """
         #Switches
         for n in self.switches:
             n.draw(drawSurface)
         #Npcs
-        if self.npcs:
-            for n in self.npcs:
+        for n in self.npcs:
             #Consider making enemies appear right before the player
-                if n == self.stalfos:
-                    n.draw(drawSurface)
-                else:
-                    n.draw(drawSurface)
+            if n == self.stalfos:
+                n.draw(drawSurface)
+            else:
+                n.draw(drawSurface)
         
         #Player last
         self.link.draw(drawSurface)
 
-    
-    
-
-
-
-    
-    
     def handleEvent(self, event):
         """
         Players, enemies, and npcs handle their events
@@ -90,49 +70,35 @@ class GameEngine(object):
 
         #Npcs
     
-    
-    
-    
-
-
-    
-    
     def handleCollision(self):
         """
         Handles collision between the player and objects,
         including puzzle objects like switches and blocks.
         """
-        ##  Interactable objects    ##
-        if self.spawning:
-            for n in self.spawning:
-                if self.link.doesCollide(n):
-                    self.link.handleCollision(n)
+        
         for n in self.switches:
             if self.link.doesCollide(n):
                 if n.pressed == False and type(n) != WeightedSwitch:
                     n.press()
-
-        ##  Npc Collision   ##
+        #Handle each npc's collision
         for n in self.npcs:
+
             #Check if it collides with the player first
             if self.link.doesCollide(n):
 
                 #Push blocks
-                if type(n) == PushableBlock:
+                if type(n) == Block:
                     n.push()
                 else:
                 # Handle it within the player class (enemies)
                     self.link.handleCollision(n)
             
             #Block collision
-            elif type(n) == PushableBlock:
+            elif type(n) == Block:
                 #Press a switch if the block is on it
                 switchIndex = n.doesCollideList(self.switches)
                 if switchIndex != -1:
-                    if type(self.switches[switchIndex]) == WeightedSwitch:
-                        self.switches[switchIndex].press(n)
-                    else:
-                        self.switches[switchIndex].press()
+                    self.switches[switchIndex].press()
                 #elif *Other possible conditions for block collision could go here. (Walls)
                 else:
                     pass
@@ -140,13 +106,11 @@ class GameEngine(object):
         Template for spawnable/despawning objects
         """
         ##  Spawning and despawning a chest ##
-        if self.chest not in self.spawning:
-            if self.weightedSwitch.pressed:
-                self.spawning.append(self.chest)
-        
-        elif not self.weightedSwitch.pressed: #and self.chest != opened
-            self.spawning.pop(self.spawning.index(self.chest))
-
+        if not self.weightedSwitch.pressed:
+            if self.chest in self.npcs: #and self.chest != opened
+                self.npcs.pop(self.npcs.index(self.chest))
+        elif self.chest not in self.npcs:
+            self.npcs.append(self.chest)
         
         """
         Templates for triggering locked switches. Pick one.
@@ -155,7 +119,6 @@ class GameEngine(object):
         if self.timedSwitch.pressed:
             #Unlock triggered, so unlock if not already unlocked
             if self.lockedSwitch.locked:
-                print("a")
                 self.lockedSwitch.unLock()
         elif self.lockedSwitch.pressed:
                 #lock it back if its still pressed after the timed switch resets
@@ -168,20 +131,11 @@ class GameEngine(object):
         elif self.lockedSwitch.pressed:
             self.lockedSwitch.lock() """
         
-        ##  Make block appear   ##
-        if self.switch.pressed:
-            self.npcs.insert(0, self.block)
-        
         
         
             
 
-
-
     def update(self, seconds):
-        """
-        Update the objects that need to be updated
-        """
         #Update player first
         self.link.update(seconds)
         #Update npcs
@@ -189,9 +143,9 @@ class GameEngine(object):
         #Update puzzle objects
         self.timedSwitch.update(seconds)
         self.lockedSwitch.update()
-        self.blockP.update(seconds, self.link, self.link.direction)
-        self.weightedSwitch.update(self.blockP)
-        self.lightSwitch.update(self.link, self.blockP)
+        self.block.update(seconds, self.link, self.link.direction)
+        self.weightedSwitch.update(self.block)
+        self.lightSwitch.update(self.link, self.block)
 
 
         Drawable.updateOffset(self.link, self.size)

@@ -1,5 +1,6 @@
 import pygame
 from gameObjects import GameEngine
+from UI import ScreenManager
 from utils import RESOLUTION, UPSCALED
 
 def main():
@@ -14,7 +15,7 @@ def main():
     drawSurface = pygame.Surface(list(map(int, RESOLUTION)))
 
     
-    gameEngine = GameEngine()   #ScreenManager()
+    gameEngine = ScreenManager() #GameEngine()   #ScreenManager()
     
     RUNNING = True
     
@@ -39,6 +40,7 @@ def main():
                 
                 if result == "exit":
                     RUNNING = False
+                    
         gameEngine.handleCollision()
         gameClock.tick(60)
         seconds = gameClock.get_time() / 1000

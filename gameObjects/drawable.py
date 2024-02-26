@@ -65,4 +65,4 @@ class Drawable(object):
     
     def doesCollideList(self, others):
         rects = [r.getCollisionRect() for r in others]
-        return self.getCollisionRect().collidelist(rects)   
+        return self.getCollisionRect().collidelist(rects)

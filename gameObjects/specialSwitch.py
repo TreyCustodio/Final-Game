@@ -28,15 +28,23 @@ class WeightedSwitch(Switch):
         else:
             self.image = SpriteManager.getInstance().getSprite(self.imageName, (2,1))
 
-    
+    def press(self, block = None):
+        if block != None:
+            self.pressed = True
+            self.set_sprite()
+    """
     def update(self, block):
         #   Unpress if no block on top
         #   Maybe craft an array of blocks,
         #   loop through, and check if it collides with any
-        if self.doesCollide(block) == False:
+        if self.pressed == True and self.doesCollide(block) == False:
+            print("b")
             self.pressed = False
             self.set_sprite()
-
+    """
+    def update(self, block):
+        if (not self.doesCollide(block)):
+            self.reset()
 
 class LockedSwitch(WeightedSwitch):
     def __init__(self, position=vec(0,0)):
@@ -56,7 +64,8 @@ class LockedSwitch(WeightedSwitch):
         Activate the switch if it is unlocked
         """
         if not self.locked:
-            super().press()
+            self.pressed = True
+            self.set_sprite()
     
     def unLock(self, remain_unlocked = False):
         self.locked = False
@@ -78,8 +87,7 @@ class LockedSwitch(WeightedSwitch):
     
     def update(self):
         if self.locked and self.pressed:
-            self.pressed = False
-            self.set_sprite()
+            self.reset()
 
 
 
@@ -101,10 +109,6 @@ class LightSwitch(Switch):
             self.image = SpriteManager.getInstance().getSprite(self.imageName, (3,2))
         else:
             self.image = SpriteManager.getInstance().getSprite(self.imageName, (2,2))
-    
-    def reset(self):
-        self.pressed = False
-        self.set_sprite()
     
     def update(self, player, object):
         if (not self.doesCollide(player)) and (not self.doesCollide(object)):

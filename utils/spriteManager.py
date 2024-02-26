@@ -40,7 +40,7 @@ class SpriteManager(object):
       _DEFAULT_SPRITE = (18,26)
       
       # A list of images that require to be loaded with transparency
-      _TRANSPARENCY = ["Objects.png"]
+      _TRANSPARENCY = ["Objects.png", "Pause.png"]
       
       # A list of images that require to be loaded with a color key
       _COLOR_KEY = ["Link.png", "Stalfos.png"]

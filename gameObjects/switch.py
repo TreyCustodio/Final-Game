@@ -30,3 +30,7 @@ class Switch(NonPlayer):
     def press(self):
         self.pressed = True
         self.set_sprite()
+    
+    def reset(self):
+        self.pressed = False
+        self.set_sprite()
