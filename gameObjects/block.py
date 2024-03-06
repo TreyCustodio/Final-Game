@@ -16,3 +16,9 @@ class Block(NonPlayer):
         #Define a SpriteManager object in nonPlayer
         print(self.imageName)
         self.image = SpriteManager.getInstance().getSprite(self.imageName, (4,0))
+
+    def update(self, player):
+        if player.pushing == True:
+            player.pushing = False
+
+    

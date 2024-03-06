@@ -1,8 +1,8 @@
 import pygame
 
-from . import (Drawable, Player, Enemy, NonPlayer, Switch, 
+from . import (Drawable, Player, Enemy, NonPlayer, Key, Switch, 
                WeightedSwitch, LightSwitch, TimedSwitch, LockedSwitch, Block, 
-               PushableBlock, Animated)
+               PushableBlock, LockBlock,Bullet)
 
 from utils import vec, RESOLUTION
 
@@ -14,32 +14,49 @@ class GameEngine(object):
         Initialize all of the room's objects
         """   
         #Player
-        self.link = Player((RESOLUTION[0]/2, RESOLUTION[1]/2), "Link.png", 2)
+        self.link = Player((RESOLUTION[0]/2, RESOLUTION[1]/2))
         self.link.position = (self.link.position[0] - self.link.image.get_size()[0]/2,
-                              self.link.position[1] - self.link.image.get_size()[1]/2)
-        self.link2 = Animated((50,80), "Link.png")
+                              112)
+        
+        
+        
         #Puzzle Objects
-        self.block = Block((150,100))
-        self.blockP = PushableBlock((100,100))
-        self.switch = Switch((100,150))
-        self.weightedSwitch = WeightedSwitch((50,150))
-        self.lightSwitch = LightSwitch((150,150))
-        self.timedSwitch = TimedSwitch((200,150))
-        self.lockedSwitch = LockedSwitch((250,150))
-        self.chest = NonPlayer((50,50), "Objects.png", (0,1))
+        self.block = LockBlock((16*9,80))#Locked block
+
+        self.blockP = PushableBlock((96, 112))
+
+        
+        self.weightedSwitch = WeightedSwitch((96,144))
+        self.switch = Switch((192,144))
+        self.lightSwitch = LightSwitch((144,144))
+        self.timedSwitch = TimedSwitch((240,144))
+        self.lockedSwitch = LockedSwitch((48,144))
+
+        self.chest = NonPlayer((64,32), "Objects.png", (0,1))
+        self.key = Key((50,96), "Objects.png", (0,2))
         #Enemies
-        self.stalfos = Enemy((RESOLUTION[0]/2, (RESOLUTION[1]/2)-50), "Stalfos.png")
+        self.stalfos = Enemy((RESOLUTION[0]-64, 16), "Stalfos.png")
         
         #Switches array
         self.switches = [self.switch, self.weightedSwitch, self.lightSwitch, self.timedSwitch, self.lockedSwitch]
         #Blocks, enemies, and npcs
-        self.npcs = [self.blockP, self.link2, self.stalfos]
+        self.npcs = [self.stalfos]
         #Spawning/Despawning objects
         self.spawning = []
 
+        self.projectiles = []
         #Screen and background
         self.size = vec(*RESOLUTION)
+        self.keyCount = Drawable((0, RESOLUTION[1]-16), "KeyCount.png")
+        
         self.background = Drawable((0,0), "test.png")
+
+        self.blocks = []
+        for i in range(9):
+            self.blocks.append(Block((i*16, 64)))
+        self.blocks.append(self.block)
+        for i in range(10,19):
+            self.blocks.append(Block((i*16, 64)))
     
 
 
@@ -50,8 +67,17 @@ class GameEngine(object):
         """
         Draw the objects
         """
+        #Draw some blocks
+        
+        
         #Background        
         self.background.draw(drawSurface)
+        self.keyCount.draw(drawSurface)
+        self.keyNumber = Drawable((33, self.keyCount.position[1]), "numbers.png", (self.link.keys,0))
+        self.keyNumber.draw(drawSurface)
+
+        for block in self.blocks:
+            block.draw(drawSurface)
 
         #Puzzle rewards
         if self.spawning:
@@ -106,13 +132,26 @@ class GameEngine(object):
         if self.spawning:
             for n in self.spawning:
                 if self.link.doesCollide(n):
-                    self.link.handleCollision(n)
+                    if n == self.key:
+                        self.spawning.pop(self.spawning.index(self.key))
+                        self.key.collect()
+                        self.link.keys += 1
+                    else:
+                        self.link.handleCollision(n)
         for n in self.switches:
             if self.link.doesCollide(n):
                 if n.pressed == False and type(n) != WeightedSwitch:
                     n.press()
 
         ##  Npc Collision   ##
+        blockIndex = self.link.doesCollideList(self.blocks)
+        if blockIndex != -1:
+            if type(self.blocks[blockIndex]) == LockBlock and self.link.keys > 0:
+                self.blocks.pop(blockIndex)
+                self.link.keys -= 1
+            else:
+                self.link.handleCollision(self.blocks[blockIndex])
+
         for n in self.npcs:
             #Check if it collides with the player first
             if self.link.doesCollide(n):
@@ -146,6 +185,13 @@ class GameEngine(object):
         
         elif not self.weightedSwitch.pressed: #and self.chest != opened
             self.spawning.pop(self.spawning.index(self.chest))
+        
+        if self.key not in self.spawning:
+            if self.lightSwitch.pressed and not(self.key.collected):
+                self.spawning.append(self.key)
+        
+        elif not self.lightSwitch.pressed:
+            self.spawning.pop(self.spawning.index(self.key))
 
         
         """
@@ -170,7 +216,13 @@ class GameEngine(object):
         
         ##  Make block appear   ##
         if self.switch.pressed:
-            self.npcs.insert(0, self.block)
+            self.npcs.insert(0, self.blockP)
+        
+        if self.stalfos in self.npcs and self.lockedSwitch.pressed:
+            self.npcs.pop(self.npcs.index(self.stalfos))
+        
+        if self.stalfos not in self.npcs and not self.lockedSwitch.pressed:
+            self.npcs.append(self.stalfos)
         
         
         
@@ -189,7 +241,8 @@ class GameEngine(object):
         #Update puzzle objects
         self.timedSwitch.update(seconds)
         self.lockedSwitch.update()
-        self.blockP.update(seconds, self.link, self.link.direction)
+        #self.block.update(self.link)
+        self.blockP.update(seconds, self.link, self.link.row)
         self.weightedSwitch.update(self.blockP)
         self.lightSwitch.update(self.link, self.blockP)
 

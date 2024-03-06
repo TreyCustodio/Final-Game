@@ -6,6 +6,10 @@ import pygame
 This file contains unique types of blocks.
 All of them inherit from the Block class
 """
+class LockBlock(Block):
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, (4,4))
+        
 class PushableBlock(Block):
     def __init__(self, position=vec(0,0), heavy=False):
         super().__init__(position, (4,1))
@@ -23,7 +27,7 @@ class PushableBlock(Block):
         # (0 down), (2 up)
         # (1 right), (3 left)
         if self.pushing:
-            player.set_Sprite(1)
+            player.pushing = True
             if direction == 0:
                 self.vel = vec(0, player.getSpeed())
             elif direction == 2:
@@ -37,5 +41,6 @@ class PushableBlock(Block):
             self.position += self.vel * (seconds)
             self.pushing = False
             self.vel = (0,0)
-        else:
-            player.set_Sprite(0)
+        elif player.pushing == True:
+            player.pushing = False
+            #player.set_Sprite(0)

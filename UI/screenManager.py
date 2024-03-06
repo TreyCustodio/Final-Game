@@ -41,7 +41,7 @@ class ScreenManager(object):
             if self.state == "paused":
                 self.pauseEngine.draw(drawSurf)
                 #self.pausedText.draw(drawSurf)
-        
+            
         elif self.state == "mainMenu":
             self.mainMenu.draw(drawSurf)
     
@@ -53,6 +53,8 @@ class ScreenManager(object):
                 self.state.pause()
                 
             elif self.state == "paused":
+                if event.type == KEYDOWN and event.key == K_r:
+                    self.state.mainMenu()
                 #Pause engine handles the events if paused
                 self.pauseEngine.handleEvent(event)
             else:
