@@ -1,0 +1,53 @@
+Include a maze in one of the dungeon rooms
+Final game will probably just be one huge(sort of) dungeon. Multiple items to collect,
+including some elemental weapons, keys, and a couple of health upgrades.
+Acquiring items will grant access to more rooms, and the deeper you go,
+the more difficult the enemies will get, as they will be able to resist
+your weapons with different types of shields. Counter their shields with the
+proper element.
+
+##
+Enemy Types
+##
+Gun does weak non-elemental damage.
+Fire beats ice, ice beats fire
+Wind beats thunder, thunder beats wind
+
+1. Certain enemies require a specific elemental attack to be damaged at all.
+2. Others will resist all elements except for the one they're weak to, but non-elemental damage will still work. However, their weakness will deal massive damage.
+3. Every other type of enemy is non-elemental.
+
+Examples of the 3 types of enemies:
+1. Fire based enemy can only be damaged by non-elemental or ice attacks [Attacks player with fire]
+2. Fire shield enemy can only be damaged by ice attacks. [No special attacks, just special defense]
+3. Non elemental enemies have no special properties. [Basic skeleton]
+
+
+
+##
+Weapons
+##
+if super effective: deal 2x damage
+0. Critter beam (deal a bit of damage to your enemies)
+- Bullets disappear on collision
+- No special animation
+- Fire the bullet based on direction
+
+1. Fire sword (deal massive damage with a fiery blade)
+- Mimic sword mechanics from ALTTP
+
+2. Ice cleats (Hold Z to tackle enemies and freeze them. Not to be confused with ice skates!)
+- While holding the button, you move faster but cant change direction. -> State of tackling
+- Collision with walls/blocks/enemies
+- Freeze the enemy for a few seconds. Every enemy needs to have a freeze timer and a frozen state
+
+3. Thunderclap (decimate enemies surrounding you. "With the sound of the thunderclap, begone...")
+- Cooldown (10 seconds)
+- Deal massive thunder damage to everything within a rect that uses the player as a centerpoint
+
+4. Wind slash (Sends forth a slash that can pierce through enemies and walls)
+- Energy meter that requires pickups to replenish
+- OR make it like the charge beam and have the meter represent how charged the slash is
+
+##
+PROGRAM THAT GUN!

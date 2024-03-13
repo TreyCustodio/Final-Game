@@ -73,7 +73,7 @@ class ScreenManager(object):
             self.game.handleCollision()
     
     
-    def update(self, seconds):      
+    def update(self, seconds): 
         if self.state == "game":
             self.game.update(seconds)
         elif self.state == "paused":
