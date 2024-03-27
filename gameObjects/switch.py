@@ -1,5 +1,5 @@
 from . import NonPlayer
-from utils import vec, SpriteManager
+from utils import vec, SpriteManager, SoundManager
 import pygame
 
 """
@@ -28,8 +28,10 @@ class Switch(NonPlayer):
             self.image = SpriteManager.getInstance().getSprite(self.imageName, (2,0))
 
     def press(self):
-        self.pressed = True
-        self.set_sprite()
+        if not self.pressed:
+            SoundManager.getInstance().playSFX("LTTP_Switch.wav")
+            self.pressed = True
+            self.set_sprite()
     
     def reset(self):
         self.pressed = False

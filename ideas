@@ -49,5 +49,28 @@ if super effective: deal 2x damage
 - Energy meter that requires pickups to replenish
 - OR make it like the charge beam and have the meter represent how charged the slash is
 
+5. A shield that increases the number of iframes
+
 ##
-PROGRAM THAT GUN!
+For Milestone 2:
+1. Collision Error
+2. Diagonal Movement Error
+3. Creating a grid for the game. 16x16 squares
+4. Any pixel art tips?
+5. Organization and __inits
+
+Future:
+Thinking about designing diferent rooms.
+Each room will have its own engine.
+Have to think about how I'll use states and the screenManager to control the game.
+Player must maintain their status from engine to engine
+Also Need to think about how to transition from room to room. A fadeout?
+Of course, animations for weapons as well.
+And creating new enemies
+Freezing enemies -> dont update while frozen
+
+Collision is sometimes detecting 
+  File "C:\Users\treyc\Documents\cs\VideoGame\finalgame\gameObjects\engine.py", line 315, in handleCollision
+    n.handleCollision(p)
+  File "C:\Users\treyc\Documents\cs\VideoGame\finalgame\gameObjects\enemy.py", line 45, in handleCollision
+    SoundManager.getInstance().playSFX("enemyhit.wav").set_volume(20.0)

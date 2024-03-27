@@ -1,5 +1,5 @@
-from . import Block
-from utils import vec, SpriteManager
+from . import Block, Animated
+from utils import vec, SoundManager, SpriteManager
 import pygame
 
 """
@@ -24,40 +24,64 @@ class BreakableBlock(Block):
     def brake(self):
         self.broken = True
 
-class PushableBlock(Block):
+class PushableBlock(Animated):
     """
     A block that can be pushed by the player
     """
-    def __init__(self, position=vec(0,0), heavy=False):
-        super().__init__(position, (5,1))
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, "blockP.png", (0,0))
+
+        self.nFrames = 5
         self.vel = vec(0,0)
-        self.heavy = heavy
+        self.originalPos = position
         self.pushing = False
+
+        self.resetting = False
+        self.resetTimer = 0
+
+    def handleCollision(self, other):
+        pass
     
-    def push(self, player):
-        if self.heavy:
-            pass
-        else:
-            self.pushing = True
-            player.lockDirection()
+    def reset(self):
+        self.resetting = True
+        #self.position = self.originalPos
+
+    def push(self):
+        self.pushing = True
+        SoundManager.getInstance().playSFX("LA_Rock_Push.wav")
     
-    def update(self, seconds, player, direction):
+
+        
+    def update(self, seconds, player = None, direction = 0):
         # (0 down), (2 up)
         # (1 right), (3 left)
-        if self.pushing:
-            player.pushing = True
-            if direction == 0:
-                self.vel = vec(0, player.getSpeed())
-            elif direction == 2:
-                self.vel = vec(0, -player.getSpeed())
-            elif direction == 1:
-                self.vel = vec(player.getSpeed(), 0)
-            else:
-                self.vel = vec(-player.getSpeed(), 0)
+        if self.resetting:
+            super().update(seconds)
+            self.resetTimer += seconds
+            if self.resetTimer >= 0.2:
+                self.resetTimer = 0
+                self.position = self.originalPos
+                self.resetting = False
+                self.image = SpriteManager.getInstance().getSprite("blockP.png",(0,0))
+        else:
 
-            
-            self.position += self.vel * (seconds)
-            self.pushing = False
-            self.vel = (0,0)
-        elif player.pushing == True:
-            player.pushing = False
+            if self.pushing:
+                player.pushing = True
+                if direction == 0:
+                    self.vel = vec(0, player.getSpeed()/3)
+                elif direction == 2:
+                    self.vel = vec(0, -player.getSpeed()/3)
+                elif direction == 1:
+                    self.vel = vec(player.getSpeed()/3, 0)
+                else:
+                    self.vel = vec(-player.getSpeed()/3, 0)
+
+                
+                self.position += self.vel * (seconds)
+                self.pushing = False
+                self.vel = (0,0)
+                
+            elif player.pushing == True:
+                SoundManager.getInstance().stopSFX("LA_Rock_Push.wav")
+                player.pushing = False
+                

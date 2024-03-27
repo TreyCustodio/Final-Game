@@ -1,5 +1,4 @@
 import pygame
-from gameObjects import GameEngine
 from UI import ScreenManager
 from utils import RESOLUTION, UPSCALED
 

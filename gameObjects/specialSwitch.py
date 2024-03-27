@@ -30,8 +30,7 @@ class WeightedSwitch(Switch):
 
     def press(self, block = None):
         if block != None:
-            self.pressed = True
-            self.set_sprite()
+            super().press()
     """
     def update(self, block):
         #   Unpress if no block on top
@@ -46,7 +45,8 @@ class WeightedSwitch(Switch):
         if (not self.doesCollide(block)):
             self.reset()
 
-class LockedSwitch(WeightedSwitch):
+
+class LockedSwitch(Switch):
     def __init__(self, position=vec(0,0)):
         super().__init__(position)
         self.locked = True
@@ -64,10 +64,11 @@ class LockedSwitch(WeightedSwitch):
         Activate the switch if it is unlocked
         """
         if not self.locked:
-            self.pressed = True
-            self.set_sprite()
+            super().press()
+            
     
-    def unLock(self, remain_unlocked = False):
+    def unlock(self, remain_unlocked = False):
+        self.image = SpriteManager.getInstance().getSprite("Objects.png", (1,4))
         self.locked = False
         if remain_unlocked:
             self.remain_unlocked = True

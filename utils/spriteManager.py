@@ -24,6 +24,8 @@ class SpriteManager(object):
       
       return cls._INSTANCE
    
+   
+      
    # Do not directly instantiate this class!
    class _SM(object):
       """An internal SpriteManager class to contain the actual code. Is a private class."""
@@ -31,8 +33,11 @@ class SpriteManager(object):
       # Folder in which images are stored
       _IMAGE_FOLDER = "images"
       
+      _ROOM_FOLDER = "images\\levels"
       # Static information about the sprite sizes of particular image sheets.
-      _SPRITE_SIZES = {"Objects.png":(16,16), "Bullet.png":(16,16)
+      _SPRITE_SIZES = {"Objects.png":(16,16), "Bullet.png":(16,16), "TextBox.png": (244,32), "geemer.png": (22,18),
+                       "icon.png": (32,32), "blockP.png":(16,16), "fire.png":(18,18), "black.png": (304, 208), 
+                       "bar.png":(112,16), "ammo.png": (16,16)
          
       }
       
@@ -40,7 +45,8 @@ class SpriteManager(object):
       _DEFAULT_SPRITE = (18,26)
       
       # A list of images that require to be loaded with transparency
-      _TRANSPARENCY = ["Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png"]
+      _TRANSPARENCY = ["Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
+                       "icon.png", "TextBox.png", "geemer.png", "item.png", "fire.png", "black.png"]
       
       # A list of images that require to be loaded with a color key
       _COLOR_KEY = ["Link.png", "Stalfos.png"]
@@ -74,9 +80,17 @@ class SpriteManager(object):
          # Otherwise, return the sheet created
          return self[fileName]
       
-      def _loadImage(self, fileName, sheet=False):
+      def getLevel(self, fileName):
+         if fileName not in self._surfaces.keys():
+            self._loadImage(fileName, level = True)
+         return self[fileName]
+
+      def _loadImage(self, fileName, sheet=False, level = False):
          # Load the full image
-         fullImage = image.load(join(SpriteManager._SM._IMAGE_FOLDER, fileName))
+         if level:
+            fullImage = image.load(join(SpriteManager._SM._ROOM_FOLDER, fileName))
+         else:
+            fullImage = image.load(join(SpriteManager._SM._IMAGE_FOLDER, fileName))
          
          # Look up some information about the image to be loaded
          transparent = fileName in SpriteManager._SM._TRANSPARENCY
