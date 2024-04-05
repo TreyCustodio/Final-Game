@@ -7,9 +7,13 @@ class ScreenManagerFSM(AbstractGameFSM):
     game     = State()
     paused   = State()
     textBox = State()
+    intro = State()
     
-    speak =  game.to(textBox) | textBox.to(game)
+    toIntro = mainMenu.to(intro)
+    toGame = intro.to(game)
+    speak =  game.to(textBox) | textBox.to(game) 
     speakP = paused.to(textBox) | textBox.to(paused)
+    speakI = intro.to(textBox) | textBox.to(intro)
     pause = game.to(paused) | paused.to(game) | \
             mainMenu.to.itself(internal=True)
     toMain = game.to(mainMenu) | paused.to(mainMenu)

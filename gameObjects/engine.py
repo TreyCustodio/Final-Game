@@ -1,22 +1,24 @@
 import pygame
 
-from . import (Drawable, HealthBar, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
+from . import (Drawable, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
                WeightedSwitch, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
-               PushableBlock, LockBlock, Bullet, Sword, Cleats, Clap)
+               PushableBlock, LockBlock, Bullet, Sword, Cleats, Clap, Slash, Flapper)
 
 
 
-from utils import SoundManager, vec, RESOLUTION, SPEECH, ICON, INV, COORD, FLAGS
+from utils import SoundManager, vec, RESOLUTION, SPEECH, ICON, INV, COORD, FLAGS, EQUIPPED, UPSCALED
 
 class AE(object):
     def __init__(self):
         self.player = None
         self.resetting = False
         self.ignoreClear = False
+        self.dropCount = 0
         #Death
         self.dead = False
         self.dying = False
         #Room transitioning
+
         self.readyToTransition = False
         self.transporting = False
         self.tra_room = None
@@ -30,6 +32,7 @@ class AE(object):
         #Speaking
         self.textBox = False
         self.text = ""
+        self.largeText = False
         self.icon = None
         self.boxPos = vec(32,64)
         #Puzzle conditions
@@ -45,13 +48,23 @@ class AE(object):
         self.projectiles = []
         self.switches = []
         self.blocks = []
+        self.torches = []
         
+
+
         #Size of the room
         self.size = vec(*RESOLUTION)
         #HUD
+        self.transparentScreen = pygame.display.set_mode(list(map(int, UPSCALED)))
+
+
+        #self.transparentSurf = pygame.Surface(RESOLUTION)
+        #self.transparentSurf.set_alpha(200)
         self.keyCount = Drawable((0, RESOLUTION[1]-16), "KeyCount.png")
         self.healthBar = HealthBar()
         self.ammoBar = AmmoBar()
+        self.elementIcon = ElementIcon()
+        self.energyBar = EnergyBar()
         #Unique room elements:
         #self.max_enemies
         #self.enemyPlacement
@@ -75,7 +88,8 @@ class AE(object):
             for i in range (len(self.spawning)-1, -1, -1):
                 if issubclass(type(self.spawning[i]), Drop):
                     self.disappear(self.spawning[i])
-
+        self.dropCount = 0
+        
     def initializeRoom(self, player= None, pos = None, keepBGM = False):
         if player != None:
             self.player = player
@@ -85,18 +99,18 @@ class AE(object):
         if pos != None:
             self.player.position = pos 
             #self.player.position = (pos + self.player.vel)
-        print(self.player.position)
+        
 
         self.black.reset()
         self.createBounds()
         self.createBlocks()
         self.placeEnemies(self.enemies)
         if not keepBGM:
-            if self.bgm == None:
-                SoundManager.getInstance().fadeoutBGM()
-            else:
+            #SoundManager.getInstance().fadeoutBGM()
+            if self.bgm != None:
                 SoundManager.getInstance().playBGM(self.bgm)
         self.fading = False
+        self.player.keyDownUnlock()
         self.player.keyUnlock()
 
     def createBounds(self):
@@ -131,46 +145,87 @@ class AE(object):
 
     def placeEnemies(self, enemyLst):
         """
-        Place the enemies according to a predetermined algorithm
+        Place the enemies according to a predetermined algorithm.
+        The algorithm is selected based on the integer corresponding to
+        self.enemyPlacement
         """
+        def refresh():
+            for e in enemyLst:
+                """ if e not in self.npcs:
+                    if e.dead: """
+                if e not in self.npcs:
+                    self.npcs.append(e)
+                e.respawn()
+    
         if self.enemyPlacement > 0:
             if self.enemyPlacement == 1:
-            
-                for e in enemyLst:
-                    if e not in self.npcs:
-                        if e.dead:
-                            e.respawn()
-                        self.npcs.append(e)
+                """
+                Four in the center
+                """
+                enemyLst[0].position = COORD[6][3]
+                enemyLst[1].position = COORD[11][3]
+                enemyLst[2].position = COORD[6][7]
+                enemyLst[3].position = COORD[11][7]
+                refresh()
 
+            elif self.enemyPlacement == 2:
+                """
+                """
+                
                 enemyLst[0].position = COORD[6][3]
                 enemyLst[1].position = COORD[11][3]
                 enemyLst[2].position = COORD[6][7]
                 enemyLst[3].position = COORD[11][7]
 
-            
+                enemyLst[4].position = COORD[14][3]
+                enemyLst[5].position = COORD[3][3]
+                enemyLst[6].position = COORD[14][7]
+                enemyLst[7].position = COORD[3][7]
+                refresh()
+        else:
+            for e in enemyLst:
+                if not e.dead and e not in self.npcs:
+                    self.npcs.append(e)
+                if not e.frozen:
+                    e.freeze(playSound=False)
+                    e.freezeTimer = 4.0
+                
+
+                    
 
     def fade(self):
         self.player.keyLock()
         self.fading = True
 
-    def transport(self, room=None, position=None, keepBGM = False):
+    def transport(self, room=None, position=None, keepBGM = False, intro = False):
         """
         Transport the player to a different room
         """
+        if intro:
+            self.transporting = True
+            self.tra_room = room.getInstance()
+            return
+        
+        self.player.keyDownLock()
         self.fade()
         self.transporting = True
         self.tra_room = room.getInstance()
         self.tra_pos = position
         self.tra_keepBGM = keepBGM
-    
-    def displayText(self, text = "", icon = None):
+        if not keepBGM:
+            SoundManager.getInstance().fadeoutBGM()
+        
+    def displayText(self, text = "", icon = None, large = True):
         """
         Display text
         """
         self.textBox = True
         self.text = text
+        self.largeText = large
         if icon != None:
             self.icon = icon
+        if self.player != None:
+            self.player.stop()
     
     def flash(self, num = 0):
         """
@@ -214,9 +269,9 @@ class AE(object):
             self.projectiles.append(self.player.getBullet())
             self.player.bullet = None
 
-        #Sword swings
+        #Flames
         if self.player.sword != None:
-            self.projectiles.append(self.player.getSlash())
+            self.projectiles.append(self.player.getFlame())
             self.playSound(self.player.swordSound)
             self.player.sword = None
         
@@ -226,6 +281,18 @@ class AE(object):
             self.playSound(Clap.SOUND)
             self.player.clap = None
         
+        #Gale slash
+        if self.player.slash != None:
+            self.projectiles.append(self.player.getSlash())
+            self.playSound("plasma_shot.wav")
+            self.player.slash = None
+        
+        #Blizzard
+        if self.player.blizzard != None:
+            self.projectiles.append(self.player.getBlizzard())
+            #self.playSound("")
+
+
     def interactableEvents(self, event):
         """
         Handles interaction from the player
@@ -244,10 +311,9 @@ class AE(object):
                     self.player.handleEvent(event)
         else:
             self.player.handleEvent(event)
-    
+
     def handleEvent(self, event):
         
-        self.weaponControl()
         self.interactableEvents(event)
     
     """
@@ -285,7 +351,6 @@ class AE(object):
         #Spawn if switch pressed
         if type(obj) == PushableBlock:
             if switch.pressed and (obj not in self.pushableBlocks):
-                print("A")
                 self.playSound("menuclose.wav")
                 self.pushableBlocks.append(obj)
             return
@@ -318,10 +383,13 @@ class AE(object):
                 #Push blocks
                 if issubclass(type(n), Enemy):
                 # Handle it within the player class (enemies)
-                    if self.player.running and (type(n) == Enemy):
-                        if not n.frozen:
+                    if self.player.running:
+                        if not n.freezeShield and not n.frozen:
+                            self.player.stop()
                             n.freeze()
-                    self.player.handleCollision(n)
+
+                    if not n.frozen:
+                        self.player.handleCollision(n)
                 else:
                     self.player.handleCollision(n)
 
@@ -331,11 +399,10 @@ class AE(object):
                     for p in self.projectiles:
                         self.projectileCollision(p,n)
                         
-            
-    
     def pushableBlockCollision(self):
         if self.pushableBlocks:
             for block in self.pushableBlocks:
+                self.projectilesOnBlocks(block)
                 if self.player.doesCollide(block):
                     self.player.handleCollision(block)
 
@@ -362,23 +429,33 @@ class AE(object):
             #elif *Other possible conditions for block collision could go here. (Walls)
             else:
                 pass
-        
-                
+    
+    def enemyCollision(self, other):
+        for e in self.npcs:
+            if e.doesCollide(other):
+                e.bounce(other)
+
     def interactableCollision(self):
         if self.spawning:
             for n in self.spawning: 
-                for p in self.projectiles:
-                    self.projectileCollision(p, n)
+                if not issubclass(type(n), Drop):
+                    for p in self.projectiles:
+                        self.projectileCollision(p, n)
+                    self.enemyCollision(n)
+
                 if self.player.doesCollide(n):
                     if type(n) == Key:
                         self.disappear(n)
                         n.interact(self.player, self)
                     elif issubclass(type(n), Drop):
                         self.disappear(n)
+                        self.dropCount -= 1
                         n.interact(self.player)
                     else:
                         self.player.handleCollision(n)
     
+    #Add self.enemyCollision(block)
+    #Add self.projectilesOnBlocks(block)
     #abstract
     def blockCollision(self):
         """
@@ -386,18 +463,31 @@ class AE(object):
         """
         pass
     
+
     def projectileCollision(self, projectile, other):
         if projectile.doesCollide(other):
             if issubclass(type(other),Enemy):
                 other.handleCollision(projectile)
                 if type(projectile) == Bullet:
                     self.disappear(projectile)
+                    self.player.arrowCount += 1
                     self.player.shooting = False
             elif type(projectile) == Bullet:
                 self.playSound("OOT_DekuSeed_Hit.wav")
                 self.disappear(projectile)
+                self.player.arrowCount += 1
                 self.player.shooting = False
             
+
+    def projectilesOnBlocks(self, block):
+        for p in self.projectiles:
+            if p.doesCollide(block) and (type(p) == Sword or type(p) == Bullet):
+                self.playSound("OOT_DekuSeed_Hit.wav")
+                if type(p) == Bullet:
+                    self.disappear(p)
+                    self.player.arrowCount += 1
+                    self.player.shooting = False
+
 
     def handleCollision(self):
         #self.projectileCollision()
@@ -415,13 +505,14 @@ class AE(object):
     def updateNpcs(self, seconds):
         ##Enemies
         for n in self.npcs:
-            if type(n) == Enemy:
+            if issubclass(type(n), Enemy):
                 n.update(seconds)
                 if n.dead:
                     self.playSound("enemydies.wav")
                     self.disappear((n))
-                    if self.player.hp < self.player.max_hp:
+                    if self.dropCount < 5:
                         self.spawning.append(n.getDrop())
+                        self.dropCount += 1
                     self.enemyCounter += 1
             
         
@@ -435,7 +526,13 @@ class AE(object):
         for n in self.spawning:
             if n.animate:
                 n.update(seconds)
+            elif issubclass(type(n), Heart):
+                n.update(seconds)
+                if n.disappear:
+                    self.disappear(n)
+                    self.dropCount -= 1
                 
+
     def updatePlayer(self, seconds):
         if self.player.hp <= 0:
             #DIE
@@ -452,9 +549,17 @@ class AE(object):
     def updateProjectiles(self, seconds):
         for p in self.projectiles:
             p.update(seconds)
-            if (type(p) == Sword or type(p) == Clap) and p.timer >= p.lifetime:
+            if type(p) == Clap:
+                if p.frame == 4:
+                    self.disappear(p)
+            elif type(p) == Slash:
+                if (p.position[0] <= 0 or p.position[0] >= RESOLUTION[0]) or (p.position[1] <= 0 or p.position[1] >= RESOLUTION[1]):
+                    self.disappear(p)
+            elif (type(p) == Sword) and p.frame == 4: #and p.timer >= p.lifetime:
                 self.disappear(p)
-                self.player.unlockPosition()
+            elif type(p) == Blizzard and not self.player.freezing:
+                self.disappear(p)
+                #self.player.unlockPosition()
     
     def updatePushableBlocks(self,seconds):
         if self.pushableBlocks:
@@ -497,32 +602,35 @@ class AE(object):
                 self.handleClear()
         Drawable.updateOffset(self.player, self.size)
     
+
     """
     Draw Methods
     """
     def drawNpcs(self, drawSurface):
+        if self.spawning:
+            for n in self.spawning:
+                n.draw(drawSurface)
+
         if self.npcs:
             for n in self.npcs:
             #Consider making enemies appear right before the player
-                if type(n) == Enemy:
+                if issubclass(type(n), Enemy):
                     n.draw(drawSurface)
                 else:
                     n.draw(drawSurface)
         
-        if self.spawning:
-            for n in self.spawning:
-                n.draw(drawSurface)
+        
     
     def drawProjectiles(self, drawSurface):
         #Projectiles/weapons
         if self.projectiles:
             for p in self.projectiles:
-                if type(p) == Sword or type(p) == Clap:
+                p.draw(drawSurface)
+                """ if type(p) == Sword or type(p) == Clap:
                     p.draw(drawSurface, True)
-                #elif type(p) == Cleats:
-                    #pygame.draw.rect(drawSurface, (50,255,50), self.player.getTackleRect(), 1)
-                else:
-                    p.draw(drawSurface)
+                
+                else:   
+                    p.draw(drawSurface) """
 
     def drawFlash(self, drawSurface):
         self.flashes -= 1
@@ -531,6 +639,9 @@ class AE(object):
     def drawBlocks(self, drawSurface):
         for block in self.blocks:
             block.draw(drawSurface)
+        if self.torches:
+            for torch in self.torches:
+                torch.draw(drawSurface)
 
     def drawPushable(self, drawSurface):
         if self.pushableBlocks:
@@ -542,13 +653,31 @@ class AE(object):
             switch.draw(drawSurface)
 
     def drawHud(self, drawSurface):
-        self.keyCount.draw(drawSurface)
+        
         self.keyNumber = Drawable((33, self.keyCount.position[1]), "numbers.png", (self.player.keys,0))
         self.keyNumber.draw(drawSurface)
+        self.keyCount.draw(drawSurface)
         self.healthBar.draw(drawSurface, self.player)
-
-
         self.ammoBar.draw(drawSurface, self.player)
+        self.elementIcon.draw(drawSurface)
+
+        if EQUIPPED["C"] == 2:
+            self.energyBar.drawThunder(self.player.clapTimer, drawSurface)
+
+        elif EQUIPPED["C"] == 3:
+            
+            self.energyBar.drawWind(self.player.chargeTimer, drawSurface)
+        else:
+            self.energyBar.draw(drawSurface)
+        #pygame.transform.scale(self.transparentSurf,
+                               #list(map(int, UPSCALED)),
+                               #self.transparentScreen)
+        
+        #self.keyCount.draw(self.transparentSurf)
+        
+        #if wind selected
+        
+
         """ Text((1,16), "Ammo", (200,200,200)).draw(drawSurface)
         if self.player.ammo == self.player.max_ammo:
             Text((28,16), str(self.player.ammo), (0,220,0)).draw(drawSurface)
@@ -575,18 +704,19 @@ class AE(object):
         
         #Blocks
         self.drawBlocks(drawSurface)
-        
+
         #Switches
         self.drawSwitches(drawSurface)
 
         #Projectiles
-        self.drawProjectiles(drawSurface)
+        
         #Npcs
         self.drawNpcs(drawSurface)
 
         #Pushable blocks
         self.drawPushable(drawSurface)
         
+        self.drawProjectiles(drawSurface)
         #Player
         self.player.draw(drawSurface)
 
@@ -597,13 +727,16 @@ class AE(object):
         if self.fading:
             self.drawFade(drawSurface)
 
+        self.weaponControl()
 
 class AbstractEngine(object):
     """
     Abstract engine class for each room.
     """
+
     _INSTANCE = None
     
+
     @classmethod
     def getInstance(cls):
         if cls._INSTANCE == None:

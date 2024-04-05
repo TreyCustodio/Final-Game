@@ -33,11 +33,17 @@ class SpriteManager(object):
       # Folder in which images are stored
       _IMAGE_FOLDER = "images"
       
+      _ENEMY_FOLDER = "images\\enemies"
+
       _ROOM_FOLDER = "images\\levels"
       # Static information about the sprite sizes of particular image sheets.
       _SPRITE_SIZES = {"Objects.png":(16,16), "Bullet.png":(16,16), "TextBox.png": (244,32), "geemer.png": (22,18),
+                       "TextBox2.png": (244,64),
                        "icon.png": (32,32), "blockP.png":(16,16), "fire.png":(18,18), "black.png": (304, 208), 
-                       "bar.png":(112,16), "ammo.png": (16,16)
+                       "bar.png":(112,16), "ammo.png": (16,16), "torch.png": (16,16), 
+                       "blessing.png":(16,16), "thunder.png":(64,64), "gale.png": (18,18),
+                       "energy.png":(16,32), "item.png":(16,16),
+                       "flapper.png":(16,16), "dummy.png":(16,16)
          
       }
       
@@ -46,7 +52,10 @@ class SpriteManager(object):
       
       # A list of images that require to be loaded with transparency
       _TRANSPARENCY = ["Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
-                       "icon.png", "TextBox.png", "geemer.png", "item.png", "fire.png", "black.png"]
+                       "icon.png", "TextBox.png", "TextBox2.png", "geemer.png", "item.png", "fire.png", "black.png", "blessing.png",
+                       "thunder.png", "energy.png", "gale.png",
+                       "mofos.png", "flapper.png", "gremlin.png", "dummy.png"#Enemies
+                       ]
       
       # A list of images that require to be loaded with a color key
       _COLOR_KEY = ["Link.png", "Stalfos.png"]
@@ -68,7 +77,7 @@ class SpriteManager(object):
                                              SpriteManager._SM._DEFAULT_SPRITE)
          return spriteSize
       
-      def getSprite(self, fileName, offset=None):
+      def getSprite(self, fileName, offset=None, enemy = False):
          # If this sprite has not already been loaded, load the image from memory
          if fileName not in self._surfaces.keys():
             self._loadImage(fileName, offset != None)
@@ -84,11 +93,18 @@ class SpriteManager(object):
          if fileName not in self._surfaces.keys():
             self._loadImage(fileName, level = True)
          return self[fileName]
-
-      def _loadImage(self, fileName, sheet=False, level = False):
+      
+      def getEnemy(self, fileName, direction):
+         if fileName not in self._surfaces.keys():
+            self._loadImage(fileName, sheet = True, enemy = True)
+         return self[fileName][direction][0]
+      
+      def _loadImage(self, fileName, sheet=False, level = False, enemy = False):
          # Load the full image
          if level:
             fullImage = image.load(join(SpriteManager._SM._ROOM_FOLDER, fileName))
+         elif enemy:
+            fullImage = image.load(join(SpriteManager._SM._ENEMY_FOLDER, fileName))
          else:
             fullImage = image.load(join(SpriteManager._SM._IMAGE_FOLDER, fileName))
          

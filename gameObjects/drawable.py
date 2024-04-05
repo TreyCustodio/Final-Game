@@ -1,4 +1,4 @@
-from utils import SpriteManager, SCALE, RESOLUTION, vec, rectAdd
+from utils import SpriteManager, SCALE, RESOLUTION, EQUIPPED, vec, rectAdd
 
 import pygame
 
@@ -98,17 +98,62 @@ class Text(Drawable):
             
 class AmmoBar(Drawable):
     def __init__(self):
-        super().__init__(vec(0,16), "ammo.png", (0,0))
+        super().__init__(vec(0,15), "ammo.png", (0,0))
 
     def draw(self, drawSurface, player):
+        row = player.arrowCount
         if player.hp == player.max_hp:
-            self.image = SpriteManager.getInstance().getSprite("ammo.png", (1,0))
+            self.image = SpriteManager.getInstance().getSprite("ammo.png", (1,row))
 
         elif player.hp <= player.max_hp/5 or player.hp == 1:
-            self.image = SpriteManager.getInstance().getSprite("ammo.png", (2,0))
+            self.image = SpriteManager.getInstance().getSprite("ammo.png", (2,row))
         else:
-            self.image = SpriteManager.getInstance().getSprite("ammo.png", (0,0))
+            self.image = SpriteManager.getInstance().getSprite("ammo.png", (0,row))
         super().draw(drawSurface)
+
+class DamageIndicator(Drawable):
+    """
+    Displays the health, name, and image
+    of the currently targeted (last hit) enemy
+    """
+    def __init__(self):
+        super().__init__(vec(0,RESOLUTION[1]), "indicator.png", (0,0))
+
+
+class ElementIcon(Drawable):
+    def __init__(self):
+        super().__init__(vec(15,15), "ammo.png", (0,2))
+
+    def draw(self, drawSurface):
+        equipped = EQUIPPED["C"]
+        if equipped != None:
+            self.image = SpriteManager.getInstance().getSprite("ammo.png", (equipped+1, 2))
+        super().draw(drawSurface)
+
+
+class EnergyBar(Drawable):
+    def __init__(self):
+        super().__init__(vec(0,31), "energy.png", (0,0))
+        self.element = 0
+
+    def setElement(self, int=0):
+        self.element = int
+        self.image = SpriteManager.getInstance().getSprite("energy.png", (self.element,0))
+
+    def draw(self, drawSurface):
+        super().draw(drawSurface)
+    
+    def drawWind(self, timer, drawSurface):
+        if timer >= 5:
+            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (2, 5)), list(map(int, self.position)))
+        elif timer < 5:
+            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (2, int(timer))), list(map(int, self.position)))
+    
+    def drawThunder(self, timer, drawSurface):
+        if timer == 0:
+            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (1, 5)), list(map(int, self.position)))
+        else:
+            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (1, int(timer))), list(map(int, self.position)))
 
 class HealthBar(Drawable):
     def __init__(self):

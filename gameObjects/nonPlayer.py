@@ -1,5 +1,5 @@
 from . import Drawable, Animated
-from utils import SpriteManager, SCALE, RESOLUTION, vec, rectAdd, SoundManager, SPEECH, ICON, INV
+from utils import SpriteManager, SCALE, RESOLUTION, vec, rectAdd, SoundManager, FLAGS, SPEECH, ICON, INV
 import pygame
 
 class NonPlayer(Animated):
@@ -45,7 +45,7 @@ class Chest(NonPlayer):
 
     def interact(self, engine):#drawSurface
         if self.interacted:
-            engine.displayText("Empty.")
+            engine.displayText("Empty.", large = False)
 
         else:
             self.interacted = True
@@ -53,11 +53,11 @@ class Chest(NonPlayer):
             SoundManager.getInstance().playSFX("click1.wav")
             SoundManager.getInstance().playSFX("click2.wav")
             if self.icon != None:
-                engine.displayText(self.text, self.icon)
+                engine.displayText(self.text, self.icon, large = False)
                 if self.icon == ICON["plant"]:
                     INV["plant"] += 1
             else:
-                engine.displayText(self.text)
+                engine.displayText(self.text, large = False)
 
 class Sign(NonPlayer):
     def __init__(self, position = vec(0,0), text = ""):
@@ -68,9 +68,73 @@ class Sign(NonPlayer):
         engine.displayText(self.text)
 
 
+class Barrier(NonPlayer):
+    def __init__(self, position = vec(0,0), element = 0):
+        super().__init__(position, "barrier.png", (0,element))
+        if element == 0:
+            self.text = SPEECH["ice"]
+        elif element == 1:
+            self.text = SPEECH["fire"]
+            self.framesPerSecond = 8
+            self.row = 1
+        elif element == 2:
+            self.text = SPEECH["thunder"]
+            self.framesPerSecond = 40
+            self.row = 2
+        else:
+            self.text = SPEECH["wind"]
+            self.row = 3
 
 
+    def interact(self,engine):
+        engine.displayText(self.text)
 
+class Blessing(NonPlayer):
+    def __init__(self, position = vec(0,0), element=0):
+        #0 -> ice
+        #1 -> fire
+        #2 -> thunder
+        #3 -> wind
+        super().__init__(position, "blessing.png", (0,element))
+        if element == 0:
+            self.text = SPEECH["ice"]
+        elif element == 1:
+            self.text = SPEECH["fire"]
+            self.framesPerSecond = 8
+            self.row = 1
+        elif element == 2:
+            self.text = SPEECH["thunder"]
+            self.framesPerSecond = 20
+            self.row = 2
+        else:
+            self.text = SPEECH["wind"]
+            self.row = 3
+        self.animate = True
+        self.nFrames = 4
+        self.element = element
+
+    def getCollisionRect(self):
+        return super().getCollisionRect()
+    
+    def interact(self, engine):
+        if self.element == 0:
+            INV["cleats"] = True
+            FLAGS[90] = True
+            FLAGS[89] = True
+        elif self.element == 1:
+            INV["fire"] = True
+            FLAGS[91] = True
+            FLAGS[89] = True
+        elif self.element == 2:
+            INV["clap"] = True
+            FLAGS[92] = True
+            FLAGS[89] = True
+        elif self.element == 3:
+            INV["slash"] = True
+            FLAGS[93] = True
+            FLAGS[89] = True
+        engine.displayText(self.text)
+        
 class Geemer(NonPlayer):
     def __init__(self, position = vec(0,0), text = "", variant = None, maxCount = 0, fps = 16):
         super().__init__(position, "geemer.png", (0,0))
@@ -86,6 +150,7 @@ class Geemer(NonPlayer):
         self.max = maxCount
         self.variant = variant #Repeats same line of text over and over
         self.dialogueCounter = 0 #Helpful for displaying multiple different conversations
+        self.icon = ICON["geemer"]
     
     
     def getCollisionRect(self):
@@ -99,7 +164,6 @@ class Geemer(NonPlayer):
         For when characters display different dialogue after interaction
         """
         if text != "":
-            print("A")
             self.text = text
         elif (self.interacted and (self.variant != None)):
             
@@ -137,7 +201,7 @@ class Geemer(NonPlayer):
                     self.framesPerSecond = 2
                     self.vel = vec(10, 0)
                 else:
-                    engine.displayText(self.text)
+                    engine.displayText(self.text, self.icon)
                     return
 
             elif self.variant == 0 and not INV["shoot"]:
@@ -151,7 +215,7 @@ class Geemer(NonPlayer):
             self.set_text()
             self.dialogueCounter += 1
 
-        engine.displayText(self.text)
+        engine.displayText(self.text, self.icon)
        
 
     def update(self, seconds):
@@ -175,15 +239,20 @@ class Drop(NonPlayer):
     """
     def __init__(self, position=vec(0,0), offset = (0,0)):
         super().__init__(position, "Objects.png", offset)
+        self.timer = 0
     
     def interact(self, player):
         self.interacted = True
 
+    def update(self, seconds):
+        super().update(seconds)
+        
 
 class Heart(Drop):
-    def __init__(self, position=vec(0,0), big = False):
+    def __init__(self, position=vec(0,0)):
         super().__init__(position, (0,3))
-        self.big = big
+        self.disappear = False
+        
     
     def getCollisionRect(self):
         return pygame.Rect((self.position[0]+3,self.position[1]+5), (10,8))
@@ -194,6 +263,12 @@ class Heart(Drop):
             self.interacted = True
             if player.hp < player.max_hp:
                 player.hp += 1
+
+    def update(self, seconds):
+        super().update(seconds)
+        self.timer += seconds
+        if self.timer >= 5:
+            self.disappear = True
 
 class BigHeart(Drop):
     def __init__(self, position = vec(0,0)):

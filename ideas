@@ -60,17 +60,62 @@ For Milestone 2:
 5. Organization and __inits
 
 Future:
-Thinking about designing diferent rooms.
-Each room will have its own engine.
-Have to think about how I'll use states and the screenManager to control the game.
-Player must maintain their status from engine to engine
-Also Need to think about how to transition from room to room. A fadeout?
 Of course, animations for weapons as well.
 And creating new enemies
-Freezing enemies -> dont update while frozen
 
-Collision is sometimes detecting 
-  File "C:\Users\treyc\Documents\cs\VideoGame\finalgame\gameObjects\engine.py", line 315, in handleCollision
-    n.handleCollision(p)
-  File "C:\Users\treyc\Documents\cs\VideoGame\finalgame\gameObjects\enemy.py", line 45, in handleCollision
-    SoundManager.getInstance().playSFX("enemyhit.wav").set_volume(20.0)
+
+
+
+For week of 4/1
+Finish:
+- Gale slash animations**
+- Blizzard animations**
+- Enemy design
+- Cleaning up sound effects thru channel
+- Keycount HUD
+- Bonus: Design damage indicator HUD display in the top-right
+    - Once an enemy is struck, their health, name, and image is displayed in the top-right until
+    they die or until another enemy is struck.
+- Bonus: Reward the player for beating enemies while at full health somehow (Rupees)
+
+
+Bugs:
+- The game would crash if I let enemies or blocks collide with the player
+before the first round of updating. This is because the player's position
+is changed to a touple after the room transition. Find a way to keep player's
+position a vec object.
+- You can't move left while colliding with something above you, but you can move right.
+- Figure out ways to make movement more fluid
+
+
+
+
+Demo Week:
+- Design the level. Keep it short.
+- Normal Mode: Pick element in the chapel, start only with arrow and cleats
+- God Mode: Already have all elements
+- Freeplay Mode: Fight a bunch of enemies, press a switch to respawn the enemies******* <- enjoyment
+
+
+- 1-2 rooms for each element.
+    - 1 puzzle and a fight, or just a fight
+- Once all 4 rooms are cleared, open up the final room and either
+design a boss if time, or give the player some crazy powerful item.
+Then design another room for them to just play around in -> Freeplay Mode
+
+
+
+- Game offers the choice of different playstyles.
+Keeping the arrow-health mechanic in mind,
+you could choose the reckless route and stay at low health.
+or stay far away and shoot arrows super fast while using
+gale slash
+
+
+
+
+
+##
+QUESTIONS
+- Way to detect if the screen is being moved? Automatically pause the game if so?
+- Transparency

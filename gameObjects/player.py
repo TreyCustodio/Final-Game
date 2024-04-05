@@ -1,5 +1,5 @@
-from . import Bullet, Sword, Clap, Cleats, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
-from utils import SpriteManager, SoundManager, SCALE, RESOLUTION, INV, vec
+from . import Bullet, Sword, Dummy, Blizzard, Clap, Cleats, Slash, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
+from utils import SpriteManager, SoundManager, SCALE, RESOLUTION, INV, EQUIPPED, vec
 import pygame
 
 
@@ -9,12 +9,14 @@ class Player(Animated):
     def __init__(self, position=vec(0,0), direction=2):
         super().__init__(position, "Link.png", (0, direction))  
         #Frames, vel, speed, and row
+        self.frame = direction
         self.nFrames = 8
         self.vel = vec(0,0)
         self.speed = 75
         self.row = direction # (0 down), (1 right), (2 up), (3 left)
         #States
-        self.charging = False
+        
+        
         self.movingTo = None
         self.moving = False
         self.pushing = False
@@ -25,6 +27,7 @@ class Player(Animated):
         #Movement locks
         self.talking = False
         self.key_lock = False
+        self.keyDown_lock = False
         self.directionLock = False
         self.positionLock = False
         self.collisionRect = pygame.Rect((self.position[0]+1,self.position[1]+7),(16,16))
@@ -32,6 +35,14 @@ class Player(Animated):
         self.keys = 1
         #Bullet
         self.bullet = None
+        self.arrowCount = 1
+        self.arrowReady = True
+        self.arrowTimer = 0
+        #Gale slash
+        self.slash = None
+        self.chargeTimer = 0
+        self.charged = False
+        self.charging = False
         #Sword
         self.sword = None
         self.swordReady = True
@@ -40,13 +51,16 @@ class Player(Animated):
         self.swordRefresher = 0
         #Thunder clap
         self.clap = None
-        self.clapTimer = 0
-        self.clapReady = True
+        self.clapTimer = 0.01
+        self.clapReady = False
         #Ice cleats
         self.cleats = None
         self.running = False
         self.runningDirection = 0
 
+        #Blizzard
+        self.freezing = False
+        self.blizzard = None
         #Else
         self.items = []
         self.hp = 5
@@ -57,18 +71,24 @@ class Player(Animated):
         self.invincible = False
         self.iframeTimer = 0
 
+        self.idleFrame = 9##Integer used to display flashing idle sprite while charging
+
     """
     Getter methods
     """
     ###Get weapon instances###
+    
     def getBullet(self):
         return self.bullet
 
-    def getTackle(self):
-        return self.cleats
+    def getFlame(self):
+        return self.sword
+    
+    def getBlizzard(self):
+        return self.blizzard
 
     def getSlash(self):
-        return self.sword
+        return self.slash
     
     def getDirection(self, row):
         """
@@ -133,6 +153,12 @@ class Player(Animated):
     def movingDiagonal(self):
         return (self.vel[0] != 0 and self.vel[1] != 0)
     
+    def keyDownLock(self):
+        self.keyDown_lock = True
+    
+    def keyDownUnlock(self):
+        self.keyDown_lock = False
+
     def keyLock(self):
         #self.stop()
         self.key_lock = True
@@ -171,8 +197,6 @@ class Player(Animated):
         SoundManager.getInstance().stopSFX("screwattack_loop.wav")
 
     def charge(self):
-        self.stop()
-        self.frame = 0
         self.charging = True
 
 
@@ -186,9 +210,12 @@ class Player(Animated):
             if self.vel[1] == 0:
                 self.row = 1
             self.vel[0] = self.speed
+
         elif direction == 3:#Left
+            #print(self.vel)
             if self.vel[1] == 0:
                 self.row = 3
+            
             self.vel[0] = -self.speed
 
         # Y -> vel[1]
@@ -201,11 +228,11 @@ class Player(Animated):
 
     def handleEvent(self, event, interactableObject = None, engine = None):
         
+
+        
         if not self.key_lock:
-            #print("A")
-            ##  Key pressed down  ##
             
-            if event.type == pygame.KEYDOWN and not self.charging:
+            if not self.keyDown_lock and event.type == pygame.KEYDOWN and (not self.freezing):
                 if not self.pushing:
                     if interactableObject != None and event.key == pygame.K_z:
                         self.vel = vec(0,0)
@@ -214,42 +241,52 @@ class Player(Animated):
                     """ if event.key == pygame.K_f:
                         self.moveTo(vec(16*4,16*10)) """
 
-                    if event.key == pygame.K_x and INV["shoot"] and not self.fired: #and self.ammo > 0:
+                    if event.key == pygame.K_x and INV["shoot"] and self.arrowCount > 0 and self.arrowReady and not self.invincible: #and self.ammo > 0:
                         #Fire bullet
                         SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
                         self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp, self.max_hp)
-                        #self.ammo -= 1
-                        self.shooting = True
-                        self.fired = True
+                        self.arrowCount -= 1
+                        self.arrowReady = False
+                        
                         
                     if not self.running:
-                        if event.key == pygame.K_a:
-                            #print("A")
-                            self.charge()
+                        if not self.charging:
+                            if event.key == pygame.K_c and not self.invincible:
+                                equippedC = EQUIPPED["C"]
+                                if equippedC != None:
+                                    if equippedC == 0 and self.swordReady:
+                                        self.sword = Sword(self.position, self.getDirection(self.row))
+                                        self.frame = -1
+                                        self.swordReady = False
+                                        self.vel = vec(0,0)
+                                        self.positionLock = True
+                                        self.directionLock = True
+                                        self.increaseSwordCounter()
 
-                        elif event.key == pygame.K_c and self.swordReady:
-                            #Swing sword
-                            self.sword = Sword(self.position, self.getDirection(self.row))
-                            self.frame = -1
-                            self.swordReady = False
-                            self.vel = vec(0,0)
-                            self.positionLock = True
-                            self.directionLock = True
-                            self.increaseSwordCounter()
- 
-                        elif event.key == pygame.K_v and self.clapReady:
-                            #Thunder Clap
-                            self.clap = Clap(self.position)
-                            self.clapReady = False
-                            self.vel = vec(0,0)
-                            self.positionLock = True
+                                    elif equippedC == 1 and self.freezing == False:
+                                        self.frame = 0
+                                        if self.blizzard == None:
+                                            self.blizzard = Blizzard(self.position, self.getDirection(self.row))
+                                        self.stop()
+                                        self.freezing = True
 
-                        elif event.key == pygame.K_z and ( self.walking and (not self.movingDiagonal()) ):
-                            #Tackle
-                            self.runningDirection = self.row
-                            self.run()
+                                    elif equippedC == 2 and self.clapReady:
+                                        self.clap = Clap(self.position)
+                                        self.clapReady = False
+                                        self.vel = vec(0,0)
+                                        self.positionLock = True
 
-                        elif self.swordReady:
+                                    elif equippedC == 3:
+                                        self.charge()
+
+
+                            elif event.key == pygame.K_z and INV["cleats"] and not self.invincible  and ( self.walking and (not self.movingDiagonal()) ):
+                                #Tackle
+                                self.runningDirection = self.row
+                                self.run()
+
+                        
+                        if self.swordReady:
                             ##  Directional Movement    ##
                             if event.key == pygame.K_UP: # 2
                                 self.move(2)
@@ -267,13 +304,15 @@ class Player(Animated):
 
             ## Handle if a key is released  ##
             elif event.type == pygame.KEYUP:
-                if self.charging:
-                    if event.key == pygame.K_a:
+
+                if self.freezing:
+                    if event.key == pygame.K_c:
                         #print("C")
-                        self.charging = False
+                        #self.frame = 4
+                        self.freezing = False
                     else:
                         return
-                if self.running:
+                elif self.running:
                     if event.key == pygame.K_z:
                         #Stop running
                         self.slow()
@@ -288,6 +327,10 @@ class Player(Animated):
                     
 
                 else:
+                    if self.charging:
+                        if event.key == pygame.K_c:
+                            self.shootSlash()
+
                     if event.key == pygame.K_UP:
                         #Display the proper sprite for diagonal
                         if self.vel[0] < 0:
@@ -312,11 +355,14 @@ class Player(Animated):
                         #Stop leftward velocity
                         if self.vel[0] < 0:
                             self.vel[0] = 0
-                           
+                        
                     elif event.key == pygame.K_RIGHT:
-                        #Stop rightward velocity
+                    #Stop rightward velocity
                         if self.vel[0] > 0:
                             self.vel[0] = 0
+        
+        elif event.type != pygame.KEYDOWN and (self.vel[0] != 0 or self.vel[1] != 0):
+            self.stop()
                        
         
     """
@@ -362,7 +408,10 @@ class Player(Animated):
     def handleCollision(self, object):
         if self.running:
             self.stop()
+        
 
+        elif self.freezing:
+            self.freezing = False
         elif type(object) == PushableBlock:
             side = self.calculateSide(object)
             self.pushing = True
@@ -398,7 +447,10 @@ class Player(Animated):
 
         elif type(object) == Geemer and object.ignoreCollision:
             return
-        elif type(object) == Enemy:
+        elif issubclass(type(object), Enemy) and type(object) != Dummy:
+            if self.charging:
+                self.shootSlash()
+
             side = self.calculateSide(object)
             self.enemyCollision(object, side)
 
@@ -416,9 +468,12 @@ class Player(Animated):
             self.knockback(side)
             
     def preventCollision(self, object, side):
+        #print("object", object)
+        #print(object.position)
         #Prevents overlapping collision rects based on side
         #self.position = vec(self.position)
-        print(self.position)
+        #print("position", self.position)
+
         obj = object.getCollisionRect()
         coll = self.getCollisionRect()
         if side == "right":
@@ -474,6 +529,21 @@ class Player(Animated):
     def inPosition(self, position):
         return self.position[0] == position[0] and self.position[1] == position[1]
 
+    def shootSlash(self):
+        if self.chargeTimer > 1:
+            if self.chargeTimer < 3:
+                self.slash = Slash(self.position, self.getDirection(self.row), 0)
+            elif self.chargeTimer < 5:
+                self.slash = Slash(self.position, self.getDirection(self.row), 1)
+            else:
+                self.slash = Slash(self.position, self.getDirection(self.row), 2)
+        
+        if self.charged:
+            self.charged = False
+        self.charging = False
+        self.chargeTimer = 0
+        self.idleFrame = 9
+
     """
     Updating
     """
@@ -493,16 +563,43 @@ class Player(Animated):
             self.swordSound = "DarkLink3.wav"
 
     def update(self, seconds):
+        if not self.arrowReady:
+            self.arrowTimer += seconds
+            if self.hp == self.max_hp:
+                if self.arrowTimer >= 0.1:
+                    self.arrowReady = True
+                    self.arrowTimer = 0
+            else:
+                if self.arrowTimer >= 0.25:
+                    self.arrowReady = True
+                    self.arrowTimer = 0
+
+        #Update walking state
+        if self.vel[0] == 0 and self.vel[1] == 0:
+            self.walking = False
+        else:
+            self.walking = True
+
         if self.charging:
-            super().update(seconds, charging = True)
-            if self.frame == 15:
-                #print("B")
-                self.charging = False
-                SoundManager.getInstance().playSFX("plasma_shot.wav")
-                #self.slash = self.getSlash()
+            self.chargeTimer += seconds
+            if self.chargeTimer >= 5:
+                self.charged = True
+                #Play a sound or something?
+            super().updatePlayer(seconds)
+            self.position += self.vel * seconds
+            return
+            
+            
+            #Shoot an even bigger slash when charged for longer?
+        elif self.freezing:
+            super().updatePlayer(seconds)
             return
         
-        if self.moving:
+        elif self.blizzard != None:
+            self.blizzard = None
+        
+        
+        """ if self.moving:
             if self.inPosition(self.movingTo):
                 self.vel = vec(0,0)
                 self.movingTo = None
@@ -518,17 +615,11 @@ class Player(Animated):
                     self.vel[1] = -self.speed
             self.position += self.vel * seconds
             
-            return
-        
-        if self.fired:
-            self.fired = False
+            return """
         
         
-        #Update walking state
-        if self.vel[0] == 0 and self.vel[1] == 0:
-            self.walking = False
-        else:
-            self.walking = True
+    
+        
         
         #Update invincibility if needed
         if self.invincible:
@@ -539,30 +630,18 @@ class Player(Animated):
 
             elif self.iframeTimer <= 1.85:
                 self.image = SpriteManager.getInstance().getSprite("null.png")
-
-        #Update sword cooldown
-        """ if self.swordReady == False:
-            self.swordRefresher += seconds
-            if self.swordRefresher >= 0.3:
-                self.swordRefresher = 0
-                self.swordReady = True
-                self.row -= 8 """
         
         #Update clap cooldown
-        if self.clapReady == False:
+        if EQUIPPED["C"] == 2 and self.clapReady == False:
             self.clapTimer += seconds
             if self.clapTimer >= 5.0:
                 self.clapTimer = 0
                 self.clapReady = True
         
-        super().update(seconds, self.walking, self.pushing, self.swordReady, self.clapReady)
-
-        if not self.shooting:
-            self.refreshAmmo()
-        
-        
+        super().updatePlayer(seconds)
         self.position += self.vel * seconds
-        print(self.position)
+        #print(self.position)
+
     def updateMovement(self):
         pass
 

@@ -1,4 +1,4 @@
-from . import Drawable
+from . import Drawable, Animated
 from utils import vec, rectAdd, SpriteManager
 import pygame
 
@@ -64,9 +64,19 @@ class Trigger(IBlock):
             super().__init__((16*9, (-6)))
         else:
             super().__init__(position)
-
+        
         self.text = text
     
     def interact(self, player, engine):
         engine.displayText(self.text)
         player.vel = vec(0,0)
+
+class Torch(Animated):
+    def __init__(self, position = vec(0,0), color = 0):
+        super().__init__(position, "torch.png", (0,color))
+        self.nFrames = 4
+        self.framesPerSecond = 8
+        self.row = color
+        if color == 1 or color == 3:
+            self.frame = 2
+    
