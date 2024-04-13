@@ -1,5 +1,5 @@
 from . import Drawable, Animated
-from utils import vec, rectAdd, SpriteManager
+from utils import vec, RESOLUTION, COORD, rectAdd, SpriteManager
 import pygame
 
 """
@@ -25,10 +25,10 @@ class Block(Drawable):
 
 class IBlock(Block):
     """
-    Invisible blocks, no need to pass in an offset
+    Invisible blocks
     """
-    def __init__(self, position = vec(0,0)):
-        super().__init__(position, (0,0))
+    def __init__(self, position = vec(0,0), offset = (0,0)):
+        super().__init__(position, offset)
 
 
 
@@ -60,23 +60,52 @@ class Trigger(IBlock):
     def __init__(self, position = vec(0,0), text="", door = -1):
         if door == 0:
             super().__init__((16*9, (16*12 + 8)))
+        elif door == 3:
+            super().__init__((0, 6*16))
+            
         elif door == 2:
             super().__init__((16*9, (-6)))
+
+        elif door == 1:
+            super().__init__((RESOLUTION[0]-16, 6*16))
+
+        elif door == 5:
+            super().__init__(position, (1,0))
         else:
             super().__init__(position)
         
+        self.door = door
         self.text = text
     
+    def getCollisionRect(self):
+        if self.door == 0 or self.door == 2:
+            return pygame.Rect((self.position[0]-8, self.position[1]), (32, 16))
+        elif self.door == 1 or self.door == 3:
+            return pygame.Rect((self.position[0],self.position[1]-8), (16,32))
+        else:
+            return super().getCollisionRect()
     def interact(self, player, engine):
         engine.displayText(self.text)
         player.vel = vec(0,0)
 
 class Torch(Animated):
-    def __init__(self, position = vec(0,0), color = 0):
-        super().__init__(position, "torch.png", (0,color))
+    def __init__(self, position = vec(0,0), color = 0, lit = True):
+        if lit:
+            super().__init__(position, "torch.png", (0,color))
+        else:
+            super().__init__(position, "torch.png", (0,4))
+            color = 4
+
+        self.lit = lit
         self.nFrames = 4
         self.framesPerSecond = 8
+
         self.row = color
         if color == 1 or color == 3:
             self.frame = 2
+    
+    def light(self):
+        if not self.lit:
+            self.row = 0
+            self.lit = True
     

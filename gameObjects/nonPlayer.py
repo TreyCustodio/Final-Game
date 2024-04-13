@@ -53,11 +53,11 @@ class Chest(NonPlayer):
             SoundManager.getInstance().playSFX("click1.wav")
             SoundManager.getInstance().playSFX("click2.wav")
             if self.icon != None:
-                engine.displayText(self.text, self.icon, large = False)
+                engine.displayText(self.text, self.icon)
                 if self.icon == ICON["plant"]:
                     INV["plant"] += 1
             else:
-                engine.displayText(self.text, large = False)
+                engine.displayText(self.text)
 
 class Sign(NonPlayer):
     def __init__(self, position = vec(0,0), text = ""):
@@ -117,7 +117,7 @@ class Blessing(NonPlayer):
         return super().getCollisionRect()
     
     def interact(self, engine):
-        if self.element == 0:
+        """ if self.element == 0:
             INV["cleats"] = True
             FLAGS[90] = True
             FLAGS[89] = True
@@ -132,25 +132,28 @@ class Blessing(NonPlayer):
         elif self.element == 3:
             INV["slash"] = True
             FLAGS[93] = True
-            FLAGS[89] = True
+            FLAGS[89] = True """
         engine.displayText(self.text)
         
 class Geemer(NonPlayer):
-    def __init__(self, position = vec(0,0), text = "", variant = None, maxCount = 0, fps = 16):
-        super().__init__(position, "geemer.png", (0,0))
+    def __init__(self, position = vec(0,0), text = "", variant = None, maxCount = 0, fps = 16, color = 0, hungry = False, feedText = ""):
+        super().__init__(position, "geemer.png", (0, color))
         self.vel = vec(0,0)
         self.position = position
         self.text = text
-        self.row = 0
+        self.row = color
         self.nFrames = 6
         self.animate = True
         self.framesPerSecond = fps
+        self.hungry = hungry
+        self.feedText = feedText
+        self.fead = not hungry
         
         self.ignoreCollision = False
         self.max = maxCount
         self.variant = variant #Repeats same line of text over and over
         self.dialogueCounter = 0 #Helpful for displaying multiple different conversations
-        self.icon = ICON["geemer"]
+        self.icon = ICON["geemer"+str(color)]
     
     
     def getCollisionRect(self):
@@ -210,7 +213,16 @@ class Geemer(NonPlayer):
 
             else:
                 self.interacted = True
-
+        elif self.hungry and INV["plant"] >= 1:
+            engine.displayText(self.feedText)
+            self.fead = True
+            self.ignoreCollision = True
+            self.framesPerSecond = 5
+            self.vel = vec(10, 0)
+            INV["plant"] -= 1
+            self.text = self.feedText
+            return
+        
         elif (self.variant != None):
             self.set_text()
             self.dialogueCounter += 1
@@ -247,6 +259,11 @@ class Drop(NonPlayer):
     def update(self, seconds):
         super().update(seconds)
         
+class Frost(Drop):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, (0))
+
+
 
 class Heart(Drop):
     def __init__(self, position=vec(0,0)):

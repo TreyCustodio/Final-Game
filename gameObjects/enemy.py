@@ -20,6 +20,7 @@ class Enemy(Animated):
             self.image = SpriteManager.getInstance().getEnemy(fileName, direction)
         
         #Animation properties
+        self.indicatorRow = 0
         self.fileName = fileName
         self.row = direction
         self.frame = 0
@@ -53,7 +54,12 @@ class Enemy(Animated):
         self.shield = 0
         self.type = Element(0)
         
+    def doesCollideBlock(self, block):
+        return self.doesCollide(block)
 
+    def doesCollideProjectile(self, projectile):
+        return self.doesCollide(projectile)
+    
     def setSpeed(self, row):
         if row == 0 or row == 4:
             self.vel[1] = self.speed
@@ -106,7 +112,21 @@ class Enemy(Animated):
         else:
             self.hp = self.maxHp
 
-    def handleCollision(self, other):
+
+    def handlePlayerCollision(self, player):
+        """
+        Expects a player
+        Returns True if the Enemy hurts the Player
+
+        Will be overriden by Enemies with multiple
+        collision Rects
+        """
+        return True
+
+
+
+    def handleCollision(self, other = None):
+        
         if self.type != 2 and type(other) == Blizzard and not self.frozen:
             self.freeze()
 
@@ -253,6 +273,7 @@ class Enemy(Animated):
 class Mofos(Enemy):
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, "mofos.png", direction)
+        self.indicatorRow = 3
         self.speed = 20
         self.maxHp = 10
         self.hp = self.maxHp
@@ -291,6 +312,7 @@ class Flapper(Enemy):
     """
     def __init__(self, position = vec(0,0), typeRow = 0, direction = 0):
         super().__init__(position, "flapper.png", typeRow)
+        self.indicatorRow = 1
         self.typeRow = typeRow
         self.row = self.typeRow
         self.speed = 70
@@ -298,7 +320,7 @@ class Flapper(Enemy):
         self.hp = self.maxHp
         self.damage = 1
         self.direction = direction
-        self.hurtRow = 1
+        self.hurtRow = 5
         ##Set velocity based on direction
         self.setSpeed(direction)
 
@@ -373,6 +395,40 @@ class Flapper(Enemy):
 
 
 
+class FireFlapper(Flapper):
+    def __init__(self, position = vec(0,0), direction = 0):
+        super().__init__(position, 1, direction)
+        self.type = Element(1)
+    
+    def handleCollision(self, other):
+        if other.type == 2:
+            super().handleCollision(other)
+
+class IceFlapper(Flapper):
+    def __init__(self, position = vec(0,0), direction = 0):
+        super().__init__(position, 2, direction)
+        self.type = Element(2)
+        self.freezeShield = True
+    
+    def handleCollision(self, other):
+        if other.type == 1:
+            super().handleCollision(other)
+
+class ThunderFlapper(Flapper):
+    def __init__(self, position = vec(0,0), direction = 0):
+        super().__init__(position, 3, direction)
+        #self.freezeShield = True
+        self.type = Element(3)
+    
+    def handleCollision(self, other):
+        if other.type == 4:
+            super().handleCollision(other)
+
+class WindFlapper(Flapper):
+    pass
+
+
+
 class Puffer(Enemy):
     """
     Must be damaged via ranged attacks.
@@ -385,22 +441,167 @@ class Puffer(Enemy):
     def puff(self):
         pass
 
-class Violater(Enemy):
+class David(Enemy):
     """
     Runs across the screen if you enter its line of sight.
     Plays a funny sound when it runs.
     """
-    def __init__(self, position):
-        pass
+    def __init__(self, position, direction = 1, boss = False):
+        super().__init__(position, "david.png", direction)
+        self.indicatorRow = 2
+        self.nFrames = 1
+        self.totalFrames = 1
+        self.speed = 200
+        self.maxHp = 30
+        self.hp = self.maxHp
+        self.damage = 1
+        self.running = False
+        self.freezeShield = True
+        self.ready = True
 
+        self.boss = boss
+
+    def getDrop(self):
+        return BigHeart((self.position[0]+3, self.position[1]+5))
+
+    def doesCollideProjectile(self, other):
+        return self.getHitBox().colliderect(other.getCollisionRect())
+
+
+    def doesCollideBlock(self, block):
+        if self.getHitBox().colliderect(block.getCollisionRect()):
+            return True
+        else:
+            return False
+        
+    def getCollisionRect(self):
+        if self.row == 1 or self.row == 5:
+            return pygame.Rect((self.position), (64, 26))
+        elif self.row == 3 or self.row == 7:
+            return pygame.Rect((self.position[0] - (64-19), self.position[1]), (64, 26))
+
+    def getHitBox(self):
+        return pygame.Rect((self.position), (19,26))
+    
+    def getRunRect(self):
+        if self.row == 1:
+            return pygame.Rect((self.position[0] + 19, self.position[1]), (64, 26))
+        elif self.row == 3:
+            return pygame.Rect((self.position[0] - 64, self.position[1]), (64-19, 26))
+        
     def run(self):
-        pass
+        if not self.running:
+            
+            self.running = True
+            self.nFrames = 3
+            self.totalFrames = 3
+            
+            if self.row == 1 or self.row == 5:
+                self.vel[0] = self.speed
+            elif self.row == 3 or self.row == 7:
+                self.vel[0] = -self.speed
+        
+
+    def move(self, seconds):
+        if self.running:
+            self.position += self.vel * seconds
+    
+    def updateFlash(self, seconds):
+        if self.row >= 4:
+            self.flashTimer += seconds
+            if self.flashTimer >= 0.5:
+                self.row -= 4
+
+
+    def handlePlayerCollision(self, player):
+        """
+        Hurts the player if it collides with its hitbox
+        Runs at the player if it collides with its runRect
+        """
+        if self.row < 4:
+            if self.getRunRect().colliderect(player.getCollisionRect()):#player collides with runRect
+                if not self.running:
+                    SoundManager.getInstance().playSFX("run.wav")
+                self.run()
+                
+                
+
+            else:
+                player.handleCollision(self)
+    
+
+    def handleCollision(self, other):
+        """
+        Only gets damaged by arrows
+        """
+        if not self.running and other.type == 0:
+            if self.row < self.hurtRow:
+                self.row += self.hurtRow
+                self.flashTimer = 0
+                self.hp -= other.damage
+                if self.hp > 0:
+                    SoundManager.getInstance().playSFX("david.wav")
+                    self.run()
+                    
+                else:
+                    self.dead = True
+
+
+    def bounce(self, other):
+        """
+        David turns around once he collides with a wall.
+        Logic gets a little iffy here.
+        """
+        if self.running == False:#Stopped
+            
+            ##If he's in the wall
+            if self.getHitBox().colliderect(other.getCollisionRect()):
+                ##Get him out the wall
+                if self.row == 3:
+                    self.position[0] -= 1
+
+                elif self.row == 1:
+                    self.position[0] += 1
+
+        
+        else:##Runs first, stop movement, reset animation
+            self.running = False
+            self.totalFrames = 1
+            self.nFrames = 1
+            self.vel = vec(0,0)
+            if self.row == 1:
+                self.row = 3
+            elif self.row == 3:
+                self.row = 1
+
+        
+
+
+
+    def update(self, seconds):
+        if self.dead:
+        #Add death animation here if self.hp = 0
+            pass
+
+        self.unfreeze(seconds)
+
+
+        super().update(seconds)
+
+        self.updateFlash(seconds)
+
+        ##Move
+        self.move(seconds)
+
+
+
 
 class Gremlin(Enemy):
-    def __init__(self, position = vec(0,0), direction = 0):
-        super().__init__(position, "gremlin.png", direction)
+    def __init__(self, position = vec(0,0), direction = 1, fileName = "gremlin.png"):
+        super().__init__(position, fileName, direction)
+        self.indicatorRow = 4
         self.speed = 50
-        self.maxHp = 20
+        self.maxHp = 15
         self.hp = self.maxHp
         self.damage = 1
         
@@ -445,12 +646,20 @@ class Gremlin(Enemy):
                 self.row -= 4
 
         
+class GremlinB(Gremlin):
+    def __init__(self, position= vec(0,0), direction = 1):
+        super().__init__(position, direction, "gremlin_blue.png")
+        self.maxHp = 30
+        self.hp = 30
+        self.damage = 2
+        self.speed = 60
 
-
-
+    def getDrop(self):
+        return BigHeart((self.position[0]+3, self.position[1]+5))
 class Dummy(Enemy):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, "dummy.png", 0)
+        self.indicatorRow = 5
         self.freezeShield = True
         self.nFrames = 1
         self.totalFrames = 1
@@ -494,21 +703,10 @@ class ThunderEnemy(Enemy):
 class WindEnemy(Enemy):
     pass
 
-class FireFlapper(Flapper):
-    def __init__(self, position = vec(0,0), direction = 0):
-        super().__init__(position, 2, direction)
-        
 
 
 
-class IceFlapper(Flapper):
-    pass
 
-class ThunderFlapper(Flapper):
-    pass
-
-class WindFlapper(Flapper):
-    pass
 
 class FireMofos(Mofos):
     pass
@@ -518,6 +716,9 @@ class ThunderMofos(Mofos):
     pass
 class WindMofos(Mofos):
     pass
+
+
+
 
 class MovementPatterns(object):
     def changeDirectionSquare(enemy):

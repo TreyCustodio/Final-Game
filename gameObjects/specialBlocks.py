@@ -44,11 +44,16 @@ class PushableBlock(Animated):
     
     def reset(self):
         self.resetting = True
+        SoundManager.getInstance().stopSFX("LA_Rock_Push.wav")
+        if not pygame.mixer.get_busy():
+            SoundManager.getInstance().playSFX("LA_Dungeon_Signal.wav")
         #self.position = self.originalPos
+
 
     def push(self):
         self.pushing = True
-        SoundManager.getInstance().playSFX("LA_Rock_Push.wav")
+        if not pygame.mixer.get_busy():
+            SoundManager.getInstance().playSFX("LA_Rock_Push.wav", -1)
     
 
         

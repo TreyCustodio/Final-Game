@@ -1,10 +1,16 @@
 from utils import SpriteManager, SCALE, RESOLUTION, EQUIPPED, vec, rectAdd
 
 import pygame
-
+"""
+This file contains Drawable Objects, including HUD-related objects
+and text-related objects.
+"""
 
         
 class Drawable(object):
+    """
+    Drawable object class written by Professor Matthews
+    """
     
     CAMERA_OFFSET = vec(0,0)
     
@@ -71,11 +77,18 @@ class Drawable(object):
 
 
 class Level(Drawable):
+    """
+    Gets the image for the level using the SpriteManager
+    """
     def __init__(self, fileName):
         super().__init__((0,0), "")
         self.image = SpriteManager.getInstance().getLevel(fileName)
         
+
 class Text(Drawable):
+    """
+    Displays text using the font from A Link to the Past
+    """
     import os
     if not pygame.font.get_init():
         pygame.font.init()
@@ -95,8 +108,22 @@ class Text(Drawable):
             self.image = Text.BOX.render(text, False, color)
         else:
             self.image = Text.FONT.render(text, False, color)
-            
+
+
+
+class DamageNum(Text):
+    """
+    Expects the damage an enemy receives as a paramater
+    and displays the damage dealt.
+    """
+    def __init__(self, position, num = 0):
+        super().__init__(position, str(num), color = (255, 0, 0))    
+
+
 class AmmoBar(Drawable):
+    """
+    Displays the currently selected arrow on the HUD
+    """
     def __init__(self):
         super().__init__(vec(0,15), "ammo.png", (0,0))
 
@@ -111,16 +138,59 @@ class AmmoBar(Drawable):
             self.image = SpriteManager.getInstance().getSprite("ammo.png", (0,row))
         super().draw(drawSurface)
 
+
 class DamageIndicator(Drawable):
     """
     Displays the health, name, and image
     of the currently targeted (last hit) enemy
     """
     def __init__(self):
-        super().__init__(vec(0,RESOLUTION[1]), "indicator.png", (0,0))
+        super().__init__(vec(RESOLUTION[0] - 58, 0), "indicator.png", (0,0) )
+        self.row = 0
+        self.indicatorTimer = 0
+    
+    def setImage(self, value, hp = 0, maxHp = 0):
+        """
+        Change the frame based on the enemy's hp
+        """
+        self.indicatorTimer = 0
+        if value != self.row:
+            self.row = value
+
+        if hp <= 0:
+            self.row = 0
+            self.image = SpriteManager.getInstance().getSprite("indicator.png", (0, 0))
+            self.indicatorTimer = 0
+
+        elif hp == maxHp:
+            self.image = SpriteManager.getInstance().getSprite("indicator.png", (0, value))
+
+        elif hp <= maxHp/4:
+            self.image = SpriteManager.getInstance().getSprite("indicator.png", (4, value))
+        
+        elif hp <= maxHp/2:
+            self.image = SpriteManager.getInstance().getSprite("indicator.png", (3, value))
+        
+        elif hp <= maxHp/1.333:
+            self.image = SpriteManager.getInstance().getSprite("indicator.png", (2, value))
+        
+        else:
+            self.image = SpriteManager.getInstance().getSprite("indicator.png", (1, value))
+            self.indicatorTimer = 0
+    
+    def update(self, seconds):
+        if self.row > 0:
+            self.indicatorTimer += seconds
+            if self.indicatorTimer >= 3:
+                self.setImage(0)
+
+
 
 
 class ElementIcon(Drawable):
+    """
+    Displays the currently selected element on the HUD
+    """
     def __init__(self):
         super().__init__(vec(15,15), "ammo.png", (0,2))
 
@@ -129,9 +199,13 @@ class ElementIcon(Drawable):
         if equipped != None:
             self.image = SpriteManager.getInstance().getSprite("ammo.png", (equipped+1, 2))
         super().draw(drawSurface)
-
+        
 
 class EnergyBar(Drawable):
+    """
+    Displays the player's energy meter on the HUD.
+    For Gale Slash and Thunder Clap
+    """
     def __init__(self):
         super().__init__(vec(0,31), "energy.png", (0,0))
         self.element = 0
@@ -144,18 +218,26 @@ class EnergyBar(Drawable):
         super().draw(drawSurface)
     
     def drawWind(self, timer, drawSurface):
-        if timer >= 5:
+        if timer >= 2.5:
             drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (2, 5)), list(map(int, self.position)))
-        elif timer < 5:
-            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (2, int(timer))), list(map(int, self.position)))
-    
+        elif timer >= 1.5:
+            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (2, 3)), list(map(int, self.position)))
+        elif timer >= 0.5:
+            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (2, 2)), list(map(int, self.position)))
+        else:
+            drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (2, 0)), list(map(int, self.position)))
+
     def drawThunder(self, timer, drawSurface):
         if timer == 0:
             drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (1, 5)), list(map(int, self.position)))
         else:
             drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (1, int(timer))), list(map(int, self.position)))
 
+
 class HealthBar(Drawable):
+    """
+    Displays the player's health on the HUD
+    """
     def __init__(self):
         super().__init__(vec(0,0), "bar.png", (0,0))
     

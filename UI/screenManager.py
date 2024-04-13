@@ -26,17 +26,17 @@ class ScreenManager(object):
         
         self.mainMenu = EventMenu("title_screen.png", fontName="zelda")
         self.mainMenu.addOption("start", "Press ENTER to start",
-                                 RESOLUTION // 2 - vec(0,25),
+                                 RESOLUTION // 2 + vec(0,5),
                                  lambda x: x.type == KEYDOWN and x.key == K_RETURN,
                                  center="both")
-        self.mainMenu.addOption("tutorial", "Press SPACE for testing",
-                                 RESOLUTION // 2 + vec(0,25),
+        self.mainMenu.addOption("tutorial", "Press SPACE to start in Grand Chapel",
+                                 RESOLUTION // 2 + vec(0,50),
                                  lambda x: x.type == KEYDOWN and x.key == K_SPACE,
                                  center="both")
-        self.mainMenu.addOption("exit", "Press ESC to quit",
+        """ self.mainMenu.addOption("exit", "Press ESC to quit",
                                  RESOLUTION // 2 + vec(0,75),
                                  lambda x: x.type == KEYDOWN and x.key == K_ESCAPE,
-                                 center="both")
+                                 center="both") """
     
     #Displaying Text
     def draw(self, drawSurf):
@@ -77,13 +77,15 @@ class ScreenManager(object):
     #Entering game, pausing
     def handleEvent(self, event):
         if self.state == "game":
-            if event.type == KEYDOWN and event.key == K_RETURN:
-                self.game.player.stop()
-                SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
-                self.state.pause()
-                return
-            else:
-                self.game.handleEvent(event)
+            if not self.game.pause_lock:
+                if event.type == KEYDOWN and event.key == K_RETURN:
+                    self.game.player.stop()
+                    SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
+                    self.state.pause()
+                    return
+                
+                else:
+                    self.game.handleEvent(event)
 
         elif self.state == "paused":
             if event.type == KEYDOWN and event.key == K_r:
@@ -105,13 +107,25 @@ class ScreenManager(object):
             choice = self.mainMenu.handleEvent(event)
 
             if choice == "start":
-                self.intro = Intro_Cut.getInstance()
-                self.inIntro = True
-                self.state.toIntro()
+                if FLAGS[51]:
+                    self.game = Grand_Chapel.getInstance()
+                    self.game.initializeRoom()
+                    self.state.startGame()
+
+                elif FLAGS[50]:
+                    self.game = Entrance.getInstance()
+                    self.game.initializeRoom()
+                    self.state.startGame()
+                    
+                else:
+                    FLAGS[50] = True
+                    self.intro = Intro_Cut.getInstance()
+                    self.inIntro = True
+                    self.state.toIntro()
             
             elif choice == "tutorial":
-                #self.game = Intro_1.getInstance()
-                self.game = Intro_1.getInstance()
+                """Testing and Freeplay"""
+                self.game = Grand_Chapel.getInstance()
                 self.game.initializeRoom()
                 self.state.startGame()
 
@@ -119,6 +133,31 @@ class ScreenManager(object):
                 return "exit"
             
         elif self.state == "textBox":
+            if event.type == KEYDOWN and event.key == K_SPACE:
+                if self.pauseEngine.paused:
+                    self.pauseEngine.textBox = False
+                    self.pauseEngine.text = ""
+                    self.state.speakP()
+                elif self.inIntro:
+                    ##Skip the intro
+                    self.intro.textBox = False
+                    self.intro.text = ""
+                    self.intro.icon = None
+                    self.intro.fading = True
+                    self.state.speakI()
+                    self.intro.fading = True
+                    self.intro.textInt = 9
+                    
+                    
+                else:
+                    self.game.textBox = False
+                    self.game.text = ""
+                    self.game.icon = None
+                    self.state.speak()
+                self.textEngine = TextEngine.tearDown()
+                return
+                    ##Close the textBox
+
             self.textEngine.handleEvent(event)
             if self.textEngine.done:
                 if self.pauseEngine.paused:
@@ -129,7 +168,8 @@ class ScreenManager(object):
                     self.intro.textBox = False
                     self.intro.text = ""
                     self.intro.icon = None
-                    self.intro.textInt += 1
+                    if self.intro.textInt == 9:
+                        self.intro.fading = True
                     self.state.speakI()
                 else:
                     self.game.textBox = False
@@ -137,6 +177,10 @@ class ScreenManager(object):
                     self.game.icon = None
                     self.state.speak()
                 self.textEngine = TextEngine.tearDown()
+        elif self.state == "intro":
+            if event.type == KEYDOWN and event.key == K_SPACE:
+                self.intro.fading = True
+                self.intro.textInt = 9
 
     #Only runs if in game
     def handleCollision(self):
@@ -147,7 +191,13 @@ class ScreenManager(object):
     def update(self, seconds): 
         if self.state == "game":
             self.game.update(seconds)
-            if self.game.readyToTransition:
+            if self.game.dead:
+                self.state.die()
+                self.game.deathReset()
+                self.game = AbstractEngine.tearDown()
+                self.game = None
+            
+            elif self.game.readyToTransition:
                 pos = self.game.tra_pos
                 player = self.game.player
                 newGame = self.game.tra_room
@@ -171,9 +221,9 @@ class ScreenManager(object):
         elif self.state == "intro":
             self.intro.update(seconds)
             if self.intro.introDone:
-                ##Transition to Intro_1##
+                ##Transition to Entrance##
                 self.inIntro = False
-                self.game = Intro_1.getInstance()
+                self.game = Entrance.getInstance()
                 self.game.initializeRoom()
                 self.state.toGame()
                 

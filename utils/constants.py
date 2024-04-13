@@ -15,6 +15,17 @@ Global boolean values that represent flags.
 Used for a variety of special events.
 """
 FLAGS = [False for i in range(100)]
+#1-49 -> Messages that only display once
+#1 -> Grand Chapel
+#2 ->
+
+
+##50-59 -> Respawn/Checkpoints
+#50 -> skip intro (post-death)
+#51 -> respawn in Grand Chapel
+
+
+##88-93 -> Blessings
 #88 -> Blessings are locked, way is clear
 #89 -> No blessings appear
 #90 -> Ice chosen
@@ -23,6 +34,7 @@ FLAGS = [False for i in range(100)]
 #93 -> Wind chosen
 
 
+##94-100 Completion flags
 #94 -> Ice complete
 #95 -> Fire complete
 #96 -> Thunder complete
@@ -48,7 +60,7 @@ Indicates what C attack and what type of arrow is equipped
 """
 EQUIPPED = {
 
-    "C": None,
+    "C": 0,
     "Arrow": 0
     #0 -> regular, 1 -> fire, 2 -> ice, 3- -> thunder, 4-> wind, 5-> super, 6-> hyper
 
@@ -121,39 +133,42 @@ these fragments.\n\
 But none who make the\n\
 venture have returned...\n",
 
+0:"Let me tell you the story\n\
+of Majestus and its people.\n",
 
-0:"          Majestus.&&\n\
-The ruins of an ancient\n\
-tribe of religious mages:\n\
+1:"Twas the mountainous home\n\
+of a tribe of mages:\n\
       The Naturalites.&&\n",
+
       
-1:"In paradise, the Naturalites\n\
+2:"In paradise, the Naturalites\n\
 prayed to their Gods,\n\
 the four elemental deities:&&\n",
 
-2:"Firion, of the Flame,&&\n\
+3:"Firion, of the Flame,&&\n\
 Estelle, of the Frost,&&\n\
 Kuwabara, of the Bolt,&&\n\
 Gladius, of the Gale.&&\n",
 
-3:"The deities granted their\n\
+4:"The deities granted their\n\
 worshippers with power,\n\
 and the Naturalites lived\n\
 prosperous lives for eons.\n\
 Until one day...&&\n",
 
-4:"Vash, the Naturalite King,\n\
-waged war on the world.\n\
-Using their Gods' blessings\n\
-for selfish conquest,\n\
-the undefeatable mages\n\
+5: "Using the blessings of\n\
+the Gods for selfish means,\n\
+the Naturalite King waged\n\
+war on the non-elementals.\n\
+And the unconquerable mages\n\
 tore apart the outside world,\n\
 scorching fields,\n\
 freezing oceans,\n\
 shocking hearts,\n\
 slicing heads.\n",
 
-5: "At the war's climax, the\n\
+
+6: "At the war's climax, the\n\
 King, with great audacity,\n\
 asked his Gods to grant\n\
 him more of their power.\n\
@@ -161,10 +176,11 @@ So, the Gods punished his\n\
 unquenchable thirst.\n\
 They sealed the King and\n\
 his people within Majestus,\n\
-never to be seen again.&&\n\
-As for the Gods...&&\n",
+never to be seen again.&&\n",
 
-6:"They relinquished their role\n\
+7: "As for the Gods...&&\n",
+
+8:"They relinquished their role\n\
 in the mortal realm,\n\
 leaving behind fragments\n\
 of their power in Majestus.\n\
@@ -186,7 +202,7 @@ INFO = {
 
 "plant":
 "A vibrantly green vegetable.\n\
-Beemers seem to love it.",
+Geemers seem to love it.",
 
 "shoot":
 "Old reliable.\n\
@@ -218,7 +234,8 @@ Icons from icon.png to be used in text display
 ICON = {
     "blank": (0,0),
     "plant":(1,0),
-    "geemer":(2,0)
+    "geemer0":(2,0),
+    "geemer1":(3,0)
 }
 
 
@@ -247,19 +264,23 @@ I get that a lot.\n\
 What's a guy like you\n\
 doing in here anyway?\n\
 There's only monsters\n\
-in here now, dude.",
+in here now, dude.\n\
+What kind of monsters\n\
+you ask?\n\
+You know..........&&\n\
+The undead........&&\n",
 
-    "intro_geemer1": "I'm a Beemer, man.\n\
+    "intro_geemer1": "I'm a Geemer, man.\n\
 I know all kindsa stuff.\n\
-My bros are around too.",
+My bros are around too.&&\n",
 
     "intro_geemer2": "My name? Oh, dude...\n\
 Geemers don't have names,\n\
-man...",
+man...&&\n",
 
     "intro_geemer3": "Dude I'm so hungry!\n\
 Ya got anything to eat,\n\
-mannnnnnnnnn????????????",
+mannnnnnnnnn????????????&&\n",
 
     "intro_sign": "/ Temple of the Naturalites\n\
    These sacred halls host\n\
@@ -286,15 +307,16 @@ Oh, dude, you're the best!&&\n",
 
 
     "intro_chest":
-"You acquired a strange plant.\n\
-Maybe someone wants it.",
+"You found a strange plant.&&\n\
+Let's see if anyone\n\
+around here wants it.\n",
 
     "intro_entrance":
-"   A divine force prevents\n\
+"   Divine forces prevent\n\
     you from leaving.\n",
 
     "intro_switches":
-"Whattup my dude?&&\n\
+"Whattup my guy?&&\n\
 If ya had a block to push,\n\
 I bet you could keep that\n\
 red switch pressed down, man.&&\n\
@@ -313,58 +335,133 @@ Reds pop back up,\n\
 Green means they're timed.\n",
 
     "intro_pushableblocks":
-"You know those blue blocks?\n\
-The ones you can push?\n\
+"Do you know about those\n\
+pushable blocks?\n\
 Dude.&&\n\
-They're actually creatures\n\
-made out of Estelle's ice.\n\
-They move away if they touch\n\
-anything they don't want to.\n",
+They were actually created\n\
+by the goddess's ice.\n\
+That's why they disappear\n\
+when they touch anything\n\
+they don't wanna touch.&&\n",
 
     "intro_roomclear":
 "Looks like orange switches\n\
 unlock when there's no more\n\
-monsters around. Nice.",
+monsters around. Nice.&&\n",
 
     "intro_combat":
-"If you're full of vigor,\n\
-your arrows will fly faster.\n\
-If you're close to death,\n\
-your instincts will kick in.\n\
-You'll deal much more damage.\n\
-Try it out, but be careful!",
+"Have you tried fighting\n\
+while on the verge of death?\n\
+You should try it sometime.\n\
+Fortune favors the brave.\n",
+
+"david":
+"There seems to be some\n\
+kind of note inside.\n\
+\"W h e r e \' s  m y\n\
+b i r t h d a y  g i f t ?\"\n\
+.....................&&\n\
+What?&&\n",
+
+
+"menu_reminder":
+"I'm sure you're quite\n\
+versatile with those weapons,\n\
+aren't you, baby?&&\n",
+
+"thunder_1":
+"Can ya feel the rhythm,\n\
+lil guy? Check it!\n\
+My name is big G,\n\
+Ya can\'t move like me,\n\
+can\'t sing like me,\n\
+can\'t sting like me,\n\
+can\'t swing like me,\n\
+don\'t got bling like me...\n\
+What? You said Geemers\n\
+don\'t have names?\n\
+Way to kill the vibe!&&\n",
+
+
+"thunder_2":
+"Soooooooooooo\n\
+hungryyyyyyyyyyy...\n\
+Foooooooooooood\n\
+stolennnnnnnnnn\n\
+byyyyyyyyyyyyy\n\
+monstersssssssss.\n",
+
+"thunder_fead":
+"Yummmmmmmmmmmmm&&\n\
+Thankssssssssssss\n\
+myyyyyyy guyyyyyy!\n",
+
+
+"thunder_sign":
+"Ya know, game design is\n\
+a lot harder than I thought,\n\
+but what else would I do?\n\
+Write a book?\n\
+And who said anything\n\
+about a fourth wall?\n",
+
+"plant":
+"You found another plant.\n\
+Feed it to a hungry Geemer.\n",
 
 "fire":
-"You have chosen\n\
-the blessing of fire.\n\
-Damage enemies with\n\
-a fiery spell!\n\
-Select your new C attack\n\
-on the pause menu.",
+"Firion's fire burns\n\
+furiously.\n",
 
 "ice":
-"You have chosen\n\
-the blessing of ice.\n\
-Hold Z to sprint and\n\
-tackle enemies.",
+"Estelle's ice quenches\n\
+your sorrows.\n",
 
 "thunder":
-"You have chosen\n\
-the blessing of thunder.\n\
-Deal massive damage to\n\
-surrounding enemies!\n\
-Select your new C attack\n\
-on the pause menu.",
+"Kuwabara's thunder shocks\n\
+your soul.\n",
 
 "wind":
-"You have chosen\n\
-the blessing of wind.\n\
-Charge up and fire\n\
-a powerful ranged attack!\n\
-Select your new C attack\n\
-on the pause menu.",
+"The winds of Gladius flow\n\
+eternally.\n",
 
+"gale_sign":
+"The creator of this game\n\
+did not finish this room,\n\
+but enjoy fighting a bunch\n\
+of Davids instead.\n",
 
+"chapel_geemer":
+"This is the Grand Chapel.&&\n\
+The ancient ones used this\n\
+room to worship the Gods.\n\
+Though they have ceased to\n\
+be, their influence remains.\n\
+Praise be to Majestus.&&\n",
+
+"skipping_text":
+"Dude... You can skip\n\
+text by pressing SPACE.\n\
+It's pretty useful in a\n\
+variety of situations.\n\
+Like the one you're\n\
+in right now.\n\
+You see, you think\n\
+I'll stop talking\n\
+if you listen to me\n\
+for long enough,\n\
+but I'll never stop\n\
+talking, and you'll\n\
+never be able to escape\n\
+my undying wrath,\n\
+as I impose my will\n\
+upon your brittle soul,\n\
+thrusting your hopes and\n\
+dreams into endless oblivion,\n\
+never able to return to\n\
+your feeble endeavors,\n\
+sinking hoplelessly into\n\
+a flood of sorrow.\n",
 
 
 

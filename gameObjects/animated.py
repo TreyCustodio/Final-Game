@@ -14,9 +14,10 @@ class Animated(Drawable):
         self.animationTimer = 0
         self.FSManimated = None
 
-    def updateWeapon(self, seconds):
+    def updateWeapon(self, seconds, gale = False):
         if not self.animate:
             return
+        
         self.animationTimer += seconds 
         if self.animationTimer > 1 / self.framesPerSecond:
             self.frame += 1
@@ -24,9 +25,11 @@ class Animated(Drawable):
             self.frame %= self.nFrames
             
             self.animationTimer -= 1 / self.framesPerSecond
+            if gale and self.animating == False:
+                self.animating = True
         self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                                 (self.frame, self.row))
-    
+
     def startAnimation(self, frame, state):
         pass
 
@@ -37,7 +40,6 @@ class Animated(Drawable):
         """
         self.animationTimer += seconds
         ##Animate Charging Sprite
-        
         
         if self.freezing:
             if self.frame >= 4:
@@ -72,10 +74,11 @@ class Animated(Drawable):
 
             
             if self.charging:
-                if self.chargeTimer > 1:
-                    if self.chargeTimer > 3:
-                        if self.chargeTimer >= 5:
+                if self.chargeTimer > 0.5:
+                    if self.chargeTimer > 1.5:
+                        if self.chargeTimer >= 2.5:
                             ##Fully charged
+                            #print("C")
                             self.idleFrame += 1
                             if self.idleFrame == 13:
                                 self.idleFrame = 9
@@ -83,11 +86,13 @@ class Animated(Drawable):
                         
                         else:# 3 < timer < 5
                             ##Medium charge
+                            #print("B")
                             chargeRow = self.row + 40
                             
                             
                     else:# 1 <= timer <= 3
                         ##Low charge
+                        #print("A")
                         chargeRow = self.row + 32
 
                 else:# 0 < timer < 1
@@ -189,15 +194,28 @@ class Fade():
     class _FA(Animated):
         def __init__(self):
             super().__init__((0,0), "black.png", (0,0))
+            #self.frame = 0
             self.nFrames = 9
-            self.framesPerSecond = 32
-        
+            self.framesPerSecond = 20
+            self.image = SpriteManager.getInstance().getSprite(self.fileName,
+                                                    (0, 0))
+            
         def update(self, seconds):
-            if self.frame < 9:
-                super().update(seconds)
+            #if self.frame < 9:
+            super().update(seconds)
         
         def reset(self):
             self.frame = 0
-            self.image = SpriteManager.getInstance().getSprite(self.fileName,#Not accessed by the player (walking always passed)
-                                                    (self.frame, self.row))
-            
+            self.image = SpriteManager.getInstance().getSprite(self.fileName,
+                                                    (0, 0))
+    
+class Tile(Animated):
+    def __init__(self, position):
+        super().__init__(position, "thunderTiles.png", (0,0))
+        self.nFrames = 5
+
+class Portal(Animated):
+    def __init__(self, position, color):
+        super().__init__(position, "portal.png", (0,color))
+        self.nFrames = 2
+        self.row = color

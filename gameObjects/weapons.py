@@ -2,26 +2,41 @@ import pygame
 from utils import SpriteManager, SCALE, RESOLUTION, vec
 from . import Drawable, Animated
 """
-This class includes everything relevant to the weapons
+This file contains everything pertenent to dealing
+damage to enemies. Each weapon is instantiated
+in the Player Class and stored in the engine's self.projectiles list.
 """
 
 class Element(object):
     """
     Elemental types:
-    0 -> None
-    1 -> Fire
-    2 -> Ice
-    3 -> Thunder
+    0 -> None,
+    1 -> Fire,
+    2 -> Ice,
+    3 -> Thunder,
     4 -> Wind
     """
     def __init__(self, integer = 0):
         self.type = integer
     
     def beats(self, otherInt = 0):
+        """
+        Compares the instantiated Element to an integer that corresponds
+        to another element's value. Returns True if the instantiated Element
+        beats the other element.
+        Fire (1) beats Ice (2)
+        Ice (2) beats Fire (1)
+        Thunder (3) beats Wind(4)
+        Wind (4) beats Thunder (3)
+        """
         return (otherInt == 1 and self.type == 2) or (otherInt == 2 and self.type == 1) or (otherInt == 3 and self.type == 4) or (otherInt == 4 and self.type == 3)
     
+
 class Bullet(Drawable):
-    SOUND = None
+    """
+    Arrows. Speed boost at full health. Damage boost at low health.
+    """
+    
     def __init__(self, position = vec(0,0), direction = 0, hp = 5, max_hp = 5):
         
 
@@ -44,10 +59,12 @@ class Bullet(Drawable):
         if direction == 0:
             self.vel = vec(0,self.speed)
         elif direction == 1:
+            self.position[1] = self.position[1] + 4
             self.vel = vec(self.speed,0)
         elif direction == 2:
             self.vel = vec(0,-self.speed)
         elif direction == 3:
+            self.position[1] = self.position[1] + 4
             self.vel = vec(-self.speed,0)
         
         
@@ -89,7 +106,7 @@ class Slash(Animated):
     Only check collision for enemies. If it goes out of bounds, pop it
     """
     def __init__(self, position = vec(0,0), direction = 0, chargeMultiplier = 0):
-        super().__init__(position, "gale.png", (0, direction))
+        super().__init__(position, "slash.png", (0, 0))
         self.vel = vec(0,0)
         if chargeMultiplier == 1:
             self.damage = 10
@@ -98,8 +115,11 @@ class Slash(Animated):
         else:
             self.damage = 5
         
-        self.animate = False
-        self.row = direction
+        self.animate = True
+        self.animating = False
+        self.row = 0
+        self.nFrames = 14
+        self.framesPerSecond = 30
         speed = 200
         if direction == 0:
             self.vel[1] = speed
@@ -114,15 +134,21 @@ class Slash(Animated):
         
 
     def getCollisionRect(self):
-        return pygame.Rect((self.position), (18,14))
+        return pygame.Rect((self.position), (32,32))
     
     def draw(self, drawSurface):
-        super().draw(drawSurface, True)
+        super().draw(drawSurface)
 
     def update(self, seconds):
+        if self.animating and self.frame == 0:
+            self.frame = 6
+        super().updateWeapon(seconds, gale = True)
         self.position += self.vel * seconds
         
 class Sword(Animated):
+    """
+    Flame C attack
+    """
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, "fire.png", (0,direction))
         self.direction = direction
@@ -161,37 +187,42 @@ class Sword(Animated):
             return pygame.Rect((self.position[0], self.position[1]), (14,18))
        
     def update(self, seconds):
-        #print(self.frame)
         super().updateWeapon(seconds)
         self.timer += seconds
         
 class Blizzard(Animated):
     def __init__(self, position = vec(0,0), direction=0):
-        super().__init__(position, "Objects.png", (0,0))
-        self.animate = False
+        super().__init__(position, "blizz.png", (0,direction))
+        self.row = direction
+        self.animate = True
+
+        self.nFrames = 19
         self.damage = 1
-        self.nFrames = 5
+        
         if direction == 0:
-            self.position[0] += 1
+            self.position[0] -= 7
             self.position[1] += 24
         elif direction == 1:
-            self.position[0] += 14
-            self.position[1] += 6
+            self.position[0] += 16
+            #self.position[1]
         elif direction == 2:
-            self.position[0] += 1
-            self.position[1] -= 10
+            self.position[0] -= 7
+            self.position[1] -= 26
         elif direction == 3:
-            self.position[0] -= 12
-            self.position[1] += 7
+            self.position[0] -= 30
 
         self.type = 2
     
     def draw(self, drawSurface):
-        super().draw(drawSurface, True)
+        super().draw(drawSurface)
 
     def getCollisionRect(self):
-        return pygame.Rect((self.position[0], self.position[1]), (16,16))
+        return pygame.Rect((self.position[0], self.position[1]), (32,32))
     
+
+    def update(self, seconds):
+        super().updateWeapon(seconds)
+
 class Clap(Animated):
     SOUND = "lightning.wav"
     def __init__(self, position = vec(0,0)):

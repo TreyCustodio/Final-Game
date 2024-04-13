@@ -1,4 +1,4 @@
-from . import Bullet, Sword, Dummy, Blizzard, Clap, Cleats, Slash, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
+from . import Bullet, Sword, Dummy, Drop, David, Blizzard, Clap, Cleats, Slash, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
 from utils import SpriteManager, SoundManager, SCALE, RESOLUTION, INV, EQUIPPED, vec
 import pygame
 
@@ -9,14 +9,18 @@ class Player(Animated):
     def __init__(self, position=vec(0,0), direction=2):
         super().__init__(position, "Link.png", (0, direction))  
         #Frames, vel, speed, and row
+        self.framesPerSecond = 30
         self.frame = direction
         self.nFrames = 8
         self.vel = vec(0,0)
         self.speed = 75
         self.row = direction # (0 down), (1 right), (2 up), (3 left)
+        self.dying = False
+        self.dead = False
         #States
         
         
+        self.headingOut = False
         self.movingTo = None
         self.moving = False
         self.pushing = False
@@ -32,7 +36,7 @@ class Player(Animated):
         self.positionLock = False
         self.collisionRect = pygame.Rect((self.position[0]+1,self.position[1]+7),(16,16))
         ##Weapons/items##
-        self.keys = 1
+        self.keys = 0
         #Bullet
         self.bullet = None
         self.arrowCount = 1
@@ -70,14 +74,14 @@ class Player(Animated):
         self.event = None
         self.invincible = False
         self.iframeTimer = 0
-
+        self.idleTimer = 0#Timer used for having the player stand still
         self.idleFrame = 9##Integer used to display flashing idle sprite while charging
 
     """
     Getter methods
     """
     ###Get weapon instances###
-    
+
     def getBullet(self):
         return self.bullet
 
@@ -184,13 +188,15 @@ class Player(Animated):
     def run(self):
         self.running = True
         self.vel *= 3
+        #SoundManager.getInstance().stopSFX("footsteps.wav")
         SoundManager.getInstance().playSFX("screwattack_loop.wav", -1)
 
     def stop(self):
+        self.freezing = False
         self.running = False
         self.vel = vec(0,0)
         SoundManager.getInstance().stopSFX("screwattack_loop.wav")
-    
+        #SoundManager.getInstance().stopSFX("footsteps.wav")
     def slow(self):
         self.running = False
         self.vel /= 3
@@ -205,6 +211,7 @@ class Player(Animated):
         The player moves based on its direction.
         Updates self.row and self.vel accordingly
         """
+        #SoundManager.getInstance().playSFX("footsteps.wav", -1)
         # X -> vel[0]
         if direction == 1:#Right
             if self.vel[1] == 0:
@@ -231,7 +238,6 @@ class Player(Animated):
 
         
         if not self.key_lock:
-            
             if not self.keyDown_lock and event.type == pygame.KEYDOWN and (not self.freezing):
                 if not self.pushing:
                     if interactableObject != None and event.key == pygame.K_z:
@@ -403,17 +409,24 @@ class Player(Animated):
     Collision detection
     """
     def interactable(self, object):
-        return self.getCollisionRect().colliderect(object.getInteractionRect())
-     
+        if not issubclass(type(object), Drop):
+            return self.getCollisionRect().colliderect(object.getInteractionRect())
+        else:
+            return False
     def handleCollision(self, object):
-        if self.running:
+        if self.dying:
+            return
+        
+        elif self.running:
             self.stop()
         
 
         elif self.freezing:
             self.freezing = False
+        
         elif type(object) == PushableBlock:
             side = self.calculateSide(object)
+            
             self.pushing = True
 
             if object.resetting:
@@ -450,7 +463,6 @@ class Player(Animated):
         elif issubclass(type(object), Enemy) and type(object) != Dummy:
             if self.charging:
                 self.shootSlash()
-
             side = self.calculateSide(object)
             self.enemyCollision(object, side)
 
@@ -484,7 +496,9 @@ class Player(Animated):
             self.position[1] = (obj.top) + (obj.height - (obj.height - coll.height)) - 6
         elif side == "bottom":
             self.position[1] = (obj.top) - (obj.height - (obj.height - coll.height) + 6)
-        SoundManager.getInstance().playSFX("bump.mp3")
+        
+        if not pygame.mixer.get_busy():
+            SoundManager.getInstance().playSFX("bump.mp3")
 
     def calculateSide(self, object):
         ##  Colliding with Block    ##
@@ -530,10 +544,10 @@ class Player(Animated):
         return self.position[0] == position[0] and self.position[1] == position[1]
 
     def shootSlash(self):
-        if self.chargeTimer > 1:
-            if self.chargeTimer < 3:
+        if self.chargeTimer > 0.5:
+            if self.chargeTimer < 1.5:
                 self.slash = Slash(self.position, self.getDirection(self.row), 0)
-            elif self.chargeTimer < 5:
+            elif self.chargeTimer < 2.5:
                 self.slash = Slash(self.position, self.getDirection(self.row), 1)
             else:
                 self.slash = Slash(self.position, self.getDirection(self.row), 2)
@@ -547,6 +561,20 @@ class Player(Animated):
     """
     Updating
     """
+    def die(self):
+        self.keyLock()
+        self.dying = True
+        self.row = 0
+        self.frame = 0
+        self.walking = False
+        
+
+        ##For special animations
+        #self.framesPerSecond = 1
+        #self.frame = 0
+        #self.nFrames = 20
+        #self.row = 56
+
     ##  Determining the sound that plays when sword is swung    ##
     def increaseSwordCounter(self):
         if self.swordCounter >= 3:
@@ -563,6 +591,30 @@ class Player(Animated):
             self.swordSound = "DarkLink3.wav"
 
     def update(self, seconds):
+        if self.dying:
+            if not self.dead:
+                if self.row == 1:
+                    
+                    
+                    super().updatePlayer(seconds)
+                    self.position += self.vel * seconds
+                    if self.position [0] >= RESOLUTION[0]:
+                        self.dead = True
+                    """ if self.frame == 2:#19
+                        self.dead = True """
+                    
+                elif self.row == 0:
+                    super().updatePlayer(seconds)
+                    self.idleTimer += seconds
+                    if self.idleTimer >= 3:
+                        self.headingOut = True
+                        self.row = 1
+                        self.idleTimer = 0
+                        
+                
+                
+            return
+        
         if not self.arrowReady:
             self.arrowTimer += seconds
             if self.hp == self.max_hp:
@@ -576,13 +628,14 @@ class Player(Animated):
 
         #Update walking state
         if self.vel[0] == 0 and self.vel[1] == 0:
+            #SoundManager.getInstance().stopSFX("footsteps.wav")
             self.walking = False
         else:
             self.walking = True
 
         if self.charging:
             self.chargeTimer += seconds
-            if self.chargeTimer >= 5:
+            if self.chargeTimer >= 2.5:
                 self.charged = True
                 #Play a sound or something?
             super().updatePlayer(seconds)

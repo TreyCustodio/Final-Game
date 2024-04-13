@@ -1,8 +1,10 @@
 import pygame
 
 from . import (Drawable, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
-               WeightedSwitch, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
-               PushableBlock, LockBlock, Bullet, Sword, Cleats, Clap, Slash, Flapper)
+               WeightedSwitch, DamageIndicator, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
+               PushableBlock, LockBlock, Bullet, Sword, Cleats, Clap, Slash, Flapper,
+               Tile, Portal)
+
 
 
 
@@ -14,9 +16,13 @@ class AE(object):
         self.resetting = False
         self.ignoreClear = False
         self.dropCount = 0
+        self.pause_lock = False
+
         #Death
         self.dead = False
         self.dying = False
+        self.deathTimer = 0
+
         #Room transitioning
 
         self.readyToTransition = False
@@ -49,6 +55,9 @@ class AE(object):
         self.switches = []
         self.blocks = []
         self.torches = []
+        self.doors = []
+        self.tiles = []
+        self.indicator = DamageIndicator()
         
 
 
@@ -75,12 +84,16 @@ class AE(object):
     Auxilary methods
     """
     def reset(self):
+        self.indicator.setImage(0)
         self.readyToTransition = False
         self.transporting = False
         self.tra_room = None
         self.tra_pos = None
         self.tra_keepBGM = False
         self.fading = False
+        
+        
+
         if self.resetting:
             self.enemyCounter = 0
             self.room_clear = False
@@ -89,20 +102,48 @@ class AE(object):
                 if issubclass(type(self.spawning[i]), Drop):
                     self.disappear(self.spawning[i])
         self.dropCount = 0
+
+
+    def deathReset(self):
+        self.boxPos = vec(32,64)
+        self.player = None
+        self.pause_lock = False
+        self.dead = False
+        self.dying = False
+        self.deathTimer = 0
+        self.indicator.setImage(0)
+        self.readyToTransition = False
+        self.transporting = False
+        self.tra_room = None
+        self.tra_pos = None
+        self.tra_keepBGM = False
+        self.fading = False
+
+        if self.spawning:
+            for i in range (len(self.spawning)-1, -1, -1):
+                if issubclass(type(self.spawning[i]), Drop):
+                    self.disappear(self.spawning[i])
+        self.dropCount = 0
+
         
+
+
     def initializeRoom(self, player= None, pos = None, keepBGM = False):
+        #SoundManager.getInstance().stopAllSFX()
         if player != None:
             self.player = player
-        else:
-            self.player = Player((16*9, (16*11) - 8))
-        
-        if pos != None:
             self.player.position = pos 
+        else:
+            self.player = Player(vec(16*9, (16*11) - 8))
+    
+        #if pos != None:
+        
             #self.player.position = (pos + self.player.vel)
         
 
         self.black.reset()
         self.createBounds()
+        self.setDoors()
         self.createBlocks()
         self.placeEnemies(self.enemies)
         if not keepBGM:
@@ -113,29 +154,65 @@ class AE(object):
         self.player.keyDownUnlock()
         self.player.keyUnlock()
 
+
+
     def createBounds(self):
         """
         Creates boundaries on the outer edge of the map
         """
         #Left side
-        for i in range(1, 12):
+        for i in range(1, 5):
+            self.blocks.append(IBlock((8,i*16)))
+        for i in range(8, 12):
             self.blocks.append(IBlock((8,i*16)))
         #Right side
-        for i in range(1, 12):
+        for i in range(1, 5):
+            self.blocks.append(IBlock((RESOLUTION[0]-24,i*16)))
+        for i in range(8, 12):
             self.blocks.append(IBlock((RESOLUTION[0]-24,i*16)))
         #Top side
-        """ for i in range(1,18):
-            self.blocks.append(IBlock((i*16, 0))) """
-        for i in range(1,9):
+        for i in range(1,8):
             self.blocks.append(IBlock((i*16, 0)))
-        for i in range(10, 18):
+        for i in range(11, 18):
             self.blocks.append(IBlock((i*16, 0)))
         #Bottom side
-        for i in range(1,9):
+        for i in range(1,8):
             self.blocks.append(IBlock((i*16, RESOLUTION[1]-16)))
-        for i in range(10, 18):
+        for i in range(11, 18):
             self.blocks.append(IBlock((i*16, RESOLUTION[1]-16)))
     
+
+    def setDoors(self):
+        if 0 not in self.doors:
+            self.blocks.append(IBlock((8*16, RESOLUTION[1]-16)))
+            self.blocks.append(IBlock((9*16, RESOLUTION[1]-16)))
+            self.blocks.append(IBlock((10*16, RESOLUTION[1]-16)))
+        else:
+            self.blocks.append(IBlock((16*8-8, RESOLUTION[1]-16)))
+            self.blocks.append(IBlock((16*10+8, RESOLUTION[1]-16)))
+        
+        if 1 not in self.doors:        
+            self.blocks.append(IBlock((RESOLUTION[0]-24, 5*16)))
+            self.blocks.append(IBlock((RESOLUTION[0]-24, 6*16)))
+            self.blocks.append(IBlock((RESOLUTION[0]-24, 7*16)))
+        else:
+            self.blocks.append(IBlock((RESOLUTION[0]-24, 16*7+8)))
+            self.blocks.append(IBlock((RESOLUTION[0]-24, 16*5-8)))
+        if 2 not in self.doors:   
+            self.blocks.append(IBlock((8*16, 0)))
+            self.blocks.append(IBlock((9*16, 0)))
+            self.blocks.append(IBlock((10*16, 0)))
+        else:
+            self.blocks.append(IBlock((8*16-8, 0)))
+            self.blocks.append(IBlock((16*10+8, 0)))
+        if 3 not in self.doors:
+            self.blocks.append(IBlock((8, 5*16)))
+            self.blocks.append(IBlock((8, 6*16)))
+            self.blocks.append(IBlock((8, 7*16)))
+            
+        else:
+            self.blocks.append(IBlock((8, 16*7+8)))
+            self.blocks.append(IBlock((8, 16*5-8)))
     #abstract
     def createBlocks(self):
         """
@@ -210,7 +287,17 @@ class AE(object):
         self.fade()
         self.transporting = True
         self.tra_room = room.getInstance()
-        self.tra_pos = position
+        if position == 0:
+            self.tra_pos = vec(16*9, 16*11)
+        elif position == 1:
+            self.tra_pos = vec(16*16, 16*6 - 8)
+        elif position == 2:
+            self.tra_pos = vec(16*9, 8)
+        elif position == 3:
+            self.tra_pos = vec(16*2, 16*6-8)
+        else:
+            self.tra_pos = position
+            
         self.tra_keepBGM = keepBGM
         if not keepBGM:
             SoundManager.getInstance().fadeoutBGM()
@@ -231,6 +318,7 @@ class AE(object):
         """
         Flash the screen white
         """
+        
         self.playSound("LA_Dungeon_Signal.wav")
         self.flashes = num
 
@@ -256,7 +344,6 @@ class AE(object):
         elif obj in self.switches:
             self.switches.pop(self.switches.index(obj))
         
-
     def playSound(self, name):
         SoundManager.getInstance().playSFX(name)
 
@@ -309,6 +396,7 @@ class AE(object):
                     self.player.handleEvent(event, n, self)
                 else:
                     self.player.handleEvent(event)
+
         else:
             self.player.handleEvent(event)
 
@@ -319,6 +407,9 @@ class AE(object):
     """
     Collision methods
     """
+   
+
+
     def despawnOnPress(self, obj, switch):
         """
         Despawns object if the switch is pressed
@@ -389,7 +480,8 @@ class AE(object):
                             n.freeze()
 
                     if not n.frozen:
-                        self.player.handleCollision(n)
+                        if n.handlePlayerCollision(self.player):
+                            self.player.handleCollision(n)
                 else:
                     self.player.handleCollision(n)
 
@@ -432,7 +524,7 @@ class AE(object):
     
     def enemyCollision(self, other):
         for e in self.npcs:
-            if e.doesCollide(other):
+            if e.doesCollideBlock(other):
                 e.bounce(other)
 
     def interactableCollision(self):
@@ -454,6 +546,7 @@ class AE(object):
                     else:
                         self.player.handleCollision(n)
     
+    
     #Add self.enemyCollision(block)
     #Add self.projectilesOnBlocks(block)
     #abstract
@@ -465,14 +558,19 @@ class AE(object):
     
 
     def projectileCollision(self, projectile, other):
-        if projectile.doesCollide(other):
-            if issubclass(type(other),Enemy):
+        
+        if issubclass(type(other),Enemy):
+            if other.doesCollideProjectile(projectile):
                 other.handleCollision(projectile)
+                self.indicator.setImage(other.indicatorRow, other.hp, other.maxHp)
+
                 if type(projectile) == Bullet:
                     self.disappear(projectile)
                     self.player.arrowCount += 1
                     self.player.shooting = False
-            elif type(projectile) == Bullet:
+
+        elif projectile.doesCollide(other):
+            if type(projectile) == Bullet:
                 self.playSound("OOT_DekuSeed_Hit.wav")
                 self.disappear(projectile)
                 self.player.arrowCount += 1
@@ -481,12 +579,17 @@ class AE(object):
 
     def projectilesOnBlocks(self, block):
         for p in self.projectiles:
-            if p.doesCollide(block) and (type(p) == Sword or type(p) == Bullet):
-                self.playSound("OOT_DekuSeed_Hit.wav")
+            if p.doesCollide(block):
                 if type(p) == Bullet:
+                    self.playSound("OOT_DekuSeed_Hit.wav")
                     self.disappear(p)
                     self.player.arrowCount += 1
                     self.player.shooting = False
+    
+    def projectilesOnTorches(self, torch):
+        for p in self.projectiles:
+            if p.type == 1 and p.doesCollide(torch):
+                torch.light()
 
 
     def handleCollision(self):
@@ -496,6 +599,7 @@ class AE(object):
         self.interactableCollision()
         self.pressSwitches()
         self.pushableBlockCollision()
+        
         #Call super().handleCollision()
         #Then self.spawn/despawn however you want
     
@@ -534,10 +638,30 @@ class AE(object):
                 
 
     def updatePlayer(self, seconds):
-        if self.player.hp <= 0:
+        if self.player.dying:
+            self.player.update(seconds)
+            if self.player.headingOut:
+                self.boxPos = vec(32,RESOLUTION[1]-74)
+                
+                self.displayText("Aight, Imma head out.&&")
+                self.player.headingOut = False
+                self.player.walking = True
+                self.player.vel[1] = 0
+                self.player.vel[0] = self.player.speed
+                
+                
+        elif self.player.hp <= 0:
+            
             #DIE
-            pygame.quit()
-        self.player.update(seconds)
+            self.player.die()
+            self.pause_lock = True
+            self.dying = True
+            SoundManager.getInstance().fadeoutBGM()
+            self.player.update(seconds)
+            #pygame.quit()
+        
+        else:
+            self.player.update(seconds)
     
     #abstract
     def updateSwitches(self, seconds):
@@ -573,13 +697,25 @@ class AE(object):
         room are defeated.
         """
         pass
+    
+    def updateHUD(self, seconds):
+        self.indicator.update(seconds)
 
     def update(self, seconds):
-        
+        if self.dying:
+            
+            self.updatePlayer(seconds)
+            if self.player.dead:
+                self.deathTimer += seconds
+                if self.deathTimer >= 2:
+                    self.dead = True
+                
+
+
+
         if self.fading:
             self.black.update(seconds)
             if self.transporting and self.black.frame == 8:
-
                 """
                 Transition here!
                 """
@@ -588,13 +724,19 @@ class AE(object):
             return
 
             
-
+        if self.torches:
+            for t in self.torches:
+                t.update(seconds)
         self.updatePlayer(seconds)
         self.updateNpcs(seconds)
         self.updateSpawning(seconds)
         self.updatePushableBlocks(seconds)
         self.updateSwitches(seconds)
         self.updateProjectiles(seconds)
+        self.updateHUD(seconds)
+        if self.tiles:
+            for t in self.tiles:
+                t.update(seconds)
         if not self.ignoreClear:
             
             if self.room_clear and self.clearFlag == 0:
@@ -660,6 +802,8 @@ class AE(object):
         self.healthBar.draw(drawSurface, self.player)
         self.ammoBar.draw(drawSurface, self.player)
         self.elementIcon.draw(drawSurface)
+        self.indicator.draw(drawSurface)
+        
 
         if EQUIPPED["C"] == 2:
             self.energyBar.drawThunder(self.player.clapTimer, drawSurface)
@@ -689,18 +833,29 @@ class AE(object):
     def drawFade(self, drawSurface):
         self.black.draw(drawSurface)
 
+    def drawTiles(self, drawSurface):
+        if self.tiles:
+            for t in self.tiles:
+                t.draw(drawSurface)
+
     def draw(self, drawSurface):
         """
         Draw the objects on the drawSurface after updating them
         """
     
-
+        if self.dying:
+            Drawable(fileName="b.png").draw(drawSurface)
+            self.player.draw(drawSurface)
+            return
+        
         if self.flashes > 0:
             self.drawFlash(drawSurface)
             return
         
-        #Background
+        #Background/Tiles
+        
         self.background.draw(drawSurface)
+        self.drawTiles(drawSurface)
         
         #Blocks
         self.drawBlocks(drawSurface)
@@ -730,6 +885,7 @@ class AE(object):
         self.weaponControl()
 
 class AbstractEngine(object):
+
     """
     Abstract engine class for each room.
     """

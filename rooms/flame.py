@@ -1,6 +1,8 @@
 from gameObjects import *
+from .intro import *
 
 class Flame_1(AbstractEngine):
+    @classmethod
     def getInstance(cls):
         if cls._INSTANCE == None:
          cls._INSTANCE = cls._Flame_1()
@@ -10,20 +12,28 @@ class Flame_1(AbstractEngine):
     class _Flame_1(AE):
         def __init__(self):
             super().__init__()
-            self.bgm = "fire.mp3"
+            self.bgm = "bowserCastle.mp3"
             self.ignoreClear = True
-            self.max_enemies = 0
-            self.enemyPlacement = 0
+            self.max_enemies = 4
+            self.enemyPlacement = 1
             self.background = Level("flame_1.png")
-            #self.trigger1 = Trigger(door = 0)
+            self.enemies = [FireFlapper() for i in range(4)]
+            self.trigger1 = Trigger(door = 3)
         
         #override
         def createBlocks(self):
-           pass
+           self.blocks.append(self.trigger1)
            
         #override
         def blockCollision(self):
-           pass
+           for b in self.blocks:
+              self.projectilesOnBlocks(b)
+              self.enemyCollision(b)
+              if self.player.doesCollide(b):
+                if b == self.trigger1:
+                   self.transport(Grand_Chapel, 3)
+                self.player.handleCollision(b)
+
 
 
 
