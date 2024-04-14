@@ -16,7 +16,7 @@ class ScreenManager(object):
         self.inIntro = False
         self.game = None # Add your game engine here!
         self.pauseEngine = PauseEngine()
-        self.textEngine = None
+        self.textEngine = TextEngine.getInstance()
         self.state = ScreenManagerFSM(self)
         self.pausedText = TextEntry(vec(0,0),"Paused")
         
@@ -47,8 +47,13 @@ class ScreenManager(object):
             self.game.draw(drawSurf)
             if self.game.textBox:
                     self.state.speak()
-                    self.textEngine = TextEngine.getInstance()
-                    self.textEngine.setText(self.game.text, self.game.icon, self.game.largeText)
+                    #self.textEngine = TextEngine.getInstance()
+                    if "Y/N" in self.game.text:
+                        self.textEngine.setText(self.game.text, self.game.icon, prompt = True)
+                        
+                    else:
+                        self.textEngine.setText(self.game.text, self.game.icon, self.game.largeText)
+                        
         if self.state == "textBox":
             if self.pauseEngine.paused:
                 self.textEngine.draw(self.pauseEngine.boxPos, drawSurf)
@@ -69,7 +74,7 @@ class ScreenManager(object):
             self.intro.draw(drawSurf)
             if self.intro.textBox:
                 self.state.speakI()
-                self.textEngine = TextEngine.getInstance()
+                #self.textEngine = TextEngine.getInstance()
                 self.textEngine.setText(self.intro.text, self.intro.icon, self.intro.largeText)
             
     
@@ -99,9 +104,14 @@ class ScreenManager(object):
             else:
                 self.pauseEngine.handleEvent(event)
                 if self.pauseEngine.text != "":
+                    
                     self.state.speakP()
-                    self.textEngine = TextEngine.getInstance()
-                    self.textEngine.setText(self.pauseEngine.text)
+                    #self.textEngine = TextEngine.getInstance()
+                    if "Y/N" in self.pauseEngine.text:
+                        self.textEngine.setText(self.pauseEngine.text, prompt = True)
+                        
+                    else:
+                        self.textEngine.setText(self.pauseEngine.text)
                 
         elif self.state == "mainMenu":
             choice = self.mainMenu.handleEvent(event)
@@ -125,7 +135,7 @@ class ScreenManager(object):
             
             elif choice == "tutorial":
                 """Testing and Freeplay"""
-                self.game = Grand_Chapel.getInstance()
+                self.game = Intro_2.getInstance()
                 self.game.initializeRoom()
                 self.state.startGame()
 
@@ -154,16 +164,21 @@ class ScreenManager(object):
                     self.game.text = ""
                     self.game.icon = None
                     self.state.speak()
-                self.textEngine = TextEngine.tearDown()
+                #self.textEngine = TextEngine.tearDown()
+                self.textEngine.reset()
                 return
                     ##Close the textBox
 
             self.textEngine.handleEvent(event)
             if self.textEngine.done:
                 if self.pauseEngine.paused:
+                    if "Y/N" in self.pauseEngine.text:
+                        self.pauseEngine.promptResult = self.textEngine.promptResult
+                    
                     self.pauseEngine.textBox = False
                     self.pauseEngine.text = ""
                     self.state.speakP()
+
                 elif self.inIntro:
                     self.intro.textBox = False
                     self.intro.text = ""
@@ -172,11 +187,14 @@ class ScreenManager(object):
                         self.intro.fading = True
                     self.state.speakI()
                 else:
+                    if "Y/N" in self.game.text:
+                        self.game.promptResult = self.textEngine.promptResult
                     self.game.textBox = False
                     self.game.text = ""
                     self.game.icon = None
                     self.state.speak()
-                self.textEngine = TextEngine.tearDown()
+                #self.textEngine = TextEngine.tearDown()
+                self.textEngine.reset()
         elif self.state == "intro":
             if event.type == KEYDOWN and event.key == K_SPACE:
                 self.intro.fading = True

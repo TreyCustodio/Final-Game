@@ -264,3 +264,25 @@ class HealthBar(Drawable):
             
         super().draw(drawSurface)
 
+class Highlight(Drawable):
+    def __init__(self, position, flag = 0):
+        """
+        flags:
+        0-> Regular 16x16, 1 -> quit, 2 -> Y/N prompt
+        """
+        super().__init__(position, "Objects.png", (0,0))
+        self.displayFlag = flag
+
+    def draw(self, drawSurface):
+        super().draw(drawSurface, True)
+    
+    def drawBlack(self, drawSurface):
+        pass
+
+    def getCollisionRect(self):
+        if self.displayFlag == 1:
+            return pygame.Rect((self.position), (16*8,32))
+        elif self.displayFlag == 2:
+            return pygame.Rect((self.position), (36,32))
+        else:
+            return super().getCollisionRect()

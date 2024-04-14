@@ -71,6 +71,7 @@ class Player(Animated):
         self.max_hp = 5
         #self.ammo = F
         #self.max_ammo = 10
+        self.ignoreCollision = False
         self.event = None
         self.invincible = False
         self.iframeTimer = 0

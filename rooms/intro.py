@@ -15,6 +15,7 @@ class Intro_Cut(AbstractEngine):
     
     class _Intro_Cut(AE):
         def __init__(self):
+            
             self.fading = False
             self.black = Fade.getInstance()
             self.player = None
@@ -359,9 +360,9 @@ class Intro_2(AbstractEngine):
             #print(COORD[9][11])
             self.ignoreClear = True
             self.trigger1 = Trigger(door = 0)
-            
             self.trigger2 = Trigger(door = 2)
-            self.doors = [0,2]
+            self.trigger3 = Trigger(door = 3)
+            self.doors = [0,2,3]
             
 
            
@@ -409,7 +410,7 @@ class Intro_2(AbstractEngine):
 
             self.enemies.append(Flapper(direction = 0))#Left, Top
 
-            self.doors = [0,2]
+            
 
 
             
@@ -423,6 +424,7 @@ class Intro_2(AbstractEngine):
         def createBlocks(self):
             self.blocks.append(self.trigger1)
             self.blocks.append(self.trigger2)
+            self.blocks.append(self.trigger3)
 
         """
         Draw
@@ -447,46 +449,70 @@ class Intro_2(AbstractEngine):
                             self.transport(Intro_1, 2, keepBGM=True)
                         elif b == self.trigger2:
                             self.transport(Intro_3, 0)
+                        elif b == self.trigger3:
+                            self.transport(Geemer_1, 1)
                     else:
                         self.player.handleCollision(b)
 
-        def handleCollision(self):
-            """
-            Handles collision between the player and objects,
-            including puzzle objects like switches and blocks.
-            """
-            super().handleCollision()
-            
-        """
-        Events
-        """
-        def handleEvent(self, event):
-            """
-            Players, enemies, and npcs handle their events.
-            Handles primary weapon mechanics
-            """
-            super().handleEvent(event)
-
-
-        """
-        Update
-        """
+        
         #override
         def handleClear(self):
             pass
-                    
+
+
+class Geemer_1(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Geemer_1()
+      
+        return cls._INSTANCE
+    
+    class _Geemer_1(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "Nujabes_Decade.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("geemer_1.png")
+            self.doors = [1,2,3]
+            self.trigger1 = Trigger(door = 1)
+        
         
         #override
-        def updateSwitches(self, seconds):
-            for s in self.switches:
-                _type = type(s)
-                pass
+        def createBlocks(self):
+            self.blocks.append(self.trigger1)
+            for i in range(2,8):
+                self.blocks.append(IBlock(COORD[i][4]))
+            for i in range(11,17):
+                self.blocks.append(IBlock(COORD[i][4]))
+            for i in range(2,17):
+                self.blocks.append(IBlock(COORD[i][8]))
+            
+            
+            for i in range(1,4):
+                self.blocks.append(IBlock(COORD[7][i]))
+            for i in range(1,4):
+                self.blocks.append(IBlock(COORD[11][i]))
+            for i in range(9,12):
+                self.blocks.append(IBlock(COORD[7][i]))
+            for i in range(9,12):
+                self.blocks.append(IBlock(COORD[11][i]))
+           
+        #override
+        def blockCollision(self):
+           for b in self.blocks:
+                for n in self.npcs:
+                    if n.doesCollide(b):
+                        n.bounce(b)
 
-        def update(self, seconds):
-            """
-            Update the objects that need to be updated
-            """
-            super().update(seconds)
+                self.projectilesOnBlocks(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Intro_2, 3)
+                    else:
+                        self.player.handleCollision(b)
 
 
 
@@ -597,12 +623,14 @@ class Grand_Chapel(AbstractEngine):
             self.wind = Blessing((COORD[12][4]), 3)
 
             self.geemer = Geemer((16*9 - 4, 16*6), text = SPEECH["chapel_geemer"], color = 1)
-            
+            self.prompt = Geemer((16*11-4, 16*6), text = "Y/NDo you want to die?")
             self.spawning = [self.ice,
                              self.fire,
                              self.thunder,
                              self.wind,
-                             self.geemer
+                             self.geemer,
+                             self.prompt
+                            
                              ]
             
             self.doors = [0,1,2,3]

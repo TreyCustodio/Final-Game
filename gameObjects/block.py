@@ -30,6 +30,9 @@ class IBlock(Block):
     def __init__(self, position = vec(0,0), offset = (0,0)):
         super().__init__(position, offset)
 
+    def draw(self, drawSurface):
+        super().draw(drawSurface)
+
 
 
 class HBlock(Block):

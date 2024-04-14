@@ -10,11 +10,15 @@ def main():
     
     
     #Get the screen
-    screen = pygame.display.set_mode(list(map(int, UPSCALED)))
+    flags = pygame.SCALED
+    screen = pygame.display.set_mode(list(map(int, UPSCALED)), flags=flags)
     drawSurface = pygame.Surface(list(map(int, RESOLUTION)))
 
-    
-    gameEngine = ScreenManager() #GameEngine()   #ScreenManager()
+    #print(pygame.display.g)
+    #pygame.display.toggle_fullscreen()
+    #print(pygame.display.list_modes())
+
+    gameEngine = ScreenManager()
     
     RUNNING = True
     
@@ -24,16 +28,24 @@ def main():
         pygame.transform.scale(drawSurface,
                                list(map(int, UPSCALED)),
                                screen)
-     
+        
+        
+        
+        
         pygame.display.flip()
         gameClock = pygame.time.Clock()
+        
+
         
         # event handling, gets all event from the eventqueue
         for event in pygame.event.get():
             # only do something if the event is of type QUIT
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
                 RUNNING = False
+            
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                pygame.display.toggle_fullscreen()
             else:
                 result = gameEngine.handleEvent(event)
                 

@@ -1,6 +1,6 @@
 import pygame
 
-from . import Drawable,  Text
+from . import Drawable,  Text, Highlight
 
 from utils import  vec, RESOLUTION, SpriteManager, SoundManager, INV, INFO, COORD, EQUIPPED
 
@@ -38,42 +38,107 @@ class TextEngine(object):
             self.end = False
             self.done = False
             self.textBox = SpriteManager.getInstance().getSprite("TextBox.png", (0,0))
+            
+            
             self.displayTimer = 0.0
 
             self.lineNum = 1 #The line the text display is currently on
+
+            self.promptHighlight = Highlight((16*6 - 8, 16*5 + 10), flag = 2)
+            self.prompt = False
+            self.highlightTimer = 0
+            self.highlighted = 0 #0 -> No, #1 -> Yes
+            self.choosing = False#The state of choosing yes or no
+            self.promptResult = False
+
+
+        def reset(self):
+            self.text = ""
+            self.line = ""
+            self.displayIcon = None
+
+            self.large = False #Boolean determining if you display the large textbox or not
+
+            self.charIndex = 0
+            self.box_drawn = False
+            self.ready_to_display = True
+            self.ready_to_continue = False
+            self.end = False
+            self.done = False
+            self.textBox = SpriteManager.getInstance().getSprite("TextBox.png", (0,0))
+            
+            
+            self.displayTimer = 0.0
+
+            self.lineNum = 1 #The line the text display is currently on
+
+            self.promptHighlight = Highlight((16*6 - 8, 16*5 + 10), flag = 2)
+            self.prompt = False
+            self.highlightTimer = 0
+            self.highlighted = 0 #0 -> No, #1 -> Yes
+            self.choosing = False#The state of choosing yes or no
+        
 
         def playSFX(self, name):
             SoundManager.getInstance().playSFX(name)
 
 
-        def setText(self, text, icon = None, large = False):
-            if large:
+        def setText(self, text, icon = None, large = False, prompt = False):
+            
+            
+            if prompt:
+                self.large = True
+                self.prompt = True
+                self.textBox = SpriteManager.getInstance().getSprite("TextBox2.png", (0,0))
+
+            elif large:
                 self.large = large
                 self.textBox = SpriteManager.getInstance().getSprite("TextBox2.png", (0,0))
 
             if icon != None and self.displayIcon == None:
                 self.displayIcon = icon
 
-            self.text = text
+            if self.prompt:
+                self.text = text[3:]
+            else:
+                self.text = text
+
             if len(self.text) <= 8:
                 #self.playSFX("TextBox_Short.wav")
                 pass
             else:
                 self.playSFX("TextBox_Open.wav")
+            
             if "\n" in self.text:
                 self.line = self.text[self.charIndex:self.text.index("\n")]
             else:
                 #1 line
                 self.line = self.text
         
+
         def draw(self,position,drawSurface):
+
+
             if self.end:
-                self.drawEnd(position, drawSurface)
+                if self.prompt:
+                    self.choosing = True
+                    self.drawPrompt(position, drawSurface)
+                    if self.prompt:
+                        if self.highlightTimer >= 0.3:
+                            pass
+                        else:
+                            self.promptHighlight.draw(drawSurface)
+
+                else:
+                    self.drawEnd(position, drawSurface)
+
             elif not self.box_drawn:
-                    self.drawBox(position, drawSurface)
-                    if self.displayIcon != None:
-                        self.drawIcon((position[0] + 106, position[1] - 32), drawSurface)
-                    self.displayText(position, drawSurface)
+                self.drawBox(position, drawSurface)
+                if self.displayIcon != None:
+                    self.drawIcon((position[0] + 106, position[1] - 32), drawSurface)
+                
+
+                self.displayText(position, drawSurface)
         
             elif self.ready_to_continue:
                 #drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox.png", (0,1)), position)
@@ -88,6 +153,10 @@ class TextEngine(object):
                 #drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox.png", (0,4)), position)
                 #self.displayText(position, drawSurface)
         
+        
+        def drawPrompt(self, position, drawSurface):
+            drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox2.png", (0,5)), position)
+
 
         def drawIcon(self, position, drawSurface):
             box = SpriteManager.getInstance().getSprite("icon.png", (0,0))
@@ -127,14 +196,9 @@ class TextEngine(object):
 
         
 
-        def displayText(self, position, drawSurface): 
+        def displayText(self, position, drawSurface, question = False): 
             
-                #drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox.png", (0,3)), position)
-                #print(self.text)
-                #print()
-                #print(self.line)
-                #print(self.text)
-                #print(self.text[self.charIndex])
+                
             if self.lineNum == 2:
                 Text(((position[0] + 10) + (8 * self.charIndex), position[1]+34), self.line[self.charIndex]).draw(drawSurface)
             elif "&&" in self.line:
@@ -148,12 +212,14 @@ class TextEngine(object):
             if self.charIndex == len(self.line):
                 SoundManager.getInstance().stopAllSFX()
                 self.text = self.text[self.charIndex+1:]
+
                 if self.text == "":
                     #SoundManager.getInstance().stopAllSFX()
                     self.end = True
                     self.ready_to_continue = True
                     self.playSFX("OOT_Dialogue_Done.wav")
                     self.charIndex = 0
+
                 elif "\n" in self.text:
                     if self.large and self.lineNum == 1 and (not "&&" in self.line):
                         self.line = self.text[:self.text.index("\n")]
@@ -178,7 +244,26 @@ class TextEngine(object):
                 
 
         def handleEvent(self, event):
-            if (event.type == pygame.KEYDOWN and event.key == pygame.K_z) and self.ready_to_continue:
+            if self.choosing:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and self.highlighted == 0:
+                    self.highlighted = 1
+                    self.promptHighlight.position = vec(self.promptHighlight.position[0]+88, self.promptHighlight.position[1])
+                    self.playSFX("pause_cursor.wav")
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT and self.highlighted == 1:
+                    self.highlighted = 0
+                    self.promptHighlight.position = vec(self.promptHighlight.position[0]-88, self.promptHighlight.position[1])
+                    self.playSFX("pause_cursor.wav")
+
+                elif (event.type == pygame.KEYDOWN and event.key == pygame.K_z):
+                    self.playSFX("WW_Textbox_Close.wav")
+                    self.done = True
+                    if self.highlighted == 0:
+                        self.promptResult = False
+                    elif self.highlighted == 1:
+                        self.promptResult = True
+                    
+
+            elif (event.type == pygame.KEYDOWN and event.key == pygame.K_z) and self.ready_to_continue:
                 if self.end == True:
                     self.playSFX("WW_Textbox_Close.wav")
                     self.done = True
@@ -186,12 +271,19 @@ class TextEngine(object):
                     self.playSFX("OOT_Dialogue_Next.wav")
                     self.box_drawn = False
                     self.ready_to_continue = False
+            
+            
 
         def update(self, seconds):
             self.displayTimer += seconds
+            self.highlightTimer += seconds
+
             if self.displayTimer >= 0.2:
                 self.ready_to_display = True
                 self.displayTimer = 0
+            
+            if self.highlightTimer >= .5:
+                self.highlightTimer = 0
 
 
 
@@ -228,9 +320,11 @@ class PauseEngine(object):
 
         self.menu = Drawable((0,0), "Pause.png")
         self.timer = 0
-        self.highlight = Drawable(COORD[3][4], "Objects.png", (0,0))
+        self.highlight = Highlight(COORD[3][4])
+        self.highlightQuit = Highlight(COORD[3][8], flag = 1)
+
         self.highlighted = vec(0,0)
-        
+        self.promptResult = False
 
     def drawEquipped(self, drawSurf):
         #Arrow
@@ -278,9 +372,13 @@ class PauseEngine(object):
             drawSurf.blit(image, (COORD[9][6]))
         
         if self.timer >= .3:
-            self.highlight.draw(drawSurf)
+            pass
+            
         else:
-            self.highlight.draw(drawSurf, True)
+            if self.highlighted[1] == 4:
+                self.highlightQuit.draw(drawSurf)
+            else:
+                self.highlight.draw(drawSurf)
 
 
 
@@ -319,8 +417,9 @@ class PauseEngine(object):
             ##Selecting an item and pulling up textbox
             ##Will have to switch the order of conditionals. Check position first so that the program
             ##Doesn't check every inventory slot
-
-            if self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*4:
+            if self.highlighted[1] == 4:
+                self.text = "Y/NDo you wish to quit?"
+            elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*4:
                 if INV["plant"] >= 1:
                     self.text = INFO["plant"]
                     return
@@ -368,18 +467,20 @@ class PauseEngine(object):
                 self.highlight.position[1] += 16
 
         elif event.type == KEYDOWN and event.key == K_RIGHT:
-            if self.highlighted[0] != 7:
+            if self.highlighted[0] != 7 and self.highlighted[1] != 4:
                 SoundManager.getInstance().playSFX("pause_cursor.wav")
                 self.highlighted[0] += 1
                 self.highlight.position[0] += 16
 
         elif event.type == KEYDOWN and event.key == K_LEFT:
-            if self.highlighted[0] != 0:
+            if self.highlighted[0] != 0 and self.highlighted[1] != 4:
                 SoundManager.getInstance().playSFX("pause_cursor.wav")
                 self.highlighted[0] -= 1
                 self.highlight.position[0] -= 16
 
     def update(self, seconds):
+        if self.promptResult:
+            pygame.quit()
         self.timer += seconds
         if self.timer >= .5:
             self.timer = 0

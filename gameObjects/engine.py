@@ -40,7 +40,8 @@ class AE(object):
         self.text = ""
         self.largeText = False
         self.icon = None
-        self.boxPos = vec(32,64)
+        self.boxPos = vec(30,64)
+        self.promptResult = False
         #Puzzle conditions
         self.room_set = False
         self.room_clear = False
@@ -64,8 +65,7 @@ class AE(object):
         #Size of the room
         self.size = vec(*RESOLUTION)
         #HUD
-        self.transparentScreen = pygame.display.set_mode(list(map(int, UPSCALED)))
-
+        
 
         #self.transparentSurf = pygame.Surface(RESOLUTION)
         #self.transparentSurf.set_alpha(200)
@@ -84,6 +84,7 @@ class AE(object):
     Auxilary methods
     """
     def reset(self):
+        self.promptResult = False
         self.indicator.setImage(0)
         self.readyToTransition = False
         self.transporting = False
@@ -105,7 +106,8 @@ class AE(object):
 
 
     def deathReset(self):
-        self.boxPos = vec(32,64)
+        self.promptResult = False
+        self.boxPos = vec(30,64)
         self.player = None
         self.pause_lock = False
         self.dead = False
@@ -595,7 +597,8 @@ class AE(object):
     def handleCollision(self):
         #self.projectileCollision()
         self.npcCollision()
-        self.blockCollision()
+        if not self.dying:
+            self.blockCollision()
         self.interactableCollision()
         self.pressSwitches()
         self.pushableBlockCollision()
@@ -702,6 +705,8 @@ class AE(object):
         self.indicator.update(seconds)
 
     def update(self, seconds):
+        if self.promptResult:
+            self.player.hp = 0
         if self.dying:
             
             self.updatePlayer(seconds)
