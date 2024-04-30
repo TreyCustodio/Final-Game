@@ -443,7 +443,6 @@ class Player(Animated):
         elif self.running:
             self.stop()
         
-
         elif self.freezing:
             self.freezing = False
         
@@ -476,7 +475,6 @@ class Player(Animated):
                         self.vel[0] = self.speed/3
                     elif self.vel[0] < 0:
                         self.vel[0] = -self.speed/3
-
                     object.push()
                 else:
                     self.preventCollision(object, side)
