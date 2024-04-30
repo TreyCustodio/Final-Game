@@ -1,6 +1,3 @@
-from gameObjects import *
-
-
 class Template(AbstractEngine):
     @classmethod
     def getInstance(cls):

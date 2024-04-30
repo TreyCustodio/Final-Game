@@ -40,6 +40,7 @@ class Drawable(object):
         return newPos
     
     def __init__(self, position=vec(0,0), fileName="", offset=None):
+        
         if fileName != "":
             self.image = SpriteManager.getInstance().getSprite(fileName, offset)
         

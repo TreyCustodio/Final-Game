@@ -1,4 +1,4 @@
-from . import Bullet, Sword, Dummy, Drop, David, Blizzard, Clap, Cleats, Slash, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
+from . import Bullet, Sword, Dummy, Drop, David, Blizzard, Clap, Hook, Slash, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
 from utils import SpriteManager, SoundManager, SCALE, RESOLUTION, INV, EQUIPPED, vec
 import pygame
 
@@ -9,6 +9,8 @@ class Player(Animated):
     def __init__(self, position=vec(0,0), direction=2):
         super().__init__(position, "Link.png", (0, direction))  
         #Frames, vel, speed, and row
+        self.height = 26
+        self.width = 18
         self.framesPerSecond = 30
         self.frame = direction
         self.nFrames = 8
@@ -61,7 +63,8 @@ class Player(Animated):
         self.cleats = None
         self.running = False
         self.runningDirection = 0
-
+        #Hook
+        self.hook = None
         #Blizzard
         self.freezing = False
         self.blizzard = None
@@ -77,11 +80,22 @@ class Player(Animated):
         self.iframeTimer = 0
         self.idleTimer = 0#Timer used for having the player stand still
         self.idleFrame = 9##Integer used to display flashing idle sprite while charging
+        
+        
+        
 
+
+    def heal(self, integer):
+        difference = self.max_hp - self.hp
+        if integer > difference:
+            self.hp = self.max_hp
+        else:
+            self.hp += integer
     """
     Getter methods
     """
     ###Get weapon instances###
+
 
     def getBullet(self):
         return self.bullet
@@ -110,7 +124,10 @@ class Player(Animated):
                 return row - 16
         else:
             return row
-        
+
+    def getHook(self):
+        return self.hook
+    
     def getClap(self):
         return self.clap
     
@@ -155,6 +172,7 @@ class Player(Animated):
     """
     Movement and event handling
     """
+    
     def movingDiagonal(self):
         return (self.vel[0] != 0 and self.vel[1] != 0)
     
@@ -242,8 +260,9 @@ class Player(Animated):
             if not self.keyDown_lock and event.type == pygame.KEYDOWN and (not self.freezing):
                 if not self.pushing:
                     if interactableObject != None and event.key == pygame.K_z:
-                        self.vel = vec(0,0)
+                        
                         interactableObject.interact(engine)
+                        self.stop()
 
                     """ if event.key == pygame.K_f:
                         self.moveTo(vec(16*4,16*10)) """
@@ -254,7 +273,12 @@ class Player(Animated):
                         self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp, self.max_hp)
                         self.arrowCount -= 1
                         self.arrowReady = False
-                        
+                    
+                    if event.key == pygame.K_a:
+                        #Hook
+                        #SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
+                        self.hook = Hook(self.position, self.getDirection(self.row))
+                        self.keyLock()
                         
                     if not self.running:
                         if not self.charging:
@@ -410,10 +434,8 @@ class Player(Animated):
     Collision detection
     """
     def interactable(self, object):
-        if not issubclass(type(object), Drop):
-            return self.getCollisionRect().colliderect(object.getInteractionRect())
-        else:
-            return False
+        return self.getCollisionRect().colliderect(object.getInteractionRect())
+        
     def handleCollision(self, object):
         if self.dying:
             return
@@ -490,16 +512,24 @@ class Player(Animated):
         obj = object.getCollisionRect()
         coll = self.getCollisionRect()
         if side == "right":
-            self.position[0] = (obj.left) - (obj.width - (obj.width - coll.width)) - 2#Line up the rects and put player 1 pixel before colliding
+            #self.position[0] = (obj.left) - (obj.width - (obj.width - coll.width)) - 2#Line up the rects and put player 1 pixel before colliding
+            self.position[0] = (obj.left - 18) + 2
+
         elif side == "left":
-            self.position[0] = (obj.left) + (obj.width - (obj.width - coll.width)) + 1
+            #self.position[0] = (obj.left) + (obj.width - (obj.width - coll.width)) + 1
+            self.position[0] = (obj.right) - 1
+    
         elif side == "top":
-            self.position[1] = (obj.top) + (obj.height - (obj.height - coll.height)) - 6
+            #self.position[1] = (obj.top) + (obj.height - (obj.height - coll.height)) - 6
+            self.position[1] = (obj.bottom) - 6
+            
         elif side == "bottom":
-            self.position[1] = (obj.top) - (obj.height - (obj.height - coll.height) + 6)
+            #2self.position[1] = (obj.top) - (obj.height - (obj.height - coll.height) + 6)
+            self.position[1] = (obj.top -26) + 4
         
         if not pygame.mixer.get_busy():
             SoundManager.getInstance().playSFX("bump.mp3")
+
 
     def calculateSide(self, object):
         ##  Colliding with Block    ##

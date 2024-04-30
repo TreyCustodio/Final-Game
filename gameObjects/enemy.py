@@ -1,5 +1,6 @@
-from . import Animated, Bullet, Element, Blizzard, Heart, BigHeart
+from . import Animated, Bullet, Element, Blizzard, Heart, BigHeart, Buck, FireShard
 from utils import SoundManager, SpriteManager, SCALE, RESOLUTION, vec
+from random import randint
 import pygame
 """
 The highest class in the enemy hierarchy.
@@ -81,7 +82,16 @@ class Enemy(Animated):
         return self.damage
 
     def getDrop(self):
-        return Heart((self.position[0]+3, self.position[1]+5))
+        integer = randint(0,2)
+        if integer == 0:
+            return Heart((self.position[0]+3, self.position[1]+5))
+        elif integer == 1:
+            return Buck((self.position[0]+3, self.position[1]+5))
+    
+    def getMoney(self):
+        integer = randint(0,1)
+        if integer == 1:
+            return Buck((self.position[0]+3, self.position[1]+5))
     
     def getCollisionRect(self):
         newRect = pygame.Rect(0,0,14,23)
@@ -127,7 +137,7 @@ class Enemy(Animated):
 
     def handleCollision(self, other = None):
         
-        if self.type != 2 and type(other) == Blizzard and not self.frozen:
+        if self.type != 2 and other.type == 2 and not self.frozen:
             self.freeze()
 
         if self.row < self.hurtRow:
@@ -250,7 +260,10 @@ class Enemy(Animated):
                 self.setSpeed(self.row)
 
     def updateFlash(self, seconds):
-        pass
+        if self.row >= self.hurtRow:
+            self.flashTimer += seconds
+            if self.flashTimer >= 0.2:
+                self.row -= self.hurtRow
 
     def update(self, seconds):
         if self.dead:
@@ -261,7 +274,7 @@ class Enemy(Animated):
         
         self.unfreeze(seconds)
 
-        super().update(seconds)
+        super().updateEnemy(seconds)
         self.updateFlash(seconds)
 
         ##Move
@@ -279,6 +292,7 @@ class Mofos(Enemy):
         self.hp = self.maxHp
         self.damage = 1
 
+    
     def bounce(self, other):
         return
                 #self.vel[0] = 0
@@ -296,12 +310,219 @@ class Mofos(Enemy):
     def updateFlash(self, seconds):
         if self.row >= 4:
             self.flashTimer += seconds
-            if self.flashTimer >= 0.2:
+            if self.flashTimer >= 0.4:
                 self.row -= 4
 
     def update(self, seconds):
         super().update(seconds)
+
+class Baller(Enemy):
+    def __init__(self, position=vec(0,0), direction = 3):
+        super().__init__(position, "baller.png", direction)
+        self.indicatorRow = 8
+        self.row = direction
+        self.hurtRow = 4
+        self.speed = 50
+        self.nFrames = 4
+        self.totalFrames = 4
+        self.maxHp = 5
+        self.hp = 5
+        self.direction = direction
+        self.damage = 1
+        self.type = Element(1)
+        self.setSpeed()
+
     
+
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0]+1, self.position[1]+1), (14,15))
+    
+    def getMoney(self):
+        return self.getDrop()
+    
+    def getDrop(self):
+        return FireShard((self.position[0]+3, self.position[1]+5))
+    
+    def bounce(self, other):
+        if not self.frozen:
+            side = self.calculateSide(other)
+            #print(other.position)
+            if side == "right":
+                self.vel[0] = -self.speed
+                self.row = 3
+                #self.vel[1] = 0
+            
+            elif side == "left":
+                self.vel[0] = self.speed
+                self.row = 1
+                #self.vel[1] = 0
+            
+    def draw(self, drawSurface):
+        super().draw(drawSurface)
+        
+
+    def setSpeed(self, row=0):
+        
+        if self.direction == 3:
+            self.vel[0] = -self.speed
+        elif self.direction == 1:
+            self.vel[0] = self.speed
+
+    def handleCollision(self, other=None):
+        if other.type == 2:
+            if not self.frozen:
+                self.freeze()
+            if self.row < self.hurtRow:
+                self.row += self.hurtRow
+                self.flashTimer = 0
+                self.hp -= other.damage
+                if self.hp > 0:
+                    SoundManager.getInstance().playSFX("enemyhit.wav")
+                else:
+                    self.dead = True
+        elif other.type == 1:
+            self.heal(other.damage)
+
+
+    def update(self, seconds):
+        super().update(seconds)
+
+class Heater(Enemy):
+    def __init__(self, position):
+        super().__init__(position, "heater.png")
+        self.indicatorRow = 0
+        self.speed = 100
+        self.nFrames = 1
+        self.totalFrames = 1
+        self.maxHp = 20
+        self.hp = 20
+        self.damage = 1
+        self.type = Element(1)
+        self.minHeight = self.position[1] + 40
+        self.maxHeight = self.position[1]
+        self.minWidth = self.position[0] - 40
+        self.maxWidth = self.position[0]
+        self.direction = 3
+        self.hurtRow = 0
+        self.vel = vec(-self.speed, self.speed)
+        self.freezeShield = True
+    
+    def bounce(self, other):
+        pass
+    
+    def setSpeed(self, row):
+        self.vel = vec(-self.speed, self.speed/2)
+
+    def updateSpeed(self):
+        if self.direction == 3:
+            #print(3)
+            if self.position[1] >= self.minHeight:
+                #print("A")
+                self.vel[1] = -self.speed/2
+
+            if self.position[0] <= self.minWidth: 
+                #print("B")               
+                self.vel[0] = self.speed
+                self.direction = 1
+                self.vel[1] = self.speed/2
+        
+        elif self.direction == 1:
+            print(1)
+            if self.position[1] >= self.minHeight:
+                self.vel[1] = -self.speed/2
+
+            if self.position[0] >= self.maxWidth:                
+                self.vel[0] = -self.speed
+                self.direction = 3
+                self.vel[1] = self.speed/2
+
+
+    def move(self, seconds):
+        if not self.frozen:
+            self.updateSpeed()
+            self.position += self.vel*seconds
+            
+
+
+
+
+
+class Stunner(Enemy):
+    def __init__(self, position=vec(0,0), direction = 0):
+        super().__init__(position, "stunner.png", direction)
+        self.indicatorRow = 9
+        self.row = direction
+        self.hurtRow = 1
+        self.speed = 50
+        self.nFrames = 15
+        self.totalFrames = 13
+        self.maxHp = 10
+        self.hp = 10
+        self.direction = direction
+        self.damage = 2
+        self.framesPerSecond = 4
+        self.type = Element(2)
+        self.setSpeed()
+
+    def bounce(self, other):
+        pass
+    
+    def handleCollision(self, other):
+        return
+    
+    def updateFlash(self, seconds):
+        return
+
+    def setSpeed(self, row=0):
+        return
+    
+    def move(self, seconds):
+        self.position += self.vel*seconds
+
+class FireMofos(Mofos):
+    def __init__(self, position = vec(0,0), direction = 0):
+        super().__init__(position, direction)
+
+    def getDrop(self):
+        return FireShard((self.position[0]+3, self.position[1]+5))
+    """ def getDrop(self):
+        return FireShard((self.position[0]+3, self.position[1]+5)) """
+    
+class Spinner(Enemy):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, "spinner.png", 0)
+        
+        self.nFrames = 2#current max frames
+        self.totalFrames = 2#Total frames
+        self.indicatorRow = 7
+        self.speed = 50
+        self.maxHp = 10
+        self.row = 0
+        self.hp = self.maxHp
+        self.damage = 1
+        self.hurtRow = 0
+        self.freezeShield = True
+        self.framesPerSecond = 32
+
+   
+    def bounce(self, other):
+        pass
+    
+    def handleCollision(self, other):
+        return
+    
+    def updateFlash(self, seconds):
+        return
+
+    def setSpeed(self, row=0):
+        return
+    
+    def move(self, seconds):
+        MovementPatterns.diamond(self, seconds)
+
+
+
+
 
 class Flapper(Enemy):
     """
@@ -321,6 +542,7 @@ class Flapper(Enemy):
         self.damage = 1
         self.direction = direction
         self.hurtRow = 5
+        
         ##Set velocity based on direction
         self.setSpeed(direction)
 
@@ -656,6 +878,7 @@ class GremlinB(Gremlin):
 
     def getDrop(self):
         return BigHeart((self.position[0]+3, self.position[1]+5))
+    
 class Dummy(Enemy):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, "dummy.png", 0)
@@ -744,7 +967,7 @@ class MovementPatterns(object):
         """
         adjust enemy.frame == condition to lengthen or shrink the range
         """
-        if enemy.frame == 5:
+        if enemy.frame == 2:
             MovementPatterns.changeDirectionSquare(enemy)
             
             if enemy.row == 0 or enemy.row == 4:

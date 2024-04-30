@@ -325,19 +325,34 @@ class PauseEngine(object):
 
         self.highlighted = vec(0,0)
         self.promptResult = False
+        self.promptFlag = ""
 
     def drawEquipped(self, drawSurf):
         #Arrow
         arrow = EQUIPPED["Arrow"]
         imageA = SpriteManager.getInstance().getSprite("item.png", (arrow, 1))
-        drawSurf.blit(imageA, (COORD[14][5]))
+        drawSurf.blit(imageA, (COORD[14][4]))
         #Element
         element = EQUIPPED["C"]
         if element != None:
             imageE = SpriteManager.getInstance().getSprite("item.png", (element, 2))
-            drawSurf.blit(imageE, (COORD[14][8]))
+            drawSurf.blit(imageE, (COORD[14][7]))
 
 
+    def drawShards(self, drawSurf):
+        image1 = SpriteManager.getInstance().getSprite("item.png", (0, 2))
+        image2 = SpriteManager.getInstance().getSprite("item.png", (1, 2))
+        image3 = SpriteManager.getInstance().getSprite("item.png", (2, 2))
+        image4 = SpriteManager.getInstance().getSprite("item.png", (3, 2))
+        drawSurf.blit(image1, (16*12 + 6, 16*10))
+        drawSurf.blit(image2, (16*13 + 6, 16*10))
+        drawSurf.blit(image3, (16*14 + 6, 16*10))
+        drawSurf.blit(image4, (16*15 + 6, 16*10))
+        Text((16*12 + 12, 16*11), str(INV["flameShard"])).draw(drawSurf)
+        Text((16*13 + 12, 16*11), str(INV["frostShard"])).draw(drawSurf)
+        Text((16*14 + 12, 16*11), str(INV["boltShard"])).draw(drawSurf)
+        Text((16*15 + 12, 16*11), str(INV["galeShard"])).draw(drawSurf)
+    
     def draw(self, drawSurf):
         if not self.paused:
             self.paused = True
@@ -346,11 +361,18 @@ class PauseEngine(object):
         self.menu.draw(drawSurf)
         
         self.drawEquipped(drawSurf)
+
+        self.drawShards(drawSurf)
         if INV["plant"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (0,0))
             drawSurf.blit(image, (COORD[3][4]))
             Text((16*3+12, 16*4+4), str(INV["plant"]), small = True).draw(drawSurf)
         
+        if INV["potion"] >= 1:
+            image = SpriteManager.getInstance().getSprite("item.png", (2,0))
+            drawSurf.blit(image, (COORD[3][7]))
+            Text((16*3+12, 16*7+4), str(INV["potion"]), small = True).draw(drawSurf)
+
         if INV["shoot"]:
             image = SpriteManager.getInstance().getSprite("item.png", (0,1))
             drawSurf.blit(image, (COORD[3][5]))
@@ -418,7 +440,9 @@ class PauseEngine(object):
             ##Will have to switch the order of conditionals. Check position first so that the program
             ##Doesn't check every inventory slot
             if self.highlighted[1] == 4:
+                self.promptFlag = ""
                 self.text = "Y/NDo you wish to quit?"
+
             elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*4:
                 if INV["plant"] >= 1:
                     self.text = INFO["plant"]
@@ -451,6 +475,11 @@ class PauseEngine(object):
                 if INV["slash"]:  
                     self.text = INFO["slash"]
                     return
+            
+            elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*7:
+                if INV["potion"] >= 1:
+                    self.promptFlag = "potion"
+                    self.text = "Y/NDrink the potion?"
             else:
                 SoundManager.getInstance().playSFX("bump.mp3")
                 
@@ -480,7 +509,11 @@ class PauseEngine(object):
 
     def update(self, seconds):
         if self.promptResult:
-            pygame.quit()
+            if self.promptFlag == "potion":
+                #restore
+                pass
+            else:
+                pygame.quit()
         self.timer += seconds
         if self.timer >= .5:
             self.timer = 0

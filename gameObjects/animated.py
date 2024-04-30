@@ -1,9 +1,10 @@
 from . import Drawable
-from utils import SpriteManager, EQUIPPED
+from utils import SpriteManager, EQUIPPED, vec
 
 class Animated(Drawable):
     
     def __init__(self, position=(0,0), fileName="", offset = (0,0)):
+        
         super().__init__(position, fileName, offset)
         self.fileName = fileName
         self.row = 0
@@ -157,6 +158,18 @@ class Animated(Drawable):
                     self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                             (0, self.row))
                 
+    def updateShotParticle(self, seconds):
+        fps = 16
+        self.animationTimer += seconds
+
+        if self.animationTimer > 1 / fps:
+            self.frame += 1
+            self.frame %= 7
+            self.animationTimer -= 1 / fps
+            
+            self.image = SpriteManager.getInstance().getSprite("shotsfired.png",
+                                                (self.frame, self.row))
+            
 
     def update(self, seconds):
         if not self.animate:
@@ -176,6 +189,16 @@ class Animated(Drawable):
                                                 (self.frame, self.row))
             
 
+    def updateEnemy(self, seconds):
+        self.animationTimer += seconds
+        
+        if self.animationTimer > 1 / self.framesPerSecond:
+            self.frame += 1
+            self.frame %= self.nFrames
+            self.animationTimer -= 1 / self.framesPerSecond
+            self.image = SpriteManager.getInstance().getSprite(self.fileName,
+                                                (self.frame, self.row))
+            
 class Fade():
     """
     If there's only going to be one animation of fades, a singleton class works.
@@ -219,3 +242,23 @@ class Portal(Animated):
         super().__init__(position, "portal.png", (0,color))
         self.nFrames = 2
         self.row = color
+
+class QuestIcon(Animated):
+    def __init__(self, position):
+        super().__init__(position, "exclamation.png", (0,0))
+        self.nFrames = 4
+
+class ZIcon(Animated):
+    def __init__(self, position):
+        super().__init__(position, "z.png", (0,0))
+        self.nFrames = 4
+
+class FireIcon(Animated):
+    def __init__(self, position):
+        super().__init__(position, "fireIcon.png", (0,0))
+        self.nFrames = 4
+
+
+class ShotParticle(Animated):
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, "shotsfired.png", (0,0))

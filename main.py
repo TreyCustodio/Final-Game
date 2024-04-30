@@ -1,6 +1,7 @@
 import pygame
 from UI import ScreenManager
 from utils import RESOLUTION, UPSCALED
+from random import randint
 
 def main():
     #Initialize the module
@@ -14,9 +15,18 @@ def main():
     screen = pygame.display.set_mode(list(map(int, UPSCALED)), flags=flags)
     drawSurface = pygame.Surface(list(map(int, RESOLUTION)))
 
-    #print(pygame.display.g)
-    #pygame.display.toggle_fullscreen()
-    #print(pygame.display.list_modes())
+    rand = randint(0,1)
+    if rand == 1:
+        pygame.display.set_caption("Majestus: I'll learn pixel art one day...")
+    else:
+        pygame.display.set_caption("Majestus: Not a Zelda clone I swear!")
+
+    iconSurf = pygame.Surface((32,32))
+    
+    image = pygame.image.load("displayIcon.png").convert()
+    iconSurf.blit(image, (0,0))
+    pygame.display.set_icon(iconSurf)
+    
 
     gameEngine = ScreenManager()
     
@@ -36,7 +46,7 @@ def main():
         gameClock = pygame.time.Clock()
         
 
-        
+
         # event handling, gets all event from the eventqueue
         for event in pygame.event.get():
             # only do something if the event is of type QUIT

@@ -1,4 +1,4 @@
-from . import Drawable, Animated
+from . import Drawable, Animated, QuestIcon, ZIcon
 from utils import SpriteManager, SCALE, RESOLUTION, vec, rectAdd, SoundManager, FLAGS, SPEECH, ICON, INV
 import pygame
 
@@ -11,7 +11,13 @@ class NonPlayer(Animated):
         super().__init__(position, fileName, offset)
         self.interacted = False
         self.animate = False
-    
+        self.interactable = False
+        self.interactIcon = ZIcon((self.position[0],self.position[1]-16))
+        self.drop = False
+
+    def updateIconPos(self):
+        self.interactIcon.position = (self.position[0], self.position[1] - 16)
+
     def getInteractionRect(self):
         oldRect = self.getCollisionRect()
         newRect = pygame.Rect((oldRect.bottomleft),(oldRect.width,5))
@@ -24,7 +30,10 @@ class NonPlayer(Animated):
         if drawHitbox:
             interaction = rectAdd(-Drawable.CAMERA_OFFSET, self.getInteractionRect())
             pygame.draw.rect(drawSurface, (255,255,255), interaction, 1)
-    
+        if self.interactable:
+            self.updateIconPos()
+            self.interactIcon.draw(drawSurface)
+
     def interact(self, player):
         pass
 
@@ -32,6 +41,13 @@ class NonPlayer(Animated):
         lst.pop(lst.index(self))
         return lst
     
+    def setInteractable(self):
+        self.interactable = True
+
+    def update(self, seconds):
+        super().update(seconds)
+        if self.interactable:
+            self.interactIcon.update(seconds)
 
 class Chest(NonPlayer):
     """
@@ -41,6 +57,7 @@ class Chest(NonPlayer):
     def __init__(self, position = vec(0,0), text = "", icon = None):
         super().__init__(position, "Objects.png", (0,1))
         self.icon = icon
+        #self.interactIcon = QuestIcon((self.position[0], self.position[1] -16))
         self.text = text
 
     def interact(self, engine):#drawSurface
@@ -58,6 +75,11 @@ class Chest(NonPlayer):
                     INV["plant"] += 1
             else:
                 engine.displayText(self.text)
+
+    
+    
+    
+
 
 class Sign(NonPlayer):
     def __init__(self, position = vec(0,0), text = ""):
@@ -96,27 +118,50 @@ class Blessing(NonPlayer):
         #2 -> thunder
         #3 -> wind
         super().__init__(position, "blessing.png", (0,element))
-        if element == 0:
-            self.text = SPEECH["ice"]
-        elif element == 1:
-            self.text = SPEECH["fire"]
-            self.framesPerSecond = 8
+        if element == 1:
+            self.cost = INV["frostCost"]
+            self.text = "Y/NUpgrade ice for "+str(self.cost)+ " shards?"
             self.row = 1
+        elif element == 0:
+            self.cost = INV["flameCost"]
+            self.text = "Y/NUpgrade flames for "+str(self.cost)+ " shards?"
+            self.framesPerSecond = 8
+            self.row = 0
         elif element == 2:
-            self.text = SPEECH["thunder"]
+            self.cost = INV["boltCost"]
+            self.text = "Y/NUpgrade bolt for "+str(self.cost)+ " shards?"
             self.framesPerSecond = 20
             self.row = 2
+
         else:
-            self.text = SPEECH["wind"]
+            self.cost = INV["galeCost"]
+            self.text = "Y/NUpgrade wind for "+str(self.cost)+ " shards?"
             self.row = 3
+
         self.animate = True
         self.nFrames = 4
         self.element = element
 
+
+    def updateCost(self):
+        if self.element == 0:
+            self.cost = INV["flameCost"]
+            self.text = "Y/NUpgrade fire for "+str(self.cost)+ " shards?"
+        elif self.element == 1:
+            self.cost = INV["frostCost"]
+            self.text = "Y/NUpgrade ice for "+str(self.cost)+ " shards?"
+        elif self.element == 2:
+            self.cost = INV["boltCost"]
+            self.text = "Y/NUpgrade thunder for "+str(self.cost)+ " shards?"
+        elif self.element == 3:
+            self.cost = INV["galeCost"]
+            self.text = "Y/NUpgrade wind for "+str(self.cost)+ " shards?"
+    
     def getCollisionRect(self):
         return super().getCollisionRect()
     
     def interact(self, engine):
+
         """ if self.element == 0:
             INV["cleats"] = True
             FLAGS[90] = True
@@ -133,11 +178,30 @@ class Blessing(NonPlayer):
             INV["slash"] = True
             FLAGS[93] = True
             FLAGS[89] = True """
+        engine.selectedItem = self.element
         engine.displayText(self.text)
-        
+
+class Mage(NonPlayer):
+    def __init__(self, position = vec(0,0), text = "", fps = 1):
+        super().__init__(position, "mage.png", (0,0))
+        self.animate = True
+        self.framesPerSecond = fps
+        self.nFrames = 2
+        self.text = text
+    
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0]+2, self.position[1]+5), (13,15))
+    
+    def interact(self, engine):
+        engine.displayText(self.text)
+    
+    def update(self, seconds):
+        super().update(seconds)
+
 class Geemer(NonPlayer):
     def __init__(self, position = vec(0,0), text = "", variant = None, maxCount = 0, fps = 16, color = 0, hungry = False, feedText = ""):
         super().__init__(position, "geemer.png", (0, color))
+        self.interactIcon.position = (self.position[0]+3, self.position[1]-16)
         self.vel = vec(0,0)
         self.position = position
         self.text = text
@@ -154,8 +218,11 @@ class Geemer(NonPlayer):
         self.variant = variant #Repeats same line of text over and over
         self.dialogueCounter = 0 #Helpful for displaying multiple different conversations
         self.icon = ICON["geemer"+str(color)]
+
     
-    
+    def updateIconPos(self):
+        self.interactIcon.position = (self.position[0]+3, self.position[1] - 16)
+
     def getCollisionRect(self):
         return pygame.Rect((self.position[0]+3, self.position[1]+2),(16,16))
     
@@ -249,13 +316,22 @@ class Drop(NonPlayer):
     """
     Parent class for item pickups
     """
-    def __init__(self, position=vec(0,0), offset = (0,0)):
-        super().__init__(position, "Objects.png", offset)
+    def __init__(self, position=vec(0,0), row=0):
+        super().__init__(position, "drops.png", (0,row))
         self.timer = 0
+        self.row = row
+        self.drop = True
+        self.nFrames = 4
+        self.animate = True
+        self.framesPerSecond = 8
+    
+    def setInteractable(self):
+        pass
     
     def interact(self, player):
         self.interacted = True
 
+    
     def update(self, seconds):
         super().update(seconds)
         
@@ -267,12 +343,13 @@ class Frost(Drop):
 
 class Heart(Drop):
     def __init__(self, position=vec(0,0)):
-        super().__init__(position, (0,3))
+        super().__init__(position, 0)
         self.disappear = False
         
     
     def getCollisionRect(self):
         return pygame.Rect((self.position[0]+3,self.position[1]+5), (10,8))
+    
     
     def interact(self, player):
         if not self.interacted:
@@ -280,6 +357,7 @@ class Heart(Drop):
             self.interacted = True
             if player.hp < player.max_hp:
                 player.hp += 1
+
 
     def update(self, seconds):
         super().update(seconds)
@@ -289,7 +367,7 @@ class Heart(Drop):
 
 class BigHeart(Drop):
     def __init__(self, position = vec(0,0)):
-        super().__init__(position, (0,4))
+        super().__init__(position, 4)
     
     def getCollisionRect(self):
         return pygame.Rect((self.position[0], self.position[1]+1), (16,14))
@@ -303,13 +381,40 @@ class BigHeart(Drop):
                 if player.hp > player.max_hp: 
                     player.hp = player.max_hp
 
+class Buck(Drop):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, 1)
+    
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0], self.position[1]+3), (16,10))
+    
+    def interact(self, player):
+        if not self.interacted:
+            SoundManager.getInstance().playSFX("solve.wav")
+            self.interacted = True
+            if INV["money"] < INV["wallet"]:
+                INV["money"] += 1
+            
+class FireShard(Drop):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, 2)
+
+    def interact(self, player):
+        if not self.interacted:
+            SoundManager.getInstance().playSFX("Z2_beam.wav")
+            self.interacted = True
+            if INV["flameShard"] < 999:
+                INV["flameShard"] += 1
+            
+            
+
+
 class Key(Drop):
     """
     Parent class for item pickups
     """
     def __init__(self, position=vec(0,0)):
-        super().__init__(position, (0,2))
-        self.animate = False#could change
+        super().__init__(position, 3)
         self.text = SPEECH["key"]
 
     def interact(self, player, engine):
@@ -319,3 +424,20 @@ class Key(Drop):
             engine.textBox = True
             engine.text = self.text
             player.vel = vec(0,0)
+
+class Potion(NonPlayer):
+    """
+    Potion in the shop
+    """
+    def __init__(self, position):
+        super().__init__(position, "Objects.png", (6,0))
+    
+    def interact(self, engine):
+        if INV["money"] < 5:
+            engine.displayText("Damn, you're broke, man.&&")
+        elif INV["potion"] <= 2:
+            engine.displayText("Y/NSmall potion: 5 bucks")
+            engine.selectedItem = "potion"
+        
+        else:
+            engine.displayText("Sorry, but you can't carry\nany more of those.\n")

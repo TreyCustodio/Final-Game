@@ -121,7 +121,32 @@ gale slash
 - Industry feeds on passion
 - Be the change you want in the industry
 
+Arrow Mods:
+1 Element Modifier
+1 Strength Modifier
+Items:
+- Potion
+- Full restore
+- Static in a bottle
+- Elemental clothes
+
+Create seperate list for static obstacles/enemies.
+    - That way you dont have to loop thru enemies
+    to bounce an enemy off another enemy
+
+
+Cool rival character
+    - You've got the people you would kill for,
+    and the people you would die for.
+    Screw everyone else.
+
 ##
 QUESTIONS
 - Way to detect if the screen is being moved? Automatically pause the game if so?
 - Transparency
+
+
+Ralph boss idea:
+He spams shooting you.
+If you try to shoot him, he dodges to the right or left
+after 3 dodges, he runs at you, and you can hit him.

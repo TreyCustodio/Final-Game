@@ -1,4 +1,4 @@
-from . import Drawable, Animated
+from . import Drawable, Animated, FireIcon
 from utils import vec, RESOLUTION, COORD, rectAdd, SpriteManager
 import pygame
 
@@ -106,9 +106,27 @@ class Torch(Animated):
         self.row = color
         if color == 1 or color == 3:
             self.frame = 2
+        
+        self.interactable = False
+        self.interactIcon = FireIcon((self.position[0],self.position[1]-16))
+    
+    def getInteractionRect(self):
+        return pygame.Rect((self.position[0]-8, self.position[1]-8), (32,32))
+    
+    def setInteractable(self):
+        self.interactable = True
     
     def light(self):
         if not self.lit:
             self.row = 0
             self.lit = True
     
+    def draw(self, drawSurface):
+        super().draw(drawSurface)
+        if self.interactable:
+            self.interactIcon.draw(drawSurface)
+    
+    def update(self, seconds):
+        super().update(seconds)
+        if self.interactable:
+            self.interactIcon.update(seconds)

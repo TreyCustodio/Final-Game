@@ -15,10 +15,13 @@ Global boolean values that represent flags.
 Used for a variety of special events.
 """
 FLAGS = [False for i in range(100)]
-#1-49 -> Messages that only display once
+for i in range (1, 10):
+    FLAGS[i] = True
+#1-10 -> Messages that only display once
 #1 -> Grand Chapel
 #2 ->
 
+#20 - > Shards first pickup
 
 ##50-59 -> Respawn/Checkpoints
 #50 -> skip intro (post-death)
@@ -78,7 +81,21 @@ INV = {
     "fire": True,
     "clap": True,
     "slash": True,
-    "cleats": True 
+    "cleats": True,
+    "potion": 0,
+    "wallet": 20,
+    "money": 0,
+    "chanceEmblem": False,
+    "flameShard": 0,
+    "frostShard": 0,
+    "boltShard": 0,
+    "galeShard": 0,
+
+    "flameCost": 1,
+    "frostCost": 1,
+    "boltCost": 1,
+    "galeCost": 1,
+
 }
 
 
@@ -250,7 +267,12 @@ Follows format:
 roomName_class#
 """
 SPEECH = {
-    
+"flameShard":"You found a flame shard!&&\n\
+Use it in the Grand Chapel\n\
+to upgrade your flame attack!\n\
+Check how many you have\n\
+on the pause menu.\n",
+
     "key":
 "   Picked up a key.",
     "switch_unlocked" : "A switch was unlocked.",
@@ -410,7 +432,7 @@ about a fourth wall?\n",
 Feed it to a hungry Geemer.\n",
 
 "fire":
-"Firion's fire burns\n\
+"Y/NFirion's fire burns\n\
 furiously.\n",
 
 "ice":
@@ -464,6 +486,16 @@ sinking hoplelessly into\n\
 a flood of sorrow.\n",
 
 
+"town_1":
+"Welcome to Geemer town,\n\
+young traveller.\n",
+
+"shop":
+"We've got it all!&&",
+
+"shopkeep":
+"If ya see anything you want,\n\
+i'll sell it to ya.\n",
 
 "null":
 "Nothing to see here."

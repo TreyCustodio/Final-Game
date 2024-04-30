@@ -186,7 +186,8 @@ class Intro_1(AbstractEngine):
             #self.geemer5 = Geemer((COORD[4][8]), SPEECH["skipping_text"])
             self.spawning = [#self.sign, 
                             #self.geemer, 
-                            self.geemer2, self.geemer3, self.geemer4, 
+                            self.geemer2, self.geemer3, self.geemer4,
+                            #Mage((COORD[9][8]), "Hello!")
                             #self.geemer5
                             ]
             
@@ -286,16 +287,7 @@ class Intro_1(AbstractEngine):
                 # self.blocks.append(self.rblock6)
                 # self.blocks.append(self.rblock7)
             
-        """
-        Events
-        """
-        def handleEvent(self, event):
-            """
-            Players, enemies, and npcs handle their events.
-            Handles primary weapon mechanics
-            """
-            
-            super().handleEvent(event)
+     
 
         """
         Update
@@ -308,12 +300,12 @@ class Intro_1(AbstractEngine):
         #override
         def updateSpawning(self,seconds):
             ##  NPCs
-            for n in self.spawning:
-                if n.animate:
-                    n.update(seconds)
-                    if n.position[0] >=  16*13:
-                        n.vel = vec(0,0)
-                        n.ignoreCollision = False
+            super().updateSpawning(seconds)
+
+            if self.geemer3.position[0] >= 16*13:
+                self.geemer3.vel = vec(0,0)
+                self.geemer3.ignoreCollision = False
+            
         
         #override
         def updateSwitches(self, seconds):
@@ -386,7 +378,7 @@ class Intro_2(AbstractEngine):
 
             #Spawnable Objects
             self.spawning = [Geemer(COORD[2][9], SPEECH["intro_combat"], fps = 32),
-                             Geemer(COORD[14][2], SPEECH["skipping_text"], fps = 50)]
+                             Geemer(COORD[12][2], SPEECH["skipping_text"], fps = 50)]
             
             #Projectiles/weapons
 
@@ -397,18 +389,24 @@ class Intro_2(AbstractEngine):
             self.background = Level("intro_2.png")
 
             for i in range(2):
-                self.enemies.append(Mofos(direction = 0))
+                self.enemies.append(Mofos(direction = 1))
             for i in range(2):
-                self.enemies.append(Mofos(direction = 2))
+                self.enemies.append(Mofos(direction = 3))
+
+            self.enemies.append(Spinner())
+            self.enemies.append(Spinner())
+            self.enemies.append(Spinner())
+            self.enemies.append(Spinner())
 
 
+            """ 
             self.enemies.append(Flapper(direction = 1))#Right, Top
-
+            
             self.enemies.append(Flapper(direction = 2))#Left, Bottom
 
             self.enemies.append(Flapper(direction = 1))#Right, Top
 
-            self.enemies.append(Flapper(direction = 0))#Left, Top
+            self.enemies.append(Flapper(direction = 0))#Left, Top """
 
             
 
@@ -476,13 +474,22 @@ class Geemer_1(AbstractEngine):
             self.max_enemies = 0
             self.enemyPlacement = 0
             self.background = Level("geemer_1.png")
-            self.doors = [1,2,3]
+            self.doors = [1,2]
             self.trigger1 = Trigger(door = 1)
-        
-        
+            self.trigger2 = Trigger(door = 2)
+            self.spawning = [
+                Geemer((16*11, 16*5 - 4), text = SPEECH["town_1"], color = 1)
+            ]
+
+            self.npcs = [
+                Baller(COORD[3][6], direction = 1),
+                #Stunner(COORD[5][6])
+            ]
+
         #override
         def createBlocks(self):
             self.blocks.append(self.trigger1)
+            self.blocks.append(self.trigger2)
             for i in range(2,8):
                 self.blocks.append(IBlock(COORD[i][4]))
             for i in range(11,17):
@@ -511,9 +518,65 @@ class Geemer_1(AbstractEngine):
                 if self.player.doesCollide(b):
                     if b == self.trigger1:
                         self.transport(Intro_2, 3)
+                    elif b == self.trigger2:
+                        self.transport(Shop, 0, keepBGM=True)
                     else:
                         self.player.handleCollision(b)
 
+
+class Shop(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Shop()
+      
+        return cls._INSTANCE
+    
+    class _Shop(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "Nujabes_Decade.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("test.png")
+            self.trigger1 = Trigger(door = 0)
+            self.doors = [0]
+
+            self.shopKeep = Geemer((16*9-2,16*6), text = SPEECH["shopkeep"])
+            self.potion = Potion(COORD[4][6])
+            self.spawning = [
+                self.shopKeep,
+                self.potion
+            ]
+
+            self.selectedItem = ""
+
+        def handlePrompt(self):
+            if self.selectedItem == "potion":
+                INV["money"] -= 5
+                self.displayText("You bought a potion!&&\nUse it on the pause menu\nto restore a bit of health.\n")
+                INV["potion"] += 1
+                self.promptResult = False
+                self.selectedItem = ""
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                for n in self.npcs:
+                    if n.doesCollide(b):
+                        n.bounce(b)
+
+                self.projectilesOnBlocks(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Geemer_1, 2, keepBGM=True)
+                    else:
+                        self.player.handleCollision(b)
 
 
 class Intro_3(AbstractEngine):
@@ -592,7 +655,46 @@ class Intro_3(AbstractEngine):
             super().update(seconds)
             
 
+class Grand_Chapel_L(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+            cls._INSTANCE = cls._ChapelL()
+      
+        return cls._INSTANCE
+    
+    class _ChapelL(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "fire.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("test.png")
+            self.trigger1 = Trigger(door = 0)
 
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                for n in self.npcs:
+                    if n.doesCollide(b):
+                        n.bounce(b)
+
+                self.projectilesOnBlocks(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Room, 0, keepBGM=True)
+                    else:
+                        self.player.handleCollision(b)
+
+
+
+class Grand_Chapel_R(AbstractEngine):
+    pass
 
 class Grand_Chapel(AbstractEngine):
     @classmethod
@@ -617,13 +719,19 @@ class Grand_Chapel(AbstractEngine):
             
             self.portal = Portal(COORD[14][3], 3)
 
-            self.ice = Blessing((COORD[6][4]), 0)
-            self.fire = Blessing((COORD[8][4]), 1)
+
+
+            self.fire = Blessing((COORD[6][4]), 0)
+            self.ice = Blessing((COORD[8][4]), 1)
             self.thunder = Blessing((COORD[10][4]), 2)
             self.wind = Blessing((COORD[12][4]), 3)
 
+
+
             self.geemer = Geemer((16*9 - 4, 16*6), text = SPEECH["chapel_geemer"], color = 1)
             self.prompt = Geemer((16*11-4, 16*6), text = "Y/NDo you want to die?")
+            
+
             self.spawning = [self.ice,
                              self.fire,
                              self.thunder,
@@ -635,8 +743,56 @@ class Grand_Chapel(AbstractEngine):
             
             self.doors = [0,1,2,3]
         
+        def handlePrompt(self):
+            if self.promptResult:
+                if self.selectedItem == 0:
+                    if INV["flameShard"] >= INV["flameCost"]:
+                        INV["flameShard"] -= INV["flameCost"]
+                        if INV["flameCost"] == 1:
+                            INV["flameCost"] = 5
+                            self.fire.updateCost()
+                        self.displayText("Flames upgraded!")
+                    else:
+                        self.displayText("Not enough shards.")
+                    self.promptResult = False
+
+                elif self.selectedItem == 1:
+                    if INV["frostShard"] >= INV["frostCost"]:
+                        INV["frostShard"] -= INV["frostCost"]
+                        if INV["frostCost"] == 1:
+                            INV["frostCost"] = 5
+                            self.fire.updateCost()
+                        self.displayText("Ice upgraded!")
+                    else:
+                        self.displayText("Not enough shards.")
+                    self.promptResult = False
+
+                elif self.selectedItem == 2:
+                    if INV["boltShard"] >= INV["boltCost"]:
+                        INV["boltShard"] -= INV["boltCost"]
+                        if INV["boltCost"] == 1:
+                            INV["boltCost"] = 5
+                            self.fire.updateCost()
+                        self.displayText("Bolt upgraded!")
+                    else:
+                        self.displayText("Not enough shards.")
+                    self.promptResult = False
+
+                if self.selectedItem == 3:
+                    if INV["galeShard"] >= INV["galeCost"]:
+                        INV["galeShard"] -= INV["galeCost"]
+                        if INV["galeCost"] == 1:
+                            INV["galeCost"] = 5
+                            self.fire.updateCost()
+                        self.displayText("Gale upgraded!")
+                    else:
+                        self.displayText("Not enough shards.")
+                    self.promptResult = False
+
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
             super().initializeRoom(player, pos, keepBGM)
+            self.fire.updateCost()
+
             if FLAGS[1] == False:
                 self.displayText("        Grand  Chapel    ", large = False)
                 FLAGS[1] = True
@@ -678,6 +834,7 @@ class Grand_Chapel(AbstractEngine):
                 self.spawning.pop(self.spawning.index(self.wind))
                 FLAGS[88] = True
             self.portal.update(seconds)
+
 
 class Freeplay(AbstractEngine):
     @classmethod
@@ -1089,7 +1246,7 @@ class Thunder_3(AbstractEngine):
             
             self.portal = Portal(COORD[9][6], 2)
             self.blocks.append(self.portal)
-            self.sign = Sign(COORD[9][9], text = SPEECH["thunder_sign"])
+            self.sign = Sign(COORD[9][3], text = SPEECH["thunder_sign"])
             self.spawning.append(self.sign)
             self.enemies = [
                 Dummy(COORD[7][8]),

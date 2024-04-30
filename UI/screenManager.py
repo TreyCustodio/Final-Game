@@ -135,7 +135,7 @@ class ScreenManager(object):
             
             elif choice == "tutorial":
                 """Testing and Freeplay"""
-                self.game = Intro_2.getInstance()
+                self.game = Grand_Chapel.getInstance()
                 self.game.initializeRoom()
                 self.state.startGame()
 
@@ -173,8 +173,13 @@ class ScreenManager(object):
             if self.textEngine.done:
                 if self.pauseEngine.paused:
                     if "Y/N" in self.pauseEngine.text:
+                        
                         self.pauseEngine.promptResult = self.textEngine.promptResult
-                    
+                        if self.pauseEngine.promptResult and self.pauseEngine.promptFlag == "potion":
+                            INV["potion"] -= 1
+                            self.game.player.heal(3)
+                        
+
                     self.pauseEngine.textBox = False
                     self.pauseEngine.text = ""
                     self.state.speakP()

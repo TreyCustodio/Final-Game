@@ -44,7 +44,9 @@ class SpriteManager(object):
                        "blessing.png":(16,16), "thunder.png":(64,64), "gale.png": (18,18),
                        "energy.png":(16,32), "item.png":(16,16),
                        "flapper.png":(16,16), "dummy.png":(16,16), "david.png":(19,26), "thunderTiles.png":(16,16),
-                       "portal.png":(16,16)
+                       "portal.png":(16,16), "exclamation.png":(16,16), "z.png": (16,16), "fireIcon.png":(16,16),
+                       "spinner.png":(32,32), "shotsfired.png":(16,16), "drops.png":(16,16),
+                       "baller.png":(16,16)
          
       }
       
@@ -55,11 +57,13 @@ class SpriteManager(object):
       _TRANSPARENCY = ["portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
                        "icon.png", "TextBox.png", "TextBox2.png", "geemer.png", "item.png", "fire.png", "black.png", "blessing.png",
                        "thunder.png", "energy.png", "gale.png", "indicator.png",
-                       "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png"#Enemies
+                       "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png",#Enemies
+                       "exclamation.png", "z.png", "fireIcon.png", "shotsfired.png", "drops.png",
+                       "baller.png", "stunner.png", "mage.png"
                        ]
       
       # A list of images that require to be loaded with a color key
-      _COLOR_KEY = ["Link.png", "Stalfos.png", "blizz.png", "slash.png"]
+      _COLOR_KEY = ["Link.png", "Stalfos.png", "blizz.png", "slash.png", "spinner.png", "heater.png"]
       
       def __init__(self):
          # Stores the surfaces indexed based on file name
