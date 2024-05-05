@@ -14,6 +14,7 @@ class NonPlayer(Animated):
         self.interactable = False
         self.interactIcon = ZIcon((self.position[0],self.position[1]-16))
         self.drop = False
+        self.disappear = False
 
     def updateIconPos(self):
         self.interactIcon.position = (self.position[0], self.position[1] - 16)
@@ -316,7 +317,7 @@ class Drop(NonPlayer):
     """
     Parent class for item pickups
     """
-    def __init__(self, position=vec(0,0), row=0):
+    def __init__(self, position=vec(0,0), row=0, lifeTime=5):
         super().__init__(position, "drops.png", (0,row))
         self.timer = 0
         self.row = row
@@ -324,16 +325,31 @@ class Drop(NonPlayer):
         self.nFrames = 4
         self.animate = True
         self.framesPerSecond = 8
+        self.disappear = False
+        self.lifeTime = lifeTime
     
     def setInteractable(self):
         pass
     
+    def draw(self, drawSurf):
+        if self.timer >= self.lifeTime-2:
+            temp = self.lifeTime-2
+            if (self.timer >= temp and self.timer <= temp+0.2) or (self.timer >= temp+0.4 and self.timer <= temp+0.6) or (self.timer >= temp+0.8 and self.timer <= temp+1.0) or (self.timer >= temp+1.2 and self.timer <= temp+1.4) or (self.timer >= temp+1.6 and self.timer <= temp+1.8):
+                pass
+            else:
+                super().draw(drawSurf)
+        else:
+            super().draw(drawSurf)
+
     def interact(self, player):
         self.interacted = True
 
     
     def update(self, seconds):
         super().update(seconds)
+        self.timer += seconds
+        if self.timer >= self.lifeTime:
+            self.disappear = True
         
 class Frost(Drop):
     def __init__(self, position = vec(0,0)):
@@ -355,19 +371,16 @@ class Heart(Drop):
         if not self.interacted:
             SoundManager.getInstance().playSFX("solve.wav")
             self.interacted = True
-            if player.hp < player.max_hp:
+            if player.hp < INV["max_hp"]:
                 player.hp += 1
 
 
     def update(self, seconds):
         super().update(seconds)
-        self.timer += seconds
-        if self.timer >= 5:
-            self.disappear = True
 
 class BigHeart(Drop):
     def __init__(self, position = vec(0,0)):
-        super().__init__(position, 4)
+        super().__init__(position, 4, lifeTime=8)
     
     def getCollisionRect(self):
         return pygame.Rect((self.position[0], self.position[1]+1), (16,14))
@@ -376,10 +389,10 @@ class BigHeart(Drop):
         if not self.interacted:
             SoundManager.getInstance().playSFX("solve.wav")
             self.interacted = True
-            if player.hp < player.max_hp:
-                player.hp += 3
-                if player.hp > player.max_hp: 
-                    player.hp = player.max_hp
+            if player.hp < INV["max_hp"]:
+                player.hp += 5
+                if player.hp > INV["max_hp"]: 
+                    player.hp = INV["max_hp"]
 
 class Buck(Drop):
     def __init__(self, position = vec(0,0)):
@@ -397,7 +410,7 @@ class Buck(Drop):
             
 class FireShard(Drop):
     def __init__(self, position = vec(0,0)):
-        super().__init__(position, 2)
+        super().__init__(position, 2, lifeTime=20)
 
     def interact(self, player):
         if not self.interacted:
@@ -424,6 +437,10 @@ class Key(Drop):
             engine.textBox = True
             engine.text = self.text
             player.vel = vec(0,0)
+    
+    def update(self, seconds):
+        ##Keys dont disappear after their lifetime
+        Animated.update(self, seconds)
 
 class Potion(NonPlayer):
     """

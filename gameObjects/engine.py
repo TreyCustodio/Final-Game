@@ -2,8 +2,8 @@ import pygame
 
 from . import (Drawable, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
                WeightedSwitch, DamageIndicator, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
-               PushableBlock, LockBlock, Bullet, Sword, Clap, Slash, Flapper,
-               Tile, Portal, Buck)
+               PushableBlock, LockBlock, Bullet, Sword, Clap, Slash, Flapper, Number,
+               Tile, Portal, Buck, Map)
 
 
 
@@ -12,6 +12,15 @@ from utils import SoundManager, vec, RESOLUTION, SPEECH, ICON, INV, COORD, FLAGS
 
 class AE(object):
     def __init__(self):
+        """
+        __init__ is only ever called once
+        """
+        self.area = 0
+        self.roomId = 0
+        self.itemsToCollect = 0
+        self.mapCondition = False #True if pink, False if green
+
+
         self.player = None
         self.resetting = False
         self.ignoreClear = False
@@ -79,7 +88,7 @@ class AE(object):
         #self.max_enemies
         #self.enemyPlacement
         #self.bgm
-
+    
 
     """
     Auxilary methods
@@ -133,7 +142,15 @@ class AE(object):
 
 
     def initializeRoom(self, player= None, pos = None, keepBGM = False):
+        """
+        Called every time you enter the room
+        1. create wall boundaries
+        2. adjust wall collision for doors in self.doors
+        3. call createBlocks
+        4. place the enemies in self.enemies
+        """
         #SoundManager.getInstance().stopAllSFX()
+        EQUIPPED["room"] = self.roomId
         if player != None:
             self.player = player
             self.player.position = pos 
@@ -187,6 +204,9 @@ class AE(object):
     
 
     def setDoors(self):
+        """
+        Adjust the boundaries to fit doors
+        """
         if 0 not in self.doors:
             self.blocks.append(IBlock((8*16, RESOLUTION[1]-16)))
             self.blocks.append(IBlock((9*16, RESOLUTION[1]-16)))
@@ -217,6 +237,7 @@ class AE(object):
         else:
             self.blocks.append(IBlock((8, 16*7+8)))
             self.blocks.append(IBlock((8, 16*5-8)))
+    
     #abstract
     def createBlocks(self):
         """
@@ -230,6 +251,7 @@ class AE(object):
         The algorithm is selected based on the integer corresponding to
         self.enemyPlacement
         """
+        self.enemyCounter = 0
         def refresh():
             for e in enemyLst:
                 """ if e not in self.npcs:
@@ -264,12 +286,15 @@ class AE(object):
                 enemyLst[7].position = COORD[3][7]
                 refresh()
         else:
-            for e in enemyLst:
+            for i in range(self.max_enemies):
+                enemyLst[i].position = enemyLst[i].initialPos
+            refresh()
+            """ for e in enemyLst:
                 if not e.dead and e not in self.npcs:
                     self.npcs.append(e)
                 if not e.frozen:
                     e.freeze(playSound=False)
-                    e.freezeTimer = 4.0
+                    e.freezeTimer = 4.0 """
                 
 
                     
@@ -280,7 +305,11 @@ class AE(object):
 
     def transport(self, room=None, position=None, keepBGM = False, intro = False):
         """
-        Transport the player to a different room
+        Transport the player to a different room.
+        room -> room (class) name in majestus.py
+        position -> 0-3 representing cardinal direction, or a specific coordinate
+        keepBgm -> keeps the bgm
+        intro -> special properties for transport because no player yet
         """
         if intro:
             self.transporting = True
@@ -379,8 +408,9 @@ class AE(object):
             self.player.slash = None
         
         #Blizzard
-        if self.player.blizzard != None:
+        if self.player.blizzard != None and self.player.blizzard not in self.projectiles:
             self.projectiles.append(self.player.getBlizzard())
+            #print("A")
             #self.playSound("")
 
         if self.player.hook != None:
@@ -620,23 +650,23 @@ class AE(object):
     def updateNpcs(self, seconds):
         ##Enemies
         for n in self.npcs:
-            if issubclass(type(n), Enemy):
-                n.update(seconds)
-                if n.dead:
-                    self.playSound("enemydies.wav")
-                    self.disappear((n))
-                    if self.dropCount < 5:
-                        if self.player.hp == self.player.max_hp:
-                            drop = n.getMoney()
-                            if drop != None:
-                                self.spawning.append(drop)
-                        else:
-                            drop = n.getDrop()
-                            
-                            if drop != None:
-                                self.spawning.append(drop)
-                        self.dropCount += 1
-                    self.enemyCounter += 1
+            #if issubclass(type(n), Enemy):
+            n.update(seconds)
+            if n.dead:
+                self.playSound("enemydies.wav")
+                self.disappear((n))
+                if self.dropCount < 5:
+                    if self.player.hp == INV["max_hp"]:
+                        drop = n.getMoney()
+                        if drop != None:
+                            self.spawning.append(drop)
+                    else:
+                        drop = n.getDrop()
+                        
+                        if drop != None:
+                            self.spawning.append(drop)
+                    self.dropCount += 1
+                self.enemyCounter += 1
             
         
         if not self.ignoreClear and not self.room_clear and self.enemyCounter == self.max_enemies:
@@ -649,14 +679,12 @@ class AE(object):
 
         ##  NPCs
         for n in self.spawning:
-            if issubclass(type(n), Heart):
-                n.update(seconds)
-                if n.disappear:
-                    self.disappear(n)
-                    self.dropCount -= 1
-            else:
-                n.update(seconds)
-                
+            n.update(seconds)
+            if n.disappear:
+                self.disappear(n)
+                self.dropCount -= 1
+          
+    
 
     def updatePlayer(self, seconds):
         if self.player.dying:
@@ -728,6 +756,13 @@ class AE(object):
     def handlePrompt(self):
         pass
     def update(self, seconds):
+
+        if not self.mapCondition:
+            if self.itemsToCollect == 0:
+                self.mapCondition = True
+           
+                Map.getInstance().rooms[self.area][self.roomId].clearRoom()
+                
         if not FLAGS[20] and INV["flameShard"] > 0:
             FLAGS[20] = True
             self.displayText(SPEECH["flameShard"])
@@ -770,10 +805,10 @@ class AE(object):
             for t in self.tiles:
                 t.update(seconds)
         if not self.ignoreClear:
-            
             if self.room_clear and self.clearFlag == 0:
                 self.clearFlag = 1
                 self.handleClear()
+        
         Drawable.updateOffset(self.player, self.size)
     
 
@@ -842,18 +877,25 @@ class AE(object):
     def drawHud(self, drawSurface):
         
         self.moneyImage.draw(drawSurface)
-        if INV["money"] == INV["wallet"]:
-            Text((18, 16*10+4), "x " + str(INV["money"]), color = (0,220,0)).draw(drawSurface)
-        else:
-            Text((18, 16*10+4), "x " + str(INV["money"])).draw(drawSurface)
 
-        self.keyNumber = Drawable((33, self.keyCount.position[1]), "numbers.png", (self.player.keys,0))
-        self.keyNumber.draw(drawSurface)
+        
+        Number((16, 16*10+4), row = 1).draw(drawSurface)
+        if INV["money"] == INV["wallet"]:
+            self.drawNumber(vec(28, 16*10+4), INV["money"], drawSurface, row = 2)
+        else:
+            self.drawNumber(vec(28, 16*10+4), INV["money"], drawSurface)
+            #Number((28, 16*10+4), INV["money"]).draw(drawSurface)
+
+
         self.keyCount.draw(drawSurface)
+        Number((28, self.keyCount.position[1]), self.player.keys).draw(drawSurface)
         self.healthBar.draw(drawSurface, self.player)
+        
         self.ammoBar.draw(drawSurface, self.player)
         self.elementIcon.draw(drawSurface)
         self.indicator.draw(drawSurface)
+        self.drawNumber(vec(0,0), self.player.hp, drawSurface)
+
         
 
         if EQUIPPED["C"] == 2:
@@ -864,6 +906,9 @@ class AE(object):
             self.energyBar.drawWind(self.player.chargeTimer, drawSurface)
         else:
             self.energyBar.draw(drawSurface)
+        
+        if self.player.drunk:
+            self.drawNumber(vec(0,64), int(self.player.drunkTimer), drawSurface, row = 3)
         #pygame.transform.scale(self.transparentSurf,
                                #list(map(int, UPSCALED)),
                                #self.transparentScreen)
@@ -888,6 +933,17 @@ class AE(object):
         if self.tiles:
             for t in self.tiles:
                 t.draw(drawSurface)
+
+
+    def drawNumber(self, position, number, drawSurface, row = 0):
+        if number >= 10:
+            currentPos = vec(position[0]-4, position[1])
+            number = str(number)
+            for char in number:
+                Number(currentPos, int(char), row).draw(drawSurface)
+                currentPos[0] += 6
+        else:
+            Number(position, number, row).draw(drawSurface)
 
     def draw(self, drawSurface):
         """

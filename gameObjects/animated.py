@@ -182,8 +182,10 @@ class Animated(Drawable):
         self.animationTimer += seconds
         
         if self.animationTimer > 1 / self.framesPerSecond:
+            
             self.frame += 1
             self.frame %= self.nFrames
+            
             self.animationTimer -= 1 / self.framesPerSecond
             self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                                 (self.frame, self.row))
@@ -231,11 +233,23 @@ class Fade():
             self.frame = 0
             self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                                     (0, 0))
-    
+
+
 class Tile(Animated):
     def __init__(self, position):
         super().__init__(position, "thunderTiles.png", (0,0))
         self.nFrames = 5
+
+
+class ForceField(Animated):
+    def __init__(self, position, color = 0):
+        super().__init__(position, "barrier.png", (0, color))
+        self.nFrames = 4
+        self.framesPerSecond = 8
+        self.dead = False
+        self.row = color
+        self.frame += color
+
 
 class Portal(Animated):
     def __init__(self, position, color):

@@ -46,7 +46,9 @@ class SpriteManager(object):
                        "flapper.png":(16,16), "dummy.png":(16,16), "david.png":(19,26), "thunderTiles.png":(16,16),
                        "portal.png":(16,16), "exclamation.png":(16,16), "z.png": (16,16), "fireIcon.png":(16,16),
                        "spinner.png":(32,32), "shotsfired.png":(16,16), "drops.png":(16,16),
-                       "baller.png":(16,16)
+                       "baller.png":(16,16), "barrier.png":(16,16), "pixels.png":(16,16), "map.png":(240,160),
+                       "numbers.png":(16,16),
+                       "mapRooms.png":(8,8)
          
       }
       
@@ -59,7 +61,8 @@ class SpriteManager(object):
                        "thunder.png", "energy.png", "gale.png", "indicator.png",
                        "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png",#Enemies
                        "exclamation.png", "z.png", "fireIcon.png", "shotsfired.png", "drops.png",
-                       "baller.png", "stunner.png", "mage.png"
+                       "baller.png", "stunner.png", "mage.png", "barrier.png", "pixels.png",
+                       "map.png", "mapRooms.png"
                        ]
       
       # A list of images that require to be loaded with a color key

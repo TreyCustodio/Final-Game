@@ -1,3 +1,3 @@
 #from .flame import *
 #from .thunder import *
-from .intro import *
+from .majestus import *

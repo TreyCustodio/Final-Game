@@ -155,7 +155,14 @@ class Enemy(Animated):
                 SoundManager.getInstance().playSFX("enemyhit.wav")
             else:
                 self.dead = True
-        
+            
+        elif other.type == 0:
+            self.hp -= other.damage
+            if self.hp > 0: 
+                SoundManager.getInstance().playSFX("enemyhit.wav")
+            else:
+                self.dead = True
+        #print(self.hp)
     def freeze(self, playSound = True):
         self.frozen = True
         self.nFrames = 1
@@ -288,7 +295,7 @@ class Mofos(Enemy):
         super().__init__(position, "mofos.png", direction)
         self.indicatorRow = 3
         self.speed = 20
-        self.maxHp = 10
+        self.maxHp = 100
         self.hp = self.maxHp
         self.damage = 1
 

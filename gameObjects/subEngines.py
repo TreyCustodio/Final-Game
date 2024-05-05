@@ -1,6 +1,6 @@
 import pygame
 
-from . import Drawable,  Text, Highlight
+from . import Drawable,  Animated, Text, Highlight, Map, Number
 
 from utils import  vec, RESOLUTION, SpriteManager, SoundManager, INV, INFO, COORD, EQUIPPED
 
@@ -287,6 +287,7 @@ class TextEngine(object):
 
 
 
+            
 
 class PauseEngine(object):
 
@@ -312,6 +313,7 @@ class PauseEngine(object):
             i.draw
         
         """
+        self.mapOpen = False
         self.paused = False
         self.textBox = False
         self.text = ""
@@ -353,11 +355,18 @@ class PauseEngine(object):
         Text((16*14 + 12, 16*11), str(INV["boltShard"])).draw(drawSurf)
         Text((16*15 + 12, 16*11), str(INV["galeShard"])).draw(drawSurf)
     
+    def drawMap(self, drawSurf):
+
+        Map.getInstance().draw(drawSurf)
+
     def draw(self, drawSurf):
         if not self.paused:
             self.paused = True
 
-
+        if self.mapOpen:
+            self.drawMap(drawSurf)
+            return
+        
         self.menu.draw(drawSurf)
         
         self.drawEquipped(drawSurf)
@@ -366,12 +375,44 @@ class PauseEngine(object):
         if INV["plant"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (0,0))
             drawSurf.blit(image, (COORD[3][4]))
-            Text((16*3+12, 16*4+4), str(INV["plant"]), small = True).draw(drawSurf)
+            Number(COORD[3][4], INV["plant"], row = 4).draw(drawSurf)
         
+        if INV["chanceEmblem"]:
+            image = SpriteManager.getInstance().getSprite("item.png", (4,0))
+            drawSurf.blit(image, (COORD[4][4]))
+
+        if INV["map0"]:
+            image = SpriteManager.getInstance().getSprite("item.png", (5,0))
+            drawSurf.blit(image, (COORD[5][4]))
+
+        if INV["syringe"]:
+            image = SpriteManager.getInstance().getSprite("item.png", (3,0))
+            drawSurf.blit(image, (COORD[3][7]))
+
+        
+
         if INV["potion"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (2,0))
-            drawSurf.blit(image, (COORD[3][7]))
-            Text((16*3+12, 16*7+4), str(INV["potion"]), small = True).draw(drawSurf)
+            drawSurf.blit(image, (COORD[4][7]))
+            #Text((16*4+12, 16*7+4), str(INV["potion"]), small = True).draw(drawSurf)
+            Number(COORD[4][7], INV["potion"], row = 4).draw(drawSurf)
+        if INV["beer"] >= 1:
+            image = SpriteManager.getInstance().getSprite("item.png", (6,0))
+            drawSurf.blit(image, (COORD[5][7]))
+            #Text((16*4+12, 16*7+4), str(INV["beer"]), small = True).draw(drawSurf)
+            Number(COORD[5][7], INV["beer"], row = 4).draw(drawSurf)
+        
+        if INV["joint"] >= 1:
+            image = SpriteManager.getInstance().getSprite("item.png", (7,0))
+            drawSurf.blit(image, (COORD[6][7]))
+            #Text((16*4+12, 16*7+4), str(INV["beer"]), small = True).draw(drawSurf)
+            Number(COORD[6][7], INV["joint"], row = 4).draw(drawSurf)
+        
+        if INV["speed"] >= 1:
+            image = SpriteManager.getInstance().getSprite("item.png", (8,0))
+            drawSurf.blit(image, (COORD[7][7]))
+            #Text((16*4+12, 16*7+4), str(INV["beer"]), small = True).draw(drawSurf)
+            Number(COORD[7][7], INV["speed"], row = 4).draw(drawSurf)
 
         if INV["shoot"]:
             image = SpriteManager.getInstance().getSprite("item.png", (0,1))
@@ -419,6 +460,30 @@ class PauseEngine(object):
         min offset[1] = 0
         max offset[1] = 5
         """
+        if self.mapOpen and INV["map"+str(Map.getInstance().mapNum)]:
+            if event.type == KEYDOWN:
+                if event.key == K_x:
+                    #close map
+                    self.mapOpen = False
+                elif event.key == K_DOWN:
+                    if Map.getInstance().selectedPos[1] < 146.0:
+                        Map.getInstance().selectedPos[1] += 10
+                        Map.getInstance().updateSelected()
+                elif event.key == K_UP:
+                    #print(Map.getInstance().selectedPos[1])
+                    Map.getInstance().selectedPos[1] -= 10
+                    Map.getInstance().updateSelected()
+                elif event.key == K_LEFT:
+                    #print(Map.getInstance().selectedPos[0])
+                    Map.getInstance().selectedPos[0] -= 10
+                    Map.getInstance().updateSelected()
+                elif event.key == K_RIGHT:
+                    #print(Map.getInstance().selectedPos[0])
+                    Map.getInstance().selectedPos[0] += 10
+                    Map.getInstance().updateSelected()
+            
+            return
+        
         if event.type == KEYDOWN and event.key == K_c:
             if self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*6:
                 SoundManager.getInstance().playSFX("TextBox_Open.wav")
@@ -440,21 +505,34 @@ class PauseEngine(object):
             ##Will have to switch the order of conditionals. Check position first so that the program
             ##Doesn't check every inventory slot
             if self.highlighted[1] == 4:
-                self.promptFlag = ""
+                self.promptFlag = "quit"
                 self.text = "Y/NDo you wish to quit?"
 
+            ##  Key items   ##
             elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*4:
                 if INV["plant"] >= 1:
                     self.text = INFO["plant"]
                     return
+                
+            elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*4:
+                if INV["chanceEmblem"]:
+                    self.text = INFO["chance"]
+                    return
             
+            elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*4:
+                if INV["map0"]:
+                    self.mapOpen = True
+                    #Map.getInstance().updateHighlight()
+                    return
             
+            ##  Arrows  ##
             elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*5:
                 if INV["shoot"]:
                     self.text = INFO["shoot"]
                     return
                 
             
+            ##  Elements    ##
             elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*6:
                 if INV["fire"]:
                     self.text = INFO["fire"]
@@ -476,10 +554,31 @@ class PauseEngine(object):
                     self.text = INFO["slash"]
                     return
             
+            ##  Consumables   ##
             elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*7:
+                if INV["syringe"]:
+                    self.promptFlag = "syringe"
+                    self.text = "Y/NUse the syringe?"
+            elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*7:
                 if INV["potion"] >= 1:
                     self.promptFlag = "potion"
                     self.text = "Y/NDrink the potion?"
+            
+            elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*7:
+                if INV["beer"] >= 1:
+                    self.promptFlag = "beer"
+                    self.text = "Y/NDrink a beer?"
+            
+            elif self.highlight.position[0] == 16*6 and self.highlight.position[1] == 16*7:
+                if INV["joint"] >= 1:
+                    self.promptFlag = "joint"
+                    self.text = "Y/NSmoke a blunt?"
+            
+            elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*7:
+                if INV["speed"] >= 1:
+                    self.promptFlag = "speed"
+                    self.text = "Y/NDrink a can of speed?"
+
             else:
                 SoundManager.getInstance().playSFX("bump.mp3")
                 
@@ -508,12 +607,12 @@ class PauseEngine(object):
                 self.highlight.position[0] -= 16
 
     def update(self, seconds):
+        if self.mapOpen:
+            Map.getInstance().update(seconds)
         if self.promptResult:
-            if self.promptFlag == "potion":
-                #restore
-                pass
-            else:
+            if self.promptFlag == "quit":
                 pygame.quit()
+
         self.timer += seconds
         if self.timer >= .5:
             self.timer = 0

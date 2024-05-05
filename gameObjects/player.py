@@ -9,13 +9,15 @@ class Player(Animated):
     def __init__(self, position=vec(0,0), direction=2):
         super().__init__(position, "Link.png", (0, direction))  
         #Frames, vel, speed, and row
+        self.drunk = False#Buff to attack, nerf to speed
+        self.drunkTimer = 0
         self.height = 26
         self.width = 18
         self.framesPerSecond = 30
         self.frame = direction
         self.nFrames = 8
         self.vel = vec(0,0)
-        self.speed = 75
+        self.speed = 100
         self.row = direction # (0 down), (1 right), (2 up), (3 left)
         self.dying = False
         self.dead = False
@@ -38,7 +40,7 @@ class Player(Animated):
         self.positionLock = False
         self.collisionRect = pygame.Rect((self.position[0]+1,self.position[1]+7),(16,16))
         ##Weapons/items##
-        self.keys = 0
+        self.keys = 1
         #Bullet
         self.bullet = None
         self.arrowCount = 1
@@ -69,9 +71,9 @@ class Player(Animated):
         self.freezing = False
         self.blizzard = None
         #Else
-        self.items = []
-        self.hp = 5
-        self.max_hp = 5
+        
+        self.hp = 10
+        #self.max_hp = 5
         #self.ammo = F
         #self.max_ammo = 10
         self.ignoreCollision = False
@@ -83,12 +85,24 @@ class Player(Animated):
         
         
         
+    def drink(self):
+        self.drunkTimer += 30
+        self.speed = 60
+        self.drunk = True
+    
+    def undrink(self):
+        #print("A")
+        self.speed = 100
+        self.drunk = False
 
-
+    def smoke(self):
+        self.high = True
+    
     def heal(self, integer):
-        difference = self.max_hp - self.hp
+        INV["max_hp"]
+        difference = INV["max_hp"] - self.hp
         if integer > difference:
-            self.hp = self.max_hp
+            self.hp = INV["max_hp"]
         else:
             self.hp += integer
     """
@@ -193,6 +207,7 @@ class Player(Animated):
         self.moving = True
         self.movingTo = position
         self.keyLock()
+
         
         
 
@@ -252,6 +267,11 @@ class Player(Animated):
             self.row = direction
             self.vel[1] = -self.speed
 
+
+    def setWeaponDamage(self, weapon):
+        if self.drunk:
+            weapon.setDrunk()
+
     def handleEvent(self, event, interactableObject = None, engine = None):
         
 
@@ -270,9 +290,10 @@ class Player(Animated):
                     if event.key == pygame.K_x and INV["shoot"] and self.arrowCount > 0 and self.arrowReady and not self.invincible: #and self.ammo > 0:
                         #Fire bullet
                         SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
-                        self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp, self.max_hp)
+                        self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp)
                         self.arrowCount -= 1
                         self.arrowReady = False
+                        self.setWeaponDamage(self.bullet)
                     
                     if event.key == pygame.K_a:
                         #Hook
@@ -293,16 +314,19 @@ class Player(Animated):
                                         self.positionLock = True
                                         self.directionLock = True
                                         self.increaseSwordCounter()
+                                        self.setWeaponDamage(self.sword)
 
                                     elif equippedC == 1 and self.freezing == False:
                                         self.frame = 0
                                         if self.blizzard == None:
                                             self.blizzard = Blizzard(self.position, self.getDirection(self.row))
+                                            self.setWeaponDamage(self.blizzard)
                                         self.stop()
                                         self.freezing = True
 
                                     elif equippedC == 2 and self.clapReady:
                                         self.clap = Clap(self.position)
+                                        self.setWeaponDamage(self.clap)
                                         self.clapReady = False
                                         self.vel = vec(0,0)
                                         self.positionLock = True
@@ -495,10 +519,21 @@ class Player(Animated):
         if self.invincible or enemy.frozen:
             pass
         else:
-            self.hp -= enemy.getDamage()
-            SoundManager.getInstance().playSFX("samus_damage.wav")
-            self.invincible = True
-            self.knockback(side)
+            if INV["chanceEmblem"]:
+                if self.hp == 1:
+                    self.hp = 0
+                else:
+                    self.hp -= enemy.getDamage()
+                    if self.hp <= 0:
+                        self.hp = 1
+                    SoundManager.getInstance().playSFX("samus_damage.wav")
+                    self.invincible = True
+                    self.knockback(side)
+            else:
+                self.hp -= enemy.getDamage()
+                SoundManager.getInstance().playSFX("samus_damage.wav")
+                self.invincible = True
+                self.knockback(side)
             
     def preventCollision(self, object, side):
         #print("object", object)
@@ -580,7 +615,7 @@ class Player(Animated):
                 self.slash = Slash(self.position, self.getDirection(self.row), 1)
             else:
                 self.slash = Slash(self.position, self.getDirection(self.row), 2)
-        
+            self.setWeaponDamage(self.slash)
         if self.charged:
             self.charged = False
         self.charging = False
@@ -644,9 +679,15 @@ class Player(Animated):
                 
             return
         
+        if self.drunk:
+            self.drunkTimer -= seconds
+            if self.drunkTimer <= 0:
+                self.drunkTimer = 30
+                self.undrink()
+
         if not self.arrowReady:
             self.arrowTimer += seconds
-            if self.hp == self.max_hp:
+            if self.hp == INV["max_hp"]:
                 if self.arrowTimer >= 0.1:
                     self.arrowReady = True
                     self.arrowTimer = 0
@@ -665,7 +706,11 @@ class Player(Animated):
         if self.charging:
             self.chargeTimer += seconds
             if self.chargeTimer >= 2.5:
-                self.charged = True
+                if self.chargeTimer >= 2.9:
+                    self.chargeTimer = 2.5
+                if not self.charged:
+                    self.charged = True
+                
                 #Play a sound or something?
             super().updatePlayer(seconds)
             self.position += self.vel * seconds

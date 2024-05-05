@@ -37,8 +37,11 @@ class AbstractWeapon(Animated):
         self.hit = False
         self.direction = direction
         self.vel = vec(0,0)
+        self.damage = 0
 
-
+    def setDrunk(self):
+        self.damage = int(self.damage * 1.5)
+        
     def setVelocity(self, direction, speed):
         if direction == 0:
             self.vel = vec(0,speed)
@@ -97,23 +100,26 @@ class Bullet(AbstractWeapon):
     Arrows. Speed boost at full health. Damage boost at low health.
     """
     
-    def __init__(self, position = vec(0,0), direction = 0, hp = 5, max_hp = 5):
+    def __init__(self, position = vec(0,0), direction = 0, hp = 5):
         
         
-        if hp == max_hp:
+        if hp == INV["max_hp"]:
             self.speed = 900
-            self.damage = 2
+            damage = 2
             column = 1
-        elif hp <= max_hp/5 or hp == 1:
+        elif hp <= INV["max_hp"]/4 or hp == 1:
             self.speed = 300
-            self.damage = 6
+            damage = 6
             column = 2
         
         else:
-            self.damage = 2
+            damage = 2
             self.speed = 300
             column = 0
+
         super().__init__(position, "Bullet.png", column, direction)
+        self.damage = damage
+
         self.setVelocity(self.direction, self.speed)
         self.type = 0
         self.frame = 0
@@ -316,7 +322,6 @@ class Sword(AbstractWeapon):
 
 class Blizzard(AbstractWeapon):
     def __init__(self, position = vec(0,0), direction=0):
-        print(direction)
         super().__init__(position, "blizz.png", 0, direction)
         
         self.row = direction
@@ -337,6 +342,7 @@ class Blizzard(AbstractWeapon):
             self.position[0] -= 30
 
         self.type = 2
+        self.framesPerSecond = 32
     
 
     def handleCollision(self, engine):
@@ -346,10 +352,12 @@ class Blizzard(AbstractWeapon):
         super().draw(drawSurface)
 
     def getCollisionRect(self):
-        return pygame.Rect((self.position[0], self.position[1]), (32,32))
+        return pygame.Rect((self.position[0]+2, self.position[1]+3), (28,26))
     
 
     def update(self, seconds, engine):
+        if self.frame == 8:
+            self.frame = 5
         super().updateWeapon(seconds)
         if not engine.player.freezing:
             engine.disappear(self)
@@ -375,7 +383,7 @@ class Clap(AbstractWeapon):
         return pygame.Rect(((self.position[0]),self.position[1]), (64,64))
     
     def update(self,seconds, engine):
-        super().update(seconds)
+        super().updateWeapon(seconds)
         if self.frame == 4:
             engine.disappear(self)
         else:

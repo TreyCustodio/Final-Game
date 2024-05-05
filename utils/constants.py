@@ -63,10 +63,11 @@ Indicates what C attack and what type of arrow is equipped
 """
 EQUIPPED = {
 
-    "C": 0,
-    "Arrow": 0
+    "C": 3,
+    "Arrow": 0,
+    "room":0,
     #0 -> regular, 1 -> fire, 2 -> ice, 3- -> thunder, 4-> wind, 5-> super, 6-> hyper
-
+    "area":0,
 }
 
 
@@ -75,17 +76,28 @@ EQUIPPED = {
 The Player's inventory
 """
 INV = {
-    "max_hp": 5,
-    "plant": 0,
+    "max_hp": 10,
+    "plant": 1,
     "shoot": True,
     "fire": True,
     "clap": True,
     "slash": True,
     "cleats": True,
-    "potion": 0,
+    "potion": 1,
+    "beer": 5,
+    "joint":1,
+    "speed":1,
     "wallet": 20,
-    "money": 0,
-    "chanceEmblem": False,
+    "money": 20,
+
+    "map0":True,
+    "map1":False,
+    "map2":False,
+    "map3":False,
+    "map4":False,
+
+    "chanceEmblem": True,
+    "syringe":True,
     "flameShard": 0,
     "frostShard": 0,
     "boltShard": 0,
@@ -239,7 +251,12 @@ Equip with C.",
 
 "slash":
 "The blessing of wind.\n\
-Equip with C."
+Equip with C.",
+
+"chance":
+"Chance Emblem\n\
+Survive any attack,\n\
+if you have more than 1 HP."
 }
 
 

@@ -127,6 +127,8 @@ class Torch(Animated):
             self.interactIcon.draw(drawSurface)
     
     def update(self, seconds):
+        
         super().update(seconds)
+        
         if self.interactable:
             self.interactIcon.update(seconds)

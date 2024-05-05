@@ -8,6 +8,7 @@ from.specialBlocks import *
 from .weapons import *
 from .enemy import *
 from .player import *
+from .map import *
 from .engine import *
 from .subEngines import *
 

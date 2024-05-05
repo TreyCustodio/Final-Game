@@ -83,10 +83,22 @@ class ScreenManager(object):
     def handleEvent(self, event):
         if self.state == "game":
             if not self.game.pause_lock:
+                if event.type == pygame.WINDOWMOVED:
+                    self.state.pause()
+                    return
+
                 if event.type == KEYDOWN and event.key == K_RETURN:
                     self.game.player.stop()
                     SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
+                    Map.getInstance().updateHighlight()
                     self.state.pause()
+                    return
+                elif event.type == KEYDOWN and event.key == K_LSHIFT:
+                    self.game.player.stop()
+                    SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
+                    Map.getInstance().updateHighlight()
+                    self.state.pause()
+                    self.pauseEngine.mapOpen = True
                     return
                 
                 else:
@@ -96,9 +108,10 @@ class ScreenManager(object):
             if event.type == KEYDOWN and event.key == K_r:
                 self.state.toMain()
 
-            elif event.type == KEYDOWN and (event.key == K_RETURN):
+            elif event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_LSHIFT):
                 self.pauseEngine.paused = False
                 SoundManager.getInstance().playSFX("OOT_PauseMenu_Close.wav")
+                self.pauseEngine.mapOpen = False
                 self.state.pause()
 
             else:
@@ -175,9 +188,26 @@ class ScreenManager(object):
                     if "Y/N" in self.pauseEngine.text:
                         
                         self.pauseEngine.promptResult = self.textEngine.promptResult
-                        if self.pauseEngine.promptResult and self.pauseEngine.promptFlag == "potion":
-                            INV["potion"] -= 1
-                            self.game.player.heal(3)
+                        if self.pauseEngine.promptResult:
+                            if self.pauseEngine.promptFlag == "potion":
+                                INV["potion"] -= 1
+                                self.game.player.heal(3)
+                            elif self.pauseEngine.promptFlag == "beer":
+                                INV["beer"] -= 1
+                                self.game.player.drink()
+                            elif self.pauseEngine.promptFlag == "joint":
+                                INV["joint"] -= 1
+                                self.game.player.smoke()
+                            elif self.pauseEngine.promptFlag == "speed":
+                                INV["speed"] -= 1
+                                self.game.player.smoke()
+
+                            elif self.pauseEngine.promptFlag == "syringe":
+                                if self.game.player.hp > INV["max_hp"]//4:
+                                    self.game.player.hp //=4
+                                    if self.game.player.hp < 1:
+                                        self.game.player.hp = 1
+                                
                         
 
                     self.pauseEngine.textBox = False
