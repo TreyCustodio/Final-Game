@@ -1,5 +1,6 @@
 import pygame
 
+from UI import EventManager
 from . import (Drawable, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
                WeightedSwitch, DamageIndicator, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
                PushableBlock, LockBlock, Bullet, Sword, Clap, Slash, Flapper, Number,
@@ -9,18 +10,47 @@ from . import (Drawable, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Ble
 
 
 from utils import SoundManager, vec, RESOLUTION, SPEECH, ICON, INV, COORD, FLAGS, EQUIPPED, UPSCALED
+class DamageNumberManager(object):
+    def __init__(self):
+        self.numbers = []
+        
+    def addNumber(self, position, value):
+        self.numbers.append(DamageNumber(position, value))
+    
+    def draw(self, engine, drawSurface):
+        print(self.numbers)
+        for num in self.numbers:
+            engine.drawNumber(num.damagePos, num.damage, drawSurface, row = 3)
+    
+    
+    def updateNumbers(self, engine, seconds):
+        for num in self.numbers:
+            num.damagePos[1] -= 20 * seconds
+            if num.damagePos[1] <= num.maxDamagePos:
+                self.numbers.pop(self.numbers.index(num))
+
+
+class DamageNumber(object):
+    def __init__(self, position, damage):
+        self.damage = damage
+        self.damagePos = position
+        self.maxDamagePos = self.damagePos[1]-8
+
 
 class AE(object):
     def __init__(self):
         """
         __init__ is only ever called once
         """
+
+
         self.area = 0
         self.roomId = 0
         self.itemsToCollect = 0
         self.mapCondition = False #True if pink, False if green
 
 
+        self.damageNums = DamageNumberManager()
         self.player = None
         self.resetting = False
         self.ignoreClear = False
@@ -70,7 +100,8 @@ class AE(object):
         self.drops = []
         self.indicator = DamageIndicator()
         self.moneyImage = Drawable((0, 16*10+6), fileName="Objects.png", offset= (0,6))
-
+        
+        
 
         #Size of the room
         self.size = vec(*RESOLUTION)
@@ -149,6 +180,7 @@ class AE(object):
         3. call createBlocks
         4. place the enemies in self.enemies
         """
+        EventManager.getInstance().toggleFetching()
         #SoundManager.getInstance().stopAllSFX()
         EQUIPPED["room"] = self.roomId
         if player != None:
@@ -311,6 +343,7 @@ class AE(object):
         keepBgm -> keeps the bgm
         intro -> special properties for transport because no player yet
         """
+        EventManager.getInstance().startTransition()
         if intro:
             self.transporting = True
             self.tra_room = room.getInstance()
@@ -334,6 +367,9 @@ class AE(object):
         self.tra_keepBGM = keepBGM
         if not keepBGM:
             SoundManager.getInstance().fadeoutBGM()
+        
+        pygame.event.clear()
+
         
     def displayText(self, text = "", icon = None, large = True):
         """
@@ -429,9 +465,21 @@ class AE(object):
                 
         self.player.handleEvent(event)
 
+    def interactableEvents_C(self, event):
+        if self.spawning:
+            for n in self.spawning:
+                if not n.drop and self.player.interactable(n):
+                    self.player.handleEvent_C(event, n, self)
+                    return
+                
+        self.player.handleEvent_C(event)
+
 
     def handleEvent(self, event):
         self.interactableEvents(event)
+    
+    def handleEvent_C(self, event):
+        self.interactableEvents_C(event)
     
     """
     Collision methods
@@ -589,8 +637,18 @@ class AE(object):
         if other.doesCollideProjectile(projectile):
             if not projectile.hit:
                 other.handleCollision(projectile)
+                if other.hit:
+                    if projectile.id == "slash" or projectile.id == "blizz":
+                        self.damageNums.addNumber(vec(projectile.position[0]+8, projectile.position[1]), projectile.damage)
+                    else:
+                        self.damageNums.addNumber(vec(projectile.position[0], projectile.position[1]), projectile.damage)
+                    other.hit = False
                 self.indicator.setImage(other.indicatorRow, other.hp, other.maxHp)
                 projectile.handleCollision(self)
+                
+                
+               
+
 
     def projectilesOnSpawning(self, projectile, other):
         if projectile.doesCollide(other):
@@ -752,9 +810,13 @@ class AE(object):
     
     def updateHUD(self, seconds):
         self.indicator.update(seconds)
+        self.damageNums.updateNumbers(self, seconds)
+        
 
     def handlePrompt(self):
         pass
+
+
     def update(self, seconds):
 
         if not self.mapCondition:
@@ -874,6 +936,10 @@ class AE(object):
         for switch in self.switches:
             switch.draw(drawSurface)
 
+    def drawDamage(self, drawSurface):
+        self.damageNums.draw(self, drawSurface)
+        
+        
     def drawHud(self, drawSurface):
         
         self.moneyImage.draw(drawSurface)
@@ -895,6 +961,7 @@ class AE(object):
         self.elementIcon.draw(drawSurface)
         self.indicator.draw(drawSurface)
         self.drawNumber(vec(0,0), self.player.hp, drawSurface)
+        self.drawDamage(drawSurface)
 
         
 

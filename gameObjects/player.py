@@ -9,6 +9,7 @@ class Player(Animated):
     def __init__(self, position=vec(0,0), direction=2):
         super().__init__(position, "Link.png", (0, direction))  
         #Frames, vel, speed, and row
+        self.analogTrack = 0.30
         self.drunk = False#Buff to attack, nerf to speed
         self.drunkTimer = 0
         self.height = 26
@@ -256,26 +257,222 @@ class Player(Animated):
             #print(self.vel)
             if self.vel[1] == 0:
                 self.row = 3
-            
             self.vel[0] = -self.speed
 
         # Y -> vel[1]
         elif direction == 0:#Down
             self.row = direction
             self.vel[1] = self.speed
+            
         elif direction == 2:#Up
             self.row = direction
             self.vel[1] = -self.speed
 
 
+    def move_C(self, event):
+        """
+        Joystick movement routine
+        Move diagonal.
+        """
+        ##  Directional Movement    ##
+        if event.axis == 1 and event.value >= self.analogTrack: # 2
+            self.move(0)
+            return
+
+        elif event.axis == 1 and event.value <= -self.analogTrack: # 0
+            self.move(2)
+            return
+            
+        elif event.axis == 0 and event.value <= -self.analogTrack: # 3
+            self.move(3)
+            return
+            
+        elif event.axis == 0 and event.value >= self.analogTrack: # 1
+            self.move(1)
+            return
+
     def setWeaponDamage(self, weapon):
         if self.drunk:
             weapon.setDrunk()
 
-    def handleEvent(self, event, interactableObject = None, engine = None):
+
+    def stopMoving(self, event):
+        """
+        Stop moving if |joystick value| is 0.2
+        """
+        ##Up motion
+        if self.vel[1] < 0 and event.axis == 1 and event.value > -0.2:
+            #Display the proper sprite for diagonal
+            if self.vel[0] < 0:
+                self.row = 3
+            elif self.vel[0] > 0:
+                self.row = 1
+            #Stop upward velocity
+            if self.vel[1] < 0:
+                self.vel[1] = 0
+
+        ##Down motion
+        elif self.vel[1] > 0 and event.axis == 1 and event.value < 0.2:
+            
+            #Display the proper sprite for diagonal
+            if self.vel[0] < 0:
+                self.row = 3
+            elif self.vel[0] > 0:
+                self.row = 1
+            #Stop downward velocity
+            if self.vel[1] > 0:
+                self.vel[1] = 0
+
+        ##Left
+        elif self.vel[0] < 0 and event.axis == 0 and event.value > -0.2:
+            #Stop leftward velocity
+            if self.vel[0] < 0:
+                self.vel[0] = 0
+
+        ##Right
+        elif self.vel[0] > 0 and event.axis == 0 and event.value < 0.2:
+        #Stop rightward velocity
+            if self.vel[0] > 0:
+                self.vel[0] = 0
+
+
+    def buttonsUp(self, event):
+        """
+        Buttons up routine
+        """
+        if self.freezing:
+            if event.button == 3:
+                #print("C")
+                #self.frame = 4
+                self.freezing = False
+            else:
+                return
+            
+        elif self.running:
+            if event.button == 0:
+                #Stop running
+                self.slow()
+
+        else:
+            if self.charging:
+                if event.button == 3:
+                    self.shootSlash()
+    
+
+    def buttonsDown(self, event):
+        if event.button == 2 and INV["shoot"] and self.arrowCount > 0 and self.arrowReady and not self.invincible: #and self.ammo > 0:
+            #Fire bullet
+            SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
+            self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp)
+            self.arrowCount -= 1
+            self.arrowReady = False
+            self.setWeaponDamage(self.bullet)
         
+        if event.button == 1:
+            #Hook
+            #SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
+            self.hook = Hook(self.position, self.getDirection(self.row))
+            self.keyLock()
+            
+        if not self.running:
+            if not self.charging:
+                if event.button == 3 and not self.invincible:
+                    equippedC = EQUIPPED["C"]
+                    if equippedC != None:
+                        if equippedC == 0 and self.swordReady:
+                            self.sword = Sword(self.position, self.getDirection(self.row))
+                            self.frame = -1
+                            self.swordReady = False
+                            self.vel = vec(0,0)
+                            self.positionLock = True
+                            self.directionLock = True
+                            self.increaseSwordCounter()
+                            self.setWeaponDamage(self.sword)
+
+                        elif equippedC == 1 and self.freezing == False:
+                            self.frame = 0
+                            if self.blizzard == None:
+                                self.blizzard = Blizzard(self.position, self.getDirection(self.row))
+                                self.setWeaponDamage(self.blizzard)
+                            self.stop()
+                            self.freezing = True
+
+                        elif equippedC == 2 and self.clapReady:
+                            self.clap = Clap(self.position)
+                            self.setWeaponDamage(self.clap)
+                            self.clapReady = False
+                            self.vel = vec(0,0)
+                            self.positionLock = True
+
+                        elif equippedC == 3:
+                            self.charge()
+
+
+                elif event.button == 0 and INV["cleats"] and not self.invincible  and ( self.walking and (not self.movingDiagonal()) ):
+                    #Tackle
+                    self.runningDirection = self.row
+                    self.run()
 
         
+    def analogMovement(self, event):
+        if self.swordReady:
+            self.move_C(event)
+        
+        """ elif event.key == pygame.K_RIGHT and self.runningDirection == 1:
+            self.stop()
+        elif event.key == pygame.K_UP and self.runningDirection == 2:
+            self.stop()
+        elif event.key == pygame.K_LEFT and self.runningDirection == 3:
+            self.stop()
+        elif event.key == pygame.K_DOWN and self.runningDirection == 0:
+            self.stop() """
+
+        self.stopMoving(event)
+            
+    def stopPushing(self, event):
+        self.stopMoving(event)
+
+    def handleEvent_C(self, event, interactableObject = None, engine = None):
+        """ if event.type == pygame.JOYAXISMOTION:
+            print(event.axis) """
+        #print(self.key_lock)
+        if not self.key_lock:
+            #print(1)
+            if not self.keyDown_lock and (not self.freezing):
+                #print(2)
+                if not self.pushing:
+                    #print(3)
+                    if interactableObject != None:
+                        if event.type == pygame.JOYBUTTONDOWN and event.button == 0:
+                            interactableObject.interact(engine)
+                            self.stop()
+                            return
+
+                    if event.type == pygame.JOYBUTTONDOWN:
+                        self.buttonsDown(event)
+                        return
+                    
+                    elif event.type == pygame.JOYBUTTONUP:
+                        self.buttonsUp(event)
+                        return
+
+                    elif event.type == pygame.JOYAXISMOTION:
+                        self.analogMovement(event)
+                        return
+                    
+                elif event.type == pygame.JOYAXISMOTION:
+                    #print(4)
+                    self.stopPushing(event)
+                    return
+                
+            if event.type == pygame.JOYBUTTONUP:
+                    self.buttonsUp(event)
+                    return
+            
+        elif event.type != pygame.JOYAXISMOTION and (self.vel[0] != 0 or self.vel[1] != 0):
+            self.stop()
+
+    def handleEvent(self, event, interactableObject = None, engine = None):
         if not self.key_lock:
             if not self.keyDown_lock and event.type == pygame.KEYDOWN and (not self.freezing):
                 if not self.pushing:

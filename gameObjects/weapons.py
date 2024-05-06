@@ -38,6 +38,7 @@ class AbstractWeapon(Animated):
         self.direction = direction
         self.vel = vec(0,0)
         self.damage = 0
+        self.id = ""
 
     def setDrunk(self):
         self.damage = int(self.damage * 1.5)
@@ -225,6 +226,7 @@ class Slash(AbstractWeapon):
     """
     def __init__(self, position = vec(0,0), direction = 0, chargeMultiplier = 0):
         super().__init__(position, "slash.png", 0, 0)
+        self.id = "slash"
         if chargeMultiplier == 1:
             self.damage = 10
         elif chargeMultiplier == 2:
@@ -268,7 +270,7 @@ class Sword(AbstractWeapon):
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, "fire.png", 0,direction)
         
-        
+        self.id = "flame"
         self.lifetime = 0.2#Seconds the swing lasts
         self.timer = 0
         self.soundCounter = 1#Rotates between 3 sounds
@@ -324,6 +326,7 @@ class Blizzard(AbstractWeapon):
     def __init__(self, position = vec(0,0), direction=0):
         super().__init__(position, "blizz.png", 0, direction)
         
+        self.id = "blizz"
         self.row = direction
         self.nFrames = 19
         self.damage = 1

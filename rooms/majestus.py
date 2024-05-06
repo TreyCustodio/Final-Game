@@ -1,6 +1,11 @@
 from gameObjects import *
 from utils import INTRO
-
+"""
+This module contains all data pertaining
+to each room's engine. Each class represents
+a room's engine, and they all inherit from
+AbstractEngine.
+"""
 
 """
 Intro Cutscene
@@ -48,7 +53,7 @@ class Intro_Cut(AbstractEngine):
                 self.background.draw(drawSurface)
 
             if self.textInt < 2:
-                Text(vec(0,0), text = "Press SPACE to skip text").draw(drawSurface)
+                Text(vec(0,0), text = "Press START to skip text").draw(drawSurface)
         
         
         def handleEvent(self):

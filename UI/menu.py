@@ -1,4 +1,4 @@
-from gameObjects import Drawable
+from gameObjects import Drawable, Text
 from utils.vector import vec, magnitude
 from . import TextEntry
 
@@ -49,11 +49,25 @@ class EventMenu(AbstractMenu):
         super().addOption(key, text, position, center)      
         self.eventMap[key] = eventLambda
     
+    def addEvent(self, key, eventLambda):
+        """
+        Adjust the options for starting the game
+        if you're using a controller
+        """
+        self.eventMap[key] = eventLambda
+        
+
+    def editText(self, key, text):
+        position = vec(self.options[key].position[0] + 18, self.options[key].position[1])
+        self.options[key] = Text(position, text)
+
     def handleEvent(self, event):      
         for key in self.eventMap.keys():
             function = self.eventMap[key]
             if function(event):
                 return key
+    
+    
         
     
     

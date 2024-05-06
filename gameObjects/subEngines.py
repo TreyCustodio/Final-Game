@@ -238,7 +238,7 @@ class TextEngine(object):
                     self.charIndex = 0
                     self.playSFX("message-finish.wav")
             
-                        
+                    
                 
                 
                 
@@ -271,8 +271,37 @@ class TextEngine(object):
                     self.playSFX("OOT_Dialogue_Next.wav")
                     self.box_drawn = False
                     self.ready_to_continue = False
-            
-            
+
+
+        def handleEvent_C(self, event):
+            if self.choosing:
+                if event.type == JOYAXISMOTION:
+                    if event.value >= 0.8 and self.highlighted == 0:
+                        self.highlighted = 1
+                        self.promptHighlight.position = vec(self.promptHighlight.position[0]+88, self.promptHighlight.position[1])
+                        self.playSFX("pause_cursor.wav")
+                    elif event.value <= -0.8 and self.highlighted == 1:
+                        self.highlighted = 0
+                        self.promptHighlight.position = vec(self.promptHighlight.position[0]-88, self.promptHighlight.position[1])
+                        self.playSFX("pause_cursor.wav")
+                elif event.type == JOYBUTTONDOWN and event.button == 0:
+                    self.playSFX("WW_Textbox_Close.wav")
+                    self.done = True
+                    if self.highlighted == 0:
+                        self.promptResult = False
+                    elif self.highlighted == 1:
+                        self.promptResult = True
+
+            ##Progress text
+            elif (event.type == pygame.JOYBUTTONDOWN and event.button == 0) and self.ready_to_continue:
+                if self.end == True:
+                    self.playSFX("WW_Textbox_Close.wav")
+                    self.done = True
+                else:
+                    self.playSFX("OOT_Dialogue_Next.wav")
+                    self.box_drawn = False
+                    self.ready_to_continue = False
+
 
         def update(self, seconds):
             self.displayTimer += seconds
@@ -319,6 +348,8 @@ class PauseEngine(object):
         self.text = ""
         self.icon = None
         self.boxPos = vec(30,64)
+        self.joyTimer = 0.0
+        self.trackAnalog = True
 
         self.menu = Drawable((0,0), "Pause.png")
         self.timer = 0
@@ -444,6 +475,184 @@ class PauseEngine(object):
                 self.highlight.draw(drawSurf)
 
 
+    def equipElement(self):
+        if self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*6:
+                SoundManager.getInstance().playSFX("TextBox_Open.wav")
+                EQUIPPED["C"] = 0
+        elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*6:
+            SoundManager.getInstance().playSFX("TextBox_Open.wav")
+            EQUIPPED["C"] = 1
+        elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*6:
+            SoundManager.getInstance().playSFX("TextBox_Open.wav")
+            EQUIPPED["C"] = 2
+        elif self.highlight.position[0] == 16*9 and self.highlight.position[1] == 16*6:
+            SoundManager.getInstance().playSFX("TextBox_Open.wav")
+            EQUIPPED["C"] = 3
+        else:
+            SoundManager.getInstance().playSFX("bump.mp3")
+
+
+    def showInfo(self):
+        if self.highlighted[1] == 4:
+                self.promptFlag = "quit"
+                self.text = "Y/NDo you wish to quit?"
+
+        ##  Key items   ##
+        elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*4:
+            if INV["plant"] >= 1:
+                self.text = INFO["plant"]
+                return
+            
+        elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*4:
+            if INV["chanceEmblem"]:
+                self.text = INFO["chance"]
+                return
+        
+        elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*4:
+            if INV["map0"]:
+                self.mapOpen = True
+                #Map.getInstance().updateHighlight()
+                return
+        
+        ##  Arrows  ##
+        elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*5:
+            if INV["shoot"]:
+                self.text = INFO["shoot"]
+                return
+            
+        
+        ##  Elements    ##
+        elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*6:
+            if INV["fire"]:
+                self.text = INFO["fire"]
+                return
+        
+        elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*6:
+            if INV["cleats"]:
+                self.text = INFO["cleats"]
+                return
+            
+        
+        elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*6:
+            if INV["clap"]:
+                self.text = INFO["clap"]
+                return
+        
+        elif self.highlight.position[0] == 16*9 and self.highlight.position[1] == 16*6:
+            if INV["slash"]:  
+                self.text = INFO["slash"]
+                return
+        
+        ##  Consumables   ##
+        elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*7:
+            if INV["syringe"]:
+                self.promptFlag = "syringe"
+                self.text = "Y/NUse the syringe?"
+        elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*7:
+            if INV["potion"] >= 1:
+                self.promptFlag = "potion"
+                self.text = "Y/NDrink the potion?"
+        
+        elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*7:
+            if INV["beer"] >= 1:
+                self.promptFlag = "beer"
+                self.text = "Y/NDrink a beer?"
+        
+        elif self.highlight.position[0] == 16*6 and self.highlight.position[1] == 16*7:
+            if INV["joint"] >= 1:
+                self.promptFlag = "joint"
+                self.text = "Y/NSmoke a blunt?"
+        
+        elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*7:
+            if INV["speed"] >= 1:
+                self.promptFlag = "speed"
+                self.text = "Y/NDrink a can of speed?"
+
+        else:
+            SoundManager.getInstance().playSFX("bump.mp3")
+
+    def handleEvent_C(self, event):
+        if self.mapOpen and INV["map"+str(Map.getInstance().mapNum)]:
+            if event.type == JOYBUTTONDOWN:
+                if event.button == 2:
+                    #close map
+                    self.mapOpen = False
+            
+            if event.type == JOYAXISMOTION and self.trackAnalog:
+                if event.axis == 1 and event.value < -0.8:
+                    if Map.getInstance().selectedPos[1] < 146.0:
+                        Map.getInstance().selectedPos[1] += 10
+                        Map.getInstance().updateSelected()
+
+                elif event.axis == 1 and event.value > 0.8:
+                    #print(Map.getInstance().selectedPos[1])
+                    Map.getInstance().selectedPos[1] -= 10
+                    Map.getInstance().updateSelected()
+
+                elif event.axis == 0 and event.value < 0.8:
+                    #print(Map.getInstance().selectedPos[0])
+                    Map.getInstance().selectedPos[0] -= 10
+                    Map.getInstance().updateSelected()
+                elif event.axis == 0 and event.value > 0.8:
+                    #print(Map.getInstance().selectedPos[0])
+                    Map.getInstance().selectedPos[0] += 10
+                    Map.getInstance().updateSelected()
+            return
+        
+        if event.type == JOYBUTTONDOWN:
+            if event.button == 0:
+                self.showInfo()
+            elif event.button == 3:
+                self.equipElement()
+
+
+        if event.type == JOYAXISMOTION and self.trackAnalog:
+            if event.axis == 1 and event.value < -0.8:
+                #print("A")
+                if self.highlighted[1] != 0:
+                    SoundManager.getInstance().playSFX("pause_cursor.wav")
+                    self.highlighted[1] -= 1
+                    self.highlight.position[1] -= 16
+                self.trackAnalog = False
+                    
+
+            elif event.axis == 1 and event.value > 0.8:
+                #print("A")
+                if self.highlighted[1] != 4:
+                    SoundManager.getInstance().playSFX("pause_cursor.wav")
+                    self.highlighted[1] += 1
+                    self.highlight.position[1] += 16
+                self.trackAnalog = False
+            
+            ##Move right
+            elif event.axis == 0 and event.value > 0.8:
+                #print("A")
+                if self.highlighted[0] != 7 and self.highlighted[1] != 4:
+                    SoundManager.getInstance().playSFX("pause_cursor.wav")
+                    self.highlighted[0] += 1
+                    self.highlight.position[0] += 16
+                self.trackAnalog = False
+
+            elif event.axis == 0 and event.value < -0.8:
+                #print("A")
+                if self.highlighted[0] != 0 and self.highlighted[1] != 4:
+                    SoundManager.getInstance().playSFX("pause_cursor.wav")
+                    self.highlighted[0] -= 1
+                    self.highlight.position[0] -= 16
+                self.trackAnalog = False
+                    
+            """ 
+            elif event.axis == 0 and event.value < 0.1:
+                if self.highlighted[0] != 7 and self.highlighted[1] != 4:
+                    SoundManager.getInstance().playSFX("pause_cursor.wav")
+                    self.highlighted[0] += 1
+                    self.highlight.position[0] += 16
+
+            elif event.axis == 0 and event.value > 0.1:
+                if self.highlighted[0] != 0 and self.highlighted[1] != 4:
+                    SoundManager.getInstance().playSFX("pause_cursor.wav")
+                    self.highlighted[0] -= 1
+                    self.highlight.position[0] -= 16 """
 
     def handleEvent(self, event):
         """
@@ -485,102 +694,13 @@ class PauseEngine(object):
             return
         
         if event.type == KEYDOWN and event.key == K_c:
-            if self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*6:
-                SoundManager.getInstance().playSFX("TextBox_Open.wav")
-                EQUIPPED["C"] = 0
-            elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*6:
-                SoundManager.getInstance().playSFX("TextBox_Open.wav")
-                EQUIPPED["C"] = 1
-            elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*6:
-                SoundManager.getInstance().playSFX("TextBox_Open.wav")
-                EQUIPPED["C"] = 2
-            elif self.highlight.position[0] == 16*9 and self.highlight.position[1] == 16*6:
-                SoundManager.getInstance().playSFX("TextBox_Open.wav")
-                EQUIPPED["C"] = 3
-            else:
-                SoundManager.getInstance().playSFX("bump.mp3")
+            self.equipElement()
 
         if event.type == KEYDOWN and event.key == K_z:
             ##Selecting an item and pulling up textbox
             ##Will have to switch the order of conditionals. Check position first so that the program
             ##Doesn't check every inventory slot
-            if self.highlighted[1] == 4:
-                self.promptFlag = "quit"
-                self.text = "Y/NDo you wish to quit?"
-
-            ##  Key items   ##
-            elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*4:
-                if INV["plant"] >= 1:
-                    self.text = INFO["plant"]
-                    return
-                
-            elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*4:
-                if INV["chanceEmblem"]:
-                    self.text = INFO["chance"]
-                    return
-            
-            elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*4:
-                if INV["map0"]:
-                    self.mapOpen = True
-                    #Map.getInstance().updateHighlight()
-                    return
-            
-            ##  Arrows  ##
-            elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*5:
-                if INV["shoot"]:
-                    self.text = INFO["shoot"]
-                    return
-                
-            
-            ##  Elements    ##
-            elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*6:
-                if INV["fire"]:
-                    self.text = INFO["fire"]
-                    return
-            
-            elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*6:
-                if INV["cleats"]:
-                    self.text = INFO["cleats"]
-                    return
-                
-            
-            elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*6:
-                if INV["clap"]:
-                    self.text = INFO["clap"]
-                    return
-            
-            elif self.highlight.position[0] == 16*9 and self.highlight.position[1] == 16*6:
-                if INV["slash"]:  
-                    self.text = INFO["slash"]
-                    return
-            
-            ##  Consumables   ##
-            elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*7:
-                if INV["syringe"]:
-                    self.promptFlag = "syringe"
-                    self.text = "Y/NUse the syringe?"
-            elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*7:
-                if INV["potion"] >= 1:
-                    self.promptFlag = "potion"
-                    self.text = "Y/NDrink the potion?"
-            
-            elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*7:
-                if INV["beer"] >= 1:
-                    self.promptFlag = "beer"
-                    self.text = "Y/NDrink a beer?"
-            
-            elif self.highlight.position[0] == 16*6 and self.highlight.position[1] == 16*7:
-                if INV["joint"] >= 1:
-                    self.promptFlag = "joint"
-                    self.text = "Y/NSmoke a blunt?"
-            
-            elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*7:
-                if INV["speed"] >= 1:
-                    self.promptFlag = "speed"
-                    self.text = "Y/NDrink a can of speed?"
-
-            else:
-                SoundManager.getInstance().playSFX("bump.mp3")
+            self.showInfo()
                 
         if event.type == KEYDOWN and event.key == K_UP:
             if self.highlighted[1] != 0:
@@ -616,4 +736,10 @@ class PauseEngine(object):
         self.timer += seconds
         if self.timer >= .5:
             self.timer = 0
+        
+        if not self.trackAnalog:
+            self.joyTimer += seconds
+            if self.joyTimer >= 0.2:
+                self.joyTimer = 0.0
+                self.trackAnalog = True
         

@@ -20,6 +20,7 @@ class Enemy(Animated):
         if fileName != "":
             self.image = SpriteManager.getInstance().getEnemy(fileName, direction)
         
+        self.hit = False
         #Animation properties
         self.indicatorRow = 0
         self.fileName = fileName
@@ -122,6 +123,9 @@ class Enemy(Animated):
         else:
             self.hp = self.maxHp
 
+    def hurt(self, damage):
+        self.hit = True
+        self.hp -= damage
 
     def handlePlayerCollision(self, player):
         """
@@ -147,9 +151,9 @@ class Enemy(Animated):
                 self.heal(other.damage)
             elif self.shield > 0:
                 if other.type.beats(self.type):
-                    self.hp -= other.damage
+                    self.hurt(other.damage)
             else:
-                self.hp -= other.damage
+                self.hurt(other.damage)
 
             if self.hp > 0:
                 SoundManager.getInstance().playSFX("enemyhit.wav")
@@ -157,7 +161,7 @@ class Enemy(Animated):
                 self.dead = True
             
         elif other.type == 0:
-            self.hp -= other.damage
+            self.hurt(other.damage)
             if self.hp > 0: 
                 SoundManager.getInstance().playSFX("enemyhit.wav")
             else:
@@ -322,6 +326,7 @@ class Mofos(Enemy):
 
     def update(self, seconds):
         super().update(seconds)
+        
 
 class Baller(Enemy):
     def __init__(self, position=vec(0,0), direction = 3):

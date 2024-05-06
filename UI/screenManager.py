@@ -13,6 +13,9 @@ from pygame.locals import *
 class ScreenManager(object):
       
     def __init__(self):
+        self.controller = "key"
+        self.controllerSet = False
+
         self.inIntro = False
         self.game = None # Add your game engine here!
         self.pauseEngine = PauseEngine()
@@ -25,19 +28,32 @@ class ScreenManager(object):
         self.pausedText.position = vec(*midpoint)
         
         self.mainMenu = EventMenu("title_screen.png", fontName="zelda")
+        
+        
         self.mainMenu.addOption("start", "Press ENTER to start",
-                                 RESOLUTION // 2 + vec(0,5),
-                                 lambda x: x.type == KEYDOWN and x.key == K_RETURN,
-                                 center="both")
+                                RESOLUTION // 2 + vec(0,5),
+                                lambda x: x.type == KEYDOWN and x.key == K_RETURN,
+                                center="both")
+        
+        
+
         self.mainMenu.addOption("tutorial", "Press SPACE to start in Grand Chapel",
-                                 RESOLUTION // 2 + vec(0,50),
-                                 lambda x: x.type == KEYDOWN and x.key == K_SPACE,
-                                 center="both")
-        """ self.mainMenu.addOption("exit", "Press ESC to quit",
-                                 RESOLUTION // 2 + vec(0,75),
-                                 lambda x: x.type == KEYDOWN and x.key == K_ESCAPE,
-                                 center="both") """
+                                RESOLUTION // 2 + vec(0,50),
+                                lambda x: x.type == KEYDOWN and x.key == K_SPACE,
+                                center="both")
+        
+
+                                    
     
+    def setController(self, text):
+        self.controller = text
+        if self.controller == "Controller (Xbox One For Windows)":
+            self.mainMenu.addEvent("start", lambda x: x.type == JOYBUTTONDOWN and x.button == 7)
+            self.mainMenu.addEvent("tutorial", lambda x: x.type == JOYBUTTONDOWN and x.button == 6)
+            self.mainMenu.editText("start", "Press START to play")
+            self.mainMenu.editText("tutorial", "Press SELECT to start in Grand Chapel")
+
+
     #Displaying Text
     def draw(self, drawSurf):
         """
@@ -76,7 +92,21 @@ class ScreenManager(object):
                 self.state.speakI()
                 #self.textEngine = TextEngine.getInstance()
                 self.textEngine.setText(self.intro.text, self.intro.icon, self.intro.largeText)
-            
+    
+    ##Event handling methods
+    def pause(self):
+        self.game.player.stop()
+        SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
+        Map.getInstance().updateHighlight()
+        self.state.pause()
+    
+    def openMap(self):
+        self.game.player.stop()
+        SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
+        Map.getInstance().updateHighlight()
+        self.state.pause()
+        self.pauseEngine.mapOpen = True
+
     
 
     #Entering game, pausing
@@ -87,46 +117,74 @@ class ScreenManager(object):
                     self.state.pause()
                     return
 
-                if event.type == KEYDOWN and event.key == K_RETURN:
-                    self.game.player.stop()
-                    SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
-                    Map.getInstance().updateHighlight()
-                    self.state.pause()
-                    return
-                elif event.type == KEYDOWN and event.key == K_LSHIFT:
-                    self.game.player.stop()
-                    SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
-                    Map.getInstance().updateHighlight()
-                    self.state.pause()
-                    self.pauseEngine.mapOpen = True
-                    return
-                
+                if self.controller == "Controller (Xbox One For Windows)":
+                    if event.type == JOYBUTTONDOWN and event.button == 7:
+                        self.pause()
+                    
+                    elif event.type == JOYBUTTONDOWN and event.button == 6:
+                        self.openMap()
+                        
+                    
+                    else:
+                        self.game.handleEvent_C(event)
+
                 else:
-                    self.game.handleEvent(event)
+
+                    if event.type == KEYDOWN and event.key == K_RETURN:
+                        self.pause()
+                        
+                    elif event.type == KEYDOWN and event.key == K_LSHIFT:
+                        self.openMap()
+                        
+                    
+                    else:
+                        self.game.handleEvent(event)
 
         elif self.state == "paused":
-            if event.type == KEYDOWN and event.key == K_r:
-                self.state.toMain()
+            if self.controller == "Controller (Xbox One For Windows)":
+                
 
-            elif event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_LSHIFT):
-                self.pauseEngine.paused = False
-                SoundManager.getInstance().playSFX("OOT_PauseMenu_Close.wav")
-                self.pauseEngine.mapOpen = False
-                self.state.pause()
+                if event.type == JOYBUTTONDOWN and (event.button == 7):
+                    self.pauseEngine.paused = False
+                    SoundManager.getInstance().playSFX("OOT_PauseMenu_Close.wav")
+                    self.pauseEngine.mapOpen = False
+                    self.state.pause()
 
-            else:
-                self.pauseEngine.handleEvent(event)
-                if self.pauseEngine.text != "":
-                    
-                    self.state.speakP()
-                    #self.textEngine = TextEngine.getInstance()
-                    if "Y/N" in self.pauseEngine.text:
-                        self.textEngine.setText(self.pauseEngine.text, prompt = True)
+                else:
+                    self.pauseEngine.handleEvent_C(event)
+                    if self.pauseEngine.text != "":
                         
-                    else:
-                        self.textEngine.setText(self.pauseEngine.text)
+                        self.state.speakP()
+                        #self.textEngine = TextEngine.getInstance()
+                        if "Y/N" in self.pauseEngine.text:
+                            self.textEngine.setText(self.pauseEngine.text, prompt = True)
+                            
+                        else:
+                            self.textEngine.setText(self.pauseEngine.text)
+            else:
+                if event.type == KEYDOWN and event.key == K_r:
+                    self.state.toMain()
+
+                elif event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_LSHIFT):
+                    self.pauseEngine.paused = False
+                    SoundManager.getInstance().playSFX("OOT_PauseMenu_Close.wav")
+                    self.pauseEngine.mapOpen = False
+                    self.state.pause()
+
+                else:
+                    self.pauseEngine.handleEvent(event)
+                    if self.pauseEngine.text != "":
+                        
+                        self.state.speakP()
+                        #self.textEngine = TextEngine.getInstance()
+                        if "Y/N" in self.pauseEngine.text:
+                            self.textEngine.setText(self.pauseEngine.text, prompt = True)
+                            
+                        else:
+                            self.textEngine.setText(self.pauseEngine.text)
                 
         elif self.state == "mainMenu":
+            
             choice = self.mainMenu.handleEvent(event)
 
             if choice == "start":
@@ -155,34 +213,68 @@ class ScreenManager(object):
             elif choice == "exit":
                 return "exit"
             
+
+
         elif self.state == "textBox":
-            if event.type == KEYDOWN and event.key == K_SPACE:
-                if self.pauseEngine.paused:
-                    self.pauseEngine.textBox = False
-                    self.pauseEngine.text = ""
-                    self.state.speakP()
-                elif self.inIntro:
-                    ##Skip the intro
-                    self.intro.textBox = False
-                    self.intro.text = ""
-                    self.intro.icon = None
-                    self.intro.fading = True
-                    self.state.speakI()
-                    self.intro.fading = True
-                    self.intro.textInt = 9
-                    
-                    
-                else:
-                    self.game.textBox = False
-                    self.game.text = ""
-                    self.game.icon = None
-                    self.state.speak()
-                #self.textEngine = TextEngine.tearDown()
-                self.textEngine.reset()
-                return
+            if self.controller == "Controller (Xbox One For Windows)":
+                if self.textEngine.ready_to_continue and event.type == JOYBUTTONDOWN and event.button == 2:
+                    if self.pauseEngine.paused:
+                        self.pauseEngine.textBox = False
+                        self.pauseEngine.text = ""
+                        self.state.speakP()
+
+                    elif self.inIntro:
+                        ##Skip the intro
+                        self.intro.textBox = False
+                        self.intro.text = ""
+                        self.intro.icon = None
+                        self.intro.fading = True
+                        self.state.speakI()
+                        self.intro.fading = True
+                        self.intro.textInt = 9
+                        
+                        
+                    else:
+                        self.game.textBox = False
+                        self.game.text = ""
+                        self.game.icon = None
+                        self.state.speak()
+                    #self.textEngine = TextEngine.tearDown()
+                    self.textEngine.reset()
+                    return
+                    ##Close the textBox
+            else:
+                if event.type == KEYDOWN and event.key == K_SPACE:
+                    if self.pauseEngine.paused:
+                        self.pauseEngine.textBox = False
+                        self.pauseEngine.text = ""
+                        self.state.speakP()
+                    elif self.inIntro:
+                        ##Skip the intro
+                        self.intro.textBox = False
+                        self.intro.text = ""
+                        self.intro.icon = None
+                        self.intro.fading = True
+                        self.state.speakI()
+                        self.intro.fading = True
+                        self.intro.textInt = 9
+                        
+                        
+                    else:
+                        self.game.textBox = False
+                        self.game.text = ""
+                        self.game.icon = None
+                        self.state.speak()
+                    #self.textEngine = TextEngine.tearDown()
+                    self.textEngine.reset()
+                    return
                     ##Close the textBox
 
-            self.textEngine.handleEvent(event)
+            if self.controller == "Controller (Xbox One For Windows)":
+                self.textEngine.handleEvent_C(event)
+            else:
+                self.textEngine.handleEvent(event)
+
             if self.textEngine.done:
                 if self.pauseEngine.paused:
                     if "Y/N" in self.pauseEngine.text:
@@ -230,10 +322,16 @@ class ScreenManager(object):
                     self.state.speak()
                 #self.textEngine = TextEngine.tearDown()
                 self.textEngine.reset()
+
         elif self.state == "intro":
-            if event.type == KEYDOWN and event.key == K_SPACE:
-                self.intro.fading = True
-                self.intro.textInt = 9
+            if self.controller == "Controller (Xbox One For Windows)":
+                if event.type == JOYBUTTONDOWN and event.button == 7:
+                    self.intro.fading = True
+                    self.intro.textInt = 9
+            else:
+                if event.type == KEYDOWN and event.key == K_SPACE:
+                    self.intro.fading = True
+                    self.intro.textInt = 9
 
     #Only runs if in game
     def handleCollision(self):
