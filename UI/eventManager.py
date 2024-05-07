@@ -28,7 +28,7 @@ class EventManager(object):
         
         def endTransition(self):
             pygame.event.clear()
-            print("A")
+            #print("A")
             #self.toggleFetching()
         
         def handleEvents(self, engine):
@@ -47,6 +47,5 @@ class EventManager(object):
                 else:
                     #gameEngine.handleEvent(event)
                     result = engine.handleEvent(event)
-                    
                     if result == "exit":
                         RUNNING = False

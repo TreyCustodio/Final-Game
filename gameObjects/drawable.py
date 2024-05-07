@@ -1,5 +1,5 @@
 from utils import SpriteManager, SCALE, RESOLUTION, EQUIPPED, INV, vec, rectAdd
-
+from . import PixelBuilder
 import pygame
 """
 This file contains Drawable Objects, including HUD-related objects
@@ -118,16 +118,6 @@ class Text(Drawable):
             self.image = Text.FONT.render(text, False, color)
 
 
-
-class DamageNum(Text):
-    """
-    Expects the damage an enemy receives as a paramater
-    and displays the damage dealt.
-    """
-    def __init__(self, position, num = 0):
-        super().__init__(position, str(num), color = (255, 0, 0))    
-
-
 class AmmoBar(Drawable):
     """
     Displays the currently selected arrow on the HUD
@@ -154,57 +144,155 @@ class DamageIndicator(Drawable):
     """
     def __init__(self):
         super().__init__(vec(RESOLUTION[0] - 58, 0), "indicator.png", (0,0) )
+        self.invisible = True
         self.row = 0
         self.indicatorTimer = 0
+        self.currentHp_before = 0
         self.currentHp = 0
         self.currentMaxHp = 0
-        self.pixel = pygame.Surface((1,1), pygame.SRCALPHA)
+        self.currentDrawPos = 0#X position of current draw position
+        self.pixelBuilder = PixelBuilder()
+        self.currentPixels = []
+        self.pixelsToDraw = 0
+
         
     
+    
     def draw(self, drawSurface):
-        #24*8 rectangle to fill with black from right to left
-        #on 1/4 hp fill the pixel with dark red
-        super().draw(drawSurface)
-        pixelCount = 24
-        #pixel
+        if not self.invisible:
+            super().draw(drawSurface)
+            if self.row > 0:
+                index = 0
+                for p in self.currentPixels:
+                    #print(index, p.getDrawPos())
+                    index += 1
+                    drawSurface.blit(p.getPixel(), p.getDrawPos())
+                
+                #self.currentPixels = []
+                #self.pixelBuilder.draw(drawSurface)
 
+    def setPixelsToDraw(self, value):
+        self.pixelsToDraw = value
 
-    def setImage(self, value, hp = 0, maxHp = 0):
+    def setImage(self, value, hp_before=0, hp_after=0, maxHp = 0, damage = 0):
         """
-        Change the frame based on the enemy's hp
+        Called every time an enemy is struck.
+        Start from far right
+        Calculate # of pixels to turn white based on damage and max hp
+        Subtract drawPos[0] and increase the width of the pixels
+        to draw by the same amount
+        Turn that # of pixels white
+        Wait a bit
+        Gradually turn the white pixels black
+        But just fill in the pixels with black according to
+        hp_before
+
+        Expects the following parameters:
+        value -> int value of enemy's indicator image row
+        hp_before -> enemy's hp before taking damage
+        hp_after -> enemy's hp after taking damage
+        maxHp -> enemy's max hp
+        damage -> the damage dealt to the enemy
+
+        MaxHp - previous hp, draw those pixels
+        then draw current pixels
         """
-        self.currentHp = hp
-        self.currentMaxHp = maxHp
+        ##Turn invisible and return if setImage(0) called
+        if value == 0:
+            #self.pixelsToDraw = 0
+            self.image = SpriteManager.getInstance().getSprite("indicator.png", (0, value))
+            self.invisible = True
+            return
+        
+        self.invisible = False
+        ##Reset the indicator timer
         self.indicatorTimer = 0
+        ##Set the row value if not already set to that row
         if value != self.row:
             self.row = value
         
-        self.image = SpriteManager.getInstance().getSprite("indicator.png", (0, value))
-        if hp <= 0:
+        ##Defining temporary variables
+        self.currentHp_before = hp_before
+        self.currentHp = hp_after
+        self.currentMaxHp = maxHp
+        #Temporary list object used to draw the pixels
+        currentPixels = []
+
+        
+        cumulativeDamage = self.currentMaxHp - self.currentHp 
+        result = self.currentMaxHp // 28
+        if result == 0:
+            #Figure out how to draw x pixels for every 1 pt of damage
+            result = 1
+        else:
+            #draw 1 pixel for every result points of damage
+            self.setPixelsToDraw(cumulativeDamage // result)
+        print(self.pixelsToDraw)
+
+        #pixelsToDraw = int(pixelsPerHit * damage)
+        #prevPixels = int(pixelsPerHit * (self.currentMaxHp - self.currentHp))
+        
+
+        ##Adjust drawPos to account for previously dealt damage
+        self.currentDrawPos = (self.position[0]+53)
+
+
+
+        #print("black", str(black))
+        #print("drawPos", str(self.currentDrawPos))
+        #print("pixelsPerHit", str(pixelsPerHit))
+        #print("pixelsToDraw", str(pixelsToDraw))
+
+
+        ##Set the indicator imagess
+        if self.currentHp <= 0:
+            #Enemy dead, make the indicator invisible
             self.row = 0
             self.image = SpriteManager.getInstance().getSprite("indicator.png", (0, 0))
             self.indicatorTimer = 0
-
-        """ elif hp == maxHp:
+        else:
             self.image = SpriteManager.getInstance().getSprite("indicator.png", (0, value))
 
-        elif hp <= maxHp/4:
-            self.image = SpriteManager.getInstance().getSprite("indicator.png", (4, value))
+        for i in range(self.pixelsToDraw):
+            self.pixelBuilder.addPixel(currentPixels, vec(self.currentDrawPos - i, self.position[1]+8), 1, 8, color = (0,0,0))
         
-        elif hp <= maxHp/2:
-            self.image = SpriteManager.getInstance().getSprite("indicator.png", (3, value))
-        
-        elif hp <= maxHp/1.333:
-            self.image = SpriteManager.getInstance().getSprite("indicator.png", (2, value))
-        
+        ##Need to figure out how to free up memory from lists
+        #print("Pixels:", currentPixels)
+        self.currentPixels = currentPixels
+
+
+        """         if black > 0:
+            #print("B")
+            ##Add black pixels
+            for i in range(black):
+                self.pixelBuilder.addPixel(self.currentPixels, vec(self.currentDrawPos - i, self.position[1]+8), 1, 8, color = (0,0,0))
+            
+            ##Add white pixels
+            for i in range(black, (pixelsToDraw - black)):
+                self.pixelBuilder.addPixel(self.currentPixels, vec(self.currentDrawPos - i, self.position[1]+8), 1, 8)
+
         else:
-            self.image = SpriteManager.getInstance().getSprite("indicator.png", (1, value))
-            self.indicatorTimer = 0 """
+            #print("C")
+            ##First hit
+            ##Add the necessary pixels to the pixelBuilder
+            ##pixelsToDraw needs to be an int for looping
+            for i in range(pixelsToDraw):
+                self.pixelBuilder.addPixel(self.currentPixels, vec(self.currentDrawPos - i, self.position[1]+8), 1, 8) """
+        
+        
     
     def update(self, seconds):
+        """
+        Update the pixelBuilder and indicatorTimer.
+        Set the indicator to invisible after 3 seconds
+        of no action.
+        """
         if self.row > 0:
+            #If currently targeting an enemy
+            #self.pixelBuilder.update(seconds)
             self.indicatorTimer += seconds
             if self.indicatorTimer >= 3:
+                #Set invisible
                 self.setImage(0)
 
 
@@ -350,26 +438,150 @@ class EnergyBar(Drawable):
             drawSurface.blit(SpriteManager.getInstance().getSprite("energy.png", (1, int(timer))), list(map(int, self.position)))
 
 
-class HealthBar(Drawable):
+class HealthBar(object):
     """
     Displays the player's health on the HUD
+    Make singleton!
     """
     def __init__(self):
-        super().__init__(vec(0,0), "bar.png", (0,0))
-    
-    #93 pixels to fill
-    #3 pixels at the end
-    #93 // maxHP = # of pixels each point of health is worth
+        self.position = vec(0,0)
+        self.fileName = "bar.png"
+        self.edge = SpriteManager.getInstance().getSprite(self.fileName, (6,0))
+        ##Green pixels
+        self.edgeG = SpriteManager.getInstance().getSprite(self.fileName, (7,0))
+        self.green = SpriteManager.getInstance().getSprite(self.fileName, (8,0))
+        ##Red pixels
+        self.edgeR = SpriteManager.getInstance().getSprite(self.fileName, (0,0))
+        self.red1 = SpriteManager.getInstance().getSprite(self.fileName, (1,0))
+        self.red2 = SpriteManager.getInstance().getSprite(self.fileName, (2,0))
+        self.red3 = SpriteManager.getInstance().getSprite(self.fileName, (3,0))
+        self.red4 = SpriteManager.getInstance().getSprite(self.fileName, (4,0))
+        self.red5 = SpriteManager.getInstance().getSprite(self.fileName, (5,0))
+        self.red6 = SpriteManager.getInstance().getSprite(self.fileName, (9,0))
+        self.red7 = SpriteManager.getInstance().getSprite(self.fileName, (10,0))
+        self.edgeL = SpriteManager.getInstance().getSprite(self.fileName, (11,0))
+        self.red8 = SpriteManager.getInstance().getSprite(self.fileName, (12,0))
+        self.drawPos = vec(16,0)
+
+    def getHeartImage(self, player):
+        if player.hp == INV["max_hp"]:
+            return SpriteManager.getInstance().getSprite(self.fileName, (0,1))
+        elif player.hp <= INV["max_hp"] / 4:
+            return SpriteManager.getInstance().getSprite(self.fileName, (0,3))
+        else:
+            return SpriteManager.getInstance().getSprite(self.fileName, (0,2))
+
+    def drawFull(self, drawSurface, player):
+        ##Green##
+        pixelsToDraw = INV["max_hp"] * 5
+        drawSurface.blit(self.edgeG, self.drawPos)
+        self.drawPos[0]+= 1
+        for i in range(pixelsToDraw):
+            drawSurface.blit(self.green, self.drawPos)
+            self.drawPos[0] += 1
+        drawSurface.blit(self.edgeG, self.drawPos)
+        self.drawPos[0] += 1
+        drawSurface.blit(self.edge, self.drawPos)
+        self.drawPos = vec(16,0)
+
+    def drawLow(self, drawSurface, player):
+        blackPix = (INV["max_hp"] * 5) - (player.hp * 5)
+        pixelsToDraw = player.hp * 5
+        drawSurface.blit(self.edgeL, self.drawPos)
+        self.drawPos[0] += 1
+        ##Regular red pixels
+        for i in range(pixelsToDraw-3):
+            drawSurface.blit(self.red1, self.drawPos)
+            self.drawPos[0] += 1
+        ##3 pixels for shading
+        drawSurface.blit(self.red2, self.drawPos)
+        self.drawPos[0] += 1
+        drawSurface.blit(self.red3, self.drawPos)
+        self.drawPos[0] += 1
+        drawSurface.blit(self.red4, self.drawPos)
+        self.drawPos[0] += 1
+        ##Darker pixels
+        for i in range(blackPix):
+            drawSurface.blit(self.red7, self.drawPos)
+            self.drawPos[0] += 1
+        drawSurface.blit(self.red8, self.drawPos)
+        self.drawPos[0] += 1
+        drawSurface.blit(self.edge, self.drawPos)
+        self.drawPos = vec(16,0)
+
+    def drawRed(self, drawSurface, player):
+        blackPix = (INV["max_hp"] * 5) - (player.hp * 5)
+        pixelsToDraw = player.hp * 5
+        drawSurface.blit(self.red6, self.drawPos)
+        self.drawPos[0] += 1
+        ##Regular red pixels
+        for i in range(pixelsToDraw-3):
+            drawSurface.blit(self.red1, self.drawPos)
+            self.drawPos[0] += 1
+        ##3 pixels for shading
+        drawSurface.blit(self.red2, self.drawPos)
+        self.drawPos[0] += 1
+        drawSurface.blit(self.red3, self.drawPos)
+        self.drawPos[0] += 1
+        drawSurface.blit(self.red5, self.drawPos)
+        self.drawPos[0] += 1
+        ##Darker pixels
+        for i in range(blackPix):
+            drawSurface.blit(self.red5, self.drawPos)
+            self.drawPos[0] += 1
+        drawSurface.blit(self.red6, self.drawPos)
+        self.drawPos[0] += 1
+        drawSurface.blit(self.edge, self.drawPos)
+        self.drawPos = vec(16,0)
 
     def draw(self, drawSurface, player):
+        """
+        Green at full, red at low.
+        Draw 5 pixels of the healthbar per 1 hp
+        """
+        ##Draw the heart image to the left
+        drawSurface.blit(self.getHeartImage(player), self.position)
+        
+
+        ##Full Health
         if player.hp == INV["max_hp"]:
+            self.drawFull(drawSurface, player)
+        
+        elif player.hp <= INV["max_hp"] / 4:
+            self.drawLow(drawSurface, player)
+        ##Regular Display
+        else:
+            self.drawRed(drawSurface, player)
+            
+
+        
+
+        
+        
+
+        
+
+
+
+
+
+
+
+
+
+        """ if player.hp == INV["max_hp"]:
+            pixelsToDraw = INV["max_hp"] * 5
+            for i in range(pixelsToDraw):
+                ##
             self.image = SpriteManager.getInstance().getSprite("bar.png", (0,1))
             super().draw(drawSurface)
             return
+        
         elif player.hp <= INV["max_hp"] / 4:
             self.image = SpriteManager.getInstance().getSprite("bar.png", (0,3))
         else:
             self.image = SpriteManager.getInstance().getSprite("bar.png", (0,2))
+        
         super().draw(drawSurface)
 
         pixelCount = 93 // INV["max_hp"]
@@ -381,7 +593,7 @@ class HealthBar(Drawable):
         for i in range(3):
             pixel = SpriteManager.getInstance().getSprite("pixels.png", (i+1,0))
             drawSurface.blit(pixel, (self.position[0]+17+(pixelsToDraw-3)+i, self.position[1]+2))
-
+ """
         
         """ if player.hp == INV["max_hp"]:
             self.image = SpriteManager.getInstance().getSprite("bar.png", (0,1))

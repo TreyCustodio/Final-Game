@@ -140,6 +140,10 @@ class Enemy(Animated):
 
 
     def handleCollision(self, other = None):
+        """
+        Enemy gets hurt, frozen, and healed.
+        Damage = other.damage
+        """
         
         if self.type != 2 and other.type == 2 and not self.frozen:
             self.freeze()
@@ -299,8 +303,8 @@ class Mofos(Enemy):
         super().__init__(position, "mofos.png", direction)
         self.indicatorRow = 3
         self.speed = 20
-        self.maxHp = 100
-        self.hp = self.maxHp
+        self.maxHp = 20
+        self.hp = 20
         self.damage = 1
 
     
@@ -899,7 +903,7 @@ class Dummy(Enemy):
         self.nFrames = 1
         self.totalFrames = 1
         self.speed = 0
-        self.maxHp = 6
+        self.maxHp = 5
         self.hp = self.maxHp
         self.damage = 0
     
@@ -911,7 +915,7 @@ class Dummy(Enemy):
             if self.row < 1:
                 self.row = 1
                 self.flashTimer = 0
-                self.hp -= other.damage
+                self.hurt(other.damage)
                 if self.hp > 0:
                     SoundManager.getInstance().playSFX("enemyhit.wav")
                 else:

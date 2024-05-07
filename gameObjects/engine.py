@@ -18,7 +18,6 @@ class DamageNumberManager(object):
         self.numbers.append(DamageNumber(position, value))
     
     def draw(self, engine, drawSurface):
-        print(self.numbers)
         for num in self.numbers:
             engine.drawNumber(num.damagePos, num.damage, drawSurface, row = 3)
     
@@ -638,12 +637,17 @@ class AE(object):
             if not projectile.hit:
                 other.handleCollision(projectile)
                 if other.hit:
+                    ##Display the damage indicator
+                    hp_after = other.hp
+                    hp_before = other.hp + projectile.damage
+                    self.indicator.setImage(other.indicatorRow, hp_before, hp_after, other.maxHp, projectile.damage)
+
+                    ##Display damage numbers appropriately
                     if projectile.id == "slash" or projectile.id == "blizz":
                         self.damageNums.addNumber(vec(projectile.position[0]+8, projectile.position[1]), projectile.damage)
                     else:
                         self.damageNums.addNumber(vec(projectile.position[0], projectile.position[1]), projectile.damage)
                     other.hit = False
-                self.indicator.setImage(other.indicatorRow, other.hp, other.maxHp)
                 projectile.handleCollision(self)
                 
                 
@@ -1004,7 +1008,7 @@ class AE(object):
 
     def drawNumber(self, position, number, drawSurface, row = 0):
         if number >= 10:
-            currentPos = vec(position[0]-4, position[1])
+            currentPos = vec(position[0]-3, position[1])
             number = str(number)
             for char in number:
                 Number(currentPos, int(char), row).draw(drawSurface)

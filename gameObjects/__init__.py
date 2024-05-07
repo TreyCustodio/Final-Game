@@ -1,3 +1,4 @@
+from .pixel import *
 from .drawable import *
 from .animated import *
 from .nonPlayer import *

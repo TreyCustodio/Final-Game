@@ -40,14 +40,14 @@ class SpriteManager(object):
       _SPRITE_SIZES = {"Objects.png":(16,16), "Bullet.png":(16,16), "blizz.png":(32,32), "slash.png": (32,32),"TextBox.png": (244,32), "geemer.png": (22,18),
                        "TextBox2.png": (244,64), "indicator.png":(58,32),
                        "icon.png": (32,32), "blockP.png":(16,16), "fire.png":(18,18), "black.png": (304, 208), 
-                       "bar.png":(112,16), "ammo.png": (16,16), "torch.png": (16,16), 
+                       "bar.png":(16,16), "ammo.png": (16,16), "torch.png": (16,16), 
                        "blessing.png":(16,16), "thunder.png":(64,64), "gale.png": (18,18),
                        "energy.png":(16,32), "item.png":(16,16),
                        "flapper.png":(16,16), "dummy.png":(16,16), "david.png":(19,26), "thunderTiles.png":(16,16),
                        "portal.png":(16,16), "exclamation.png":(16,16), "z.png": (16,16), "fireIcon.png":(16,16),
                        "spinner.png":(32,32), "shotsfired.png":(16,16), "drops.png":(16,16),
                        "baller.png":(16,16), "barrier.png":(16,16), "pixels.png":(16,16), "map.png":(240,160),
-                       "numbers.png":(16,16),
+                       "numbers.png":(16,16), 
                        "mapRooms.png":(8,8)
          
       }
@@ -62,7 +62,7 @@ class SpriteManager(object):
                        "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png",#Enemies
                        "exclamation.png", "z.png", "fireIcon.png", "shotsfired.png", "drops.png",
                        "baller.png", "stunner.png", "mage.png", "barrier.png", "pixels.png",
-                       "map.png", "mapRooms.png"
+                       "map.png", "mapRooms.png", "bar.png"
                        ]
       
       # A list of images that require to be loaded with a color key

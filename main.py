@@ -13,11 +13,19 @@ def main():
     screen = pygame.display.set_mode(list(map(int, UPSCALED)), flags=flags)
     drawSurface = pygame.Surface(list(map(int, RESOLUTION)))
 
-    rand = randint(0,1)
+    rand = randint(0,5)
     if rand == 1:
         pygame.display.set_caption("Majestus: I'll learn pixel art one day...")
+    elif rand == 2:
+        pygame.display.set_caption("Majestus: More than a Link to the Past clone!")
+    elif rand == 3:
+        pygame.display.set_caption("Majestus: I'll give you one try to guess what my favorite video game franchise is.")
+    elif rand == 4:
+        pygame.display.set_caption("Majestus: Super Metroid clone when?")
+    elif rand == 5:
+        pygame.display.set_caption("Majestus: RIP Big L")
     else:
-        pygame.display.set_caption("Majestus: Not a Zelda clone I swear!")
+        pygame.display.set_caption("Majestus: I got the caption idea from Minecraft!")
 
     iconSurf = pygame.Surface((32,32))
     

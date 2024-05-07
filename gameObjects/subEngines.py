@@ -701,27 +701,54 @@ class PauseEngine(object):
             ##Will have to switch the order of conditionals. Check position first so that the program
             ##Doesn't check every inventory slot
             self.showInfo()
-                
+        
+        """
+        Highlight positions
+        Top left (plant) = (16*3, 16*4)
+        highlighted = integer value corresponding to inv item
+        highlight.position = actual value to draw at (mult. of 16)
+        """
         if event.type == KEYDOWN and event.key == K_UP:
-            if self.highlighted[1] != 0:
+            if self.highlighted[1] == 0:
+                SoundManager.getInstance().playSFX("pause_cursor.wav")
+                self.highlighted[1] = 4
+                self.highlight.position[1] = 128
+
+            else:
                 SoundManager.getInstance().playSFX("pause_cursor.wav")
                 self.highlighted[1] -= 1
                 self.highlight.position[1] -= 16
 
         elif event.type == KEYDOWN and event.key == K_DOWN:
-            if self.highlighted[1] != 4:
+            #print(self.highlight.position[1])
+            if self.highlighted[1] == 4:
+                SoundManager.getInstance().playSFX("pause_cursor.wav")
+                self.highlighted[1] = 0
+                self.highlight.position[1] = 16*4
+            else:
                 SoundManager.getInstance().playSFX("pause_cursor.wav")
                 self.highlighted[1] += 1
                 self.highlight.position[1] += 16
 
         elif event.type == KEYDOWN and event.key == K_RIGHT:
-            if self.highlighted[0] != 7 and self.highlighted[1] != 4:
+            if self.highlighted[0] == 7:
+                SoundManager.getInstance().playSFX("pause_cursor.wav")
+                self.highlighted[0] = 0
+                self.highlight.position[0] = 16*3
+
+            elif self.highlighted[1] != 4:
                 SoundManager.getInstance().playSFX("pause_cursor.wav")
                 self.highlighted[0] += 1
                 self.highlight.position[0] += 16
 
         elif event.type == KEYDOWN and event.key == K_LEFT:
-            if self.highlighted[0] != 0 and self.highlighted[1] != 4:
+            #print(self.highlight.position[0])
+            if self.highlighted[0] == 0:
+                SoundManager.getInstance().playSFX("pause_cursor.wav")
+                self.highlighted[0] = 7
+                self.highlight.position[0] = 160
+
+            elif self.highlighted[1] != 4:
                 SoundManager.getInstance().playSFX("pause_cursor.wav")
                 self.highlighted[0] -= 1
                 self.highlight.position[0] -= 16

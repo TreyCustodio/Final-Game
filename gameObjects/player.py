@@ -9,7 +9,8 @@ class Player(Animated):
     def __init__(self, position=vec(0,0), direction=2):
         super().__init__(position, "Link.png", (0, direction))  
         #Frames, vel, speed, and row
-        self.analogTrack = 0.30
+        #Must reach this far to move player
+        self.analogTrack = 0.40
         self.drunk = False#Buff to attack, nerf to speed
         self.drunkTimer = 0
         self.height = 26
@@ -73,7 +74,7 @@ class Player(Animated):
         self.blizzard = None
         #Else
         
-        self.hp = 10
+        self.hp = INV["max_hp"]
         #self.max_hp = 5
         #self.ammo = F
         #self.max_ammo = 10
