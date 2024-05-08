@@ -614,7 +614,10 @@ class Intro_3(AbstractEngine):
             self.trigger1 = Trigger(door = 0)
             self.trigger2 = Trigger(door = 2)
             self.torches = []
-            self.npcs = [Dummy((COORD[8][5])), Dummy((COORD[9][5])), Dummy((COORD[10][5]))]
+            self.npcs = [Dummy((COORD[8][5])), 
+                         Dummy((COORD[9][5])), 
+                         #Dummy((COORD[10][5]))
+                         ]
             self.doors = [0,2]
 
             
@@ -774,7 +777,7 @@ class Grand_Chapel(AbstractEngine):
         def __init__(self):
             super().__init__()
             self.roomId = 4
-            self.bgm = "Got-my-mind-made-up.mp3"
+            self.bgm = None
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0

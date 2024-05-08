@@ -41,7 +41,7 @@ class AE(object):
         """
         __init__ is only ever called once
         """
-
+        self.healthBarDrawn = False
 
         self.area = 0
         self.roomId = 0
@@ -110,7 +110,7 @@ class AE(object):
         #self.transparentSurf = pygame.Surface(RESOLUTION)
         #self.transparentSurf.set_alpha(200)
         self.keyCount = Drawable((0, RESOLUTION[1]-16), "KeyCount.png")
-        self.healthBar = HealthBar()
+        self.healthBar = HealthBar.getInstance()
         self.ammoBar = AmmoBar()
         self.elementIcon = ElementIcon()
         self.energyBar = EnergyBar()
@@ -445,7 +445,6 @@ class AE(object):
         #Blizzard
         if self.player.blizzard != None and self.player.blizzard not in self.projectiles:
             self.projectiles.append(self.player.getBlizzard())
-            #print("A")
             #self.playSound("")
 
         if self.player.hook != None:
@@ -556,8 +555,12 @@ class AE(object):
                             n.freeze()
 
                     if not n.frozen:
-                        if n.handlePlayerCollision(self.player):
-                            self.player.handleCollision(n)
+                        if not self.player.invincible:
+                            if n.handlePlayerCollision(self.player):
+                                self.player.handleCollision(n)
+                                #player should be invincible now
+                                if self.player.invincible and not self.healthBar.drawingHurt:
+                                    self.healthBar.drawHurt(self.player.hp, n.damage)
                 else:
                     self.player.handleCollision(n)
 
@@ -815,6 +818,7 @@ class AE(object):
     def updateHUD(self, seconds):
         self.indicator.update(seconds)
         self.damageNums.updateNumbers(self, seconds)
+        self.healthBar.update(seconds)
         
 
     def handlePrompt(self):
@@ -959,7 +963,10 @@ class AE(object):
 
         self.keyCount.draw(drawSurface)
         Number((28, self.keyCount.position[1]), self.player.keys).draw(drawSurface)
-        self.healthBar.draw(drawSurface, self.player)
+        if self.healthBar.drawn:
+            self.healthBar.draw(drawSurface, self.player)
+        else:
+            self.healthBar.drawFirst(drawSurface, self.player)
         
         self.ammoBar.draw(drawSurface, self.player)
         self.elementIcon.draw(drawSurface)
@@ -1015,6 +1022,7 @@ class AE(object):
                 currentPos[0] += 6
         else:
             Number(position, number, row).draw(drawSurface)
+
 
     def draw(self, drawSurface):
         """
