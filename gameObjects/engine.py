@@ -207,7 +207,6 @@ class AE(object):
         self.player.keyUnlock()
 
 
-
     def createBounds(self):
         """
         Creates boundaries on the outer edge of the map
@@ -643,7 +642,7 @@ class AE(object):
                     ##Display the damage indicator
                     hp_after = other.hp
                     hp_before = other.hp + projectile.damage
-                    self.indicator.setImage(other.indicatorRow, hp_before, hp_after, other.maxHp, projectile.damage)
+                    #self.indicator.setImage(other.indicatorRow, hp_before, hp_after, other.maxHp, projectile.damage)
 
                     ##Display damage numbers appropriately
                     if projectile.id == "slash" or projectile.id == "blizz":
@@ -661,27 +660,6 @@ class AE(object):
         if projectile.doesCollide(other):
             if not projectile.hit:
                 projectile.handleCollision(self)
-
-    """ def projectileCollision(self, projectile, other):
-        if other.doesCollideProjectile(projectile):
-            other.handleCollision(projectile)
-            self.indicator.setImage(other.indicatorRow, other.hp, other.maxHp)
-            projectile.handleCollision(self) 
-
-
-         if issubclass(type(other),Enemy):
-            if other.doesCollideProjectile(projectile):
-                other.handleCollision(projectile)
-                self.indicator.setImage(other.indicatorRow, other.hp, other.maxHp)
-                projectile.handleCollision(self)
-                
-
-        elif projectile.doesCollide(other):
-            if type(projectile) == Bullet:
-                self.playSound("OOT_DekuSeed_Hit.wav")
-                self.disappear(projectile)
-                self.player.arrowCount += 1
-                self.player.shooting = False """
             
 
     def projectilesOnBlocks(self, block):
@@ -740,8 +718,6 @@ class AE(object):
     
     #Most likely to be modified for cutscenes
     def updateSpawning(self, seconds):
-        
-
         ##  NPCs
         for n in self.spawning:
             n.update(seconds)
@@ -749,31 +725,24 @@ class AE(object):
                 self.disappear(n)
                 self.dropCount -= 1
           
-    
 
     def updatePlayer(self, seconds):
         if self.player.dying:
             self.player.update(seconds)
             if self.player.headingOut:
                 self.boxPos = vec(32,RESOLUTION[1]-74)
-                
                 self.displayText("Aight, Imma head out.&&")
                 self.player.headingOut = False
                 self.player.walking = True
                 self.player.vel[1] = 0
                 self.player.vel[0] = self.player.speed
-                
-                
         elif self.player.hp <= 0:
-            
             #DIE
             self.player.die()
             self.pause_lock = True
             self.dying = True
             SoundManager.getInstance().fadeoutBGM()
             self.player.update(seconds)
-            #pygame.quit()
-        
         else:
             self.player.update(seconds)
     
@@ -788,19 +757,6 @@ class AE(object):
         for p in self.projectiles:
             p.update(seconds, self)
 
-            
-            """ if type(p) == Clap:
-                if p.frame == 4:
-                    self.disappear(p)
-            elif type(p) == Slash:
-                if (p.position[0] <= 0 or p.position[0] >= RESOLUTION[0]) or (p.position[1] <= 0 or p.position[1] >= RESOLUTION[1]):
-                    self.disappear(p)
-            elif (type(p) == Sword) and p.frame == 4: #and p.timer >= p.lifetime:
-                self.disappear(p)
-            elif type(p) == Blizzard and not self.player.freezing:
-                self.disappear(p)
-                #self.player.unlockPosition() 
-            """
     
     def updatePushableBlocks(self,seconds):
         if self.pushableBlocks:
@@ -826,11 +782,9 @@ class AE(object):
 
 
     def update(self, seconds):
-
         if not self.mapCondition:
             if self.itemsToCollect == 0:
                 self.mapCondition = True
-           
                 Map.getInstance().rooms[self.area][self.roomId].clearRoom()
                 
         if not FLAGS[20] and INV["flameShard"] > 0:
@@ -918,11 +872,6 @@ class AE(object):
         if self.projectiles:
             for p in self.projectiles:
                 p.draw(drawSurface)
-                """ if type(p) == Sword or type(p) == Clap:
-                    p.draw(drawSurface, True)
-                
-                else:   
-                    p.draw(drawSurface) """
 
     def drawFlash(self, drawSurface):
         self.flashes -= 1
@@ -949,10 +898,7 @@ class AE(object):
         
         
     def drawHud(self, drawSurface):
-        
-        self.moneyImage.draw(drawSurface)
-
-        
+        self.moneyImage.draw(drawSurface)        
         Number((16, 16*10+4), row = 1).draw(drawSurface)
         if INV["money"] == INV["wallet"]:
             self.drawNumber(vec(28, 16*10+4), INV["money"], drawSurface, row = 2)
@@ -966,6 +912,8 @@ class AE(object):
         if self.healthBar.drawn:
             self.healthBar.draw(drawSurface, self.player)
         else:
+            if not self.player.key_lock:
+                self.player.keyLock()
             self.healthBar.drawFirst(drawSurface, self.player)
         
         self.ammoBar.draw(drawSurface, self.player)

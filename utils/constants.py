@@ -77,7 +77,7 @@ EQUIPPED = {
 The Player's inventory
 """
 INV = {
-    "max_hp": 5,
+    "max_hp": 3,
     "plant": 1,
     "shoot": True,
     "fire": True,
@@ -163,8 +163,8 @@ these fragments.\n\
 But none who make the\n\
 venture have returned...\n",
 
-0:"Let me tell you the story\n\
-of Majestus and its people.\n",
+0:"This is the story of\n\
+    Majestus.\n",
 
 1:"Twas the mountainous home\n\
 of a tribe of mages:\n\

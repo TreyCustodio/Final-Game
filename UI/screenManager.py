@@ -23,20 +23,19 @@ class ScreenManager(object):
         self.state = ScreenManagerFSM(self)
         self.pausedText = TextEntry(vec(0,0),"Paused")
         
+        self.fade = Fade.getInstance()
+        self.fading = False
+        
         size = self.pausedText.getSize()
         midpoint = RESOLUTION // 2 - size
         self.pausedText.position = vec(*midpoint)
-        
         self.mainMenu = EventMenu("title_screen.png", fontName="zelda")
-        
-        
+
         self.mainMenu.addOption("start", "Press ENTER to start",
                                 RESOLUTION // 2 + vec(0,5),
                                 lambda x: x.type == KEYDOWN and x.key == K_RETURN,
                                 center="both")
         
-        
-
         self.mainMenu.addOption("tutorial", "Press SPACE to start in Grand Chapel",
                                 RESOLUTION // 2 + vec(0,50),
                                 lambda x: x.type == KEYDOWN and x.key == K_SPACE,
@@ -59,29 +58,25 @@ class ScreenManager(object):
         """
         Drawing the game based on the state
         """
-        if self.state.isInGame():
+        if self.state == "game":
             self.game.draw(drawSurf)
             if self.game.textBox:
-                    self.state.speak()
-                    #self.textEngine = TextEngine.getInstance()
-                    if "Y/N" in self.game.text:
-                        self.textEngine.setText(self.game.text, self.game.icon, prompt = True)
+                self.state.speak()
+                if "Y/N" in self.game.text:
+                    self.textEngine.setText(self.game.text, self.game.icon, prompt = True)
+                else:
+                    self.textEngine.setText(self.game.text, self.game.icon, self.game.largeText)
                         
-                    else:
-                        self.textEngine.setText(self.game.text, self.game.icon, self.game.largeText)
-                        
-        if self.state == "textBox":
+        elif self.state == "textBox":
             if self.pauseEngine.paused:
                 self.textEngine.draw(self.pauseEngine.boxPos, drawSurf)
             elif self.inIntro:
                 self.textEngine.draw(self.intro.boxPos, drawSurf)
             else:
                 self.textEngine.draw(self.game.boxPos, drawSurf)
-            return
-        
-        if self.state == "paused":
+
+        elif self.state == "paused":
             self.pauseEngine.draw(drawSurf)
-            #self.pausedText.draw(drawSurf)
             
         elif self.state == "mainMenu":
             self.mainMenu.draw(drawSurf)
@@ -90,8 +85,11 @@ class ScreenManager(object):
             self.intro.draw(drawSurf)
             if self.intro.textBox:
                 self.state.speakI()
-                #self.textEngine = TextEngine.getInstance()
                 self.textEngine.setText(self.intro.text, self.intro.icon, self.intro.largeText)
+        
+        if self.fading:
+            self.fade.draw(drawSurf)
+            return
     
     ##Event handling methods
     def pause(self):
