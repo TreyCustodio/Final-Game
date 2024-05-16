@@ -1,7 +1,7 @@
 from gameObjects import *
 from utils import INTRO
 """
-This module contains all data pertaining
+This file contains all data pertaining
 to each room's engine. Each class represents
 a room's engine, and they all inherit from
 AbstractEngine.
@@ -22,7 +22,6 @@ class Intro_Cut(AbstractEngine):
         def __init__(self):
             
             self.fading = False
-            self.black = Fade.getInstance()
             self.player = None
             self.largeText = False
             self.introDone = False
@@ -40,7 +39,7 @@ class Intro_Cut(AbstractEngine):
         def draw(self, drawSurface):
             
             if self.fading:
-                self.black.draw(drawSurface)
+                Fade.getInstance().draw(drawSurface)
                 return
 
             elif self.textInt >= 4:
@@ -54,6 +53,7 @@ class Intro_Cut(AbstractEngine):
 
             if self.textInt < 2:
                 Text(vec(0,0), text = "Press START to skip text").draw(drawSurface)
+            
         
         
         def handleEvent(self):
@@ -63,17 +63,20 @@ class Intro_Cut(AbstractEngine):
             pass
 
         def update(self, seconds):
-            
+            """
+            Fade within Intro engine,
+            ScreenManager fades In after introDone == True
+            """
             if self.textInt > 8:
-                if self.black.frame == 8:
+                if Fade.getInstance().frame == 8:
                     self.timer += seconds
-                    if self.timer >= 1:
+                    if self.timer >= 0.5:
                         SoundManager.getInstance().fadeoutBGM()
                         self.introDone = True
                         return
                     return
                 else:
-                    self.black.update(seconds)
+                    Fade.getInstance().update(seconds)
                     return
                 
             self.timer += seconds
@@ -243,14 +246,14 @@ class Intro_1(AbstractEngine):
                 self.enemyCollision(b)
                 self.projectilesOnBlocks(b)
                 if self.player.doesCollide(b):
-                    if type(b) == LockBlock and self.player.keys > 0:
+                    if type(b) == LockBlock and INV["keys"] > 0:
                         self.playSound("LA_Dungeon_Teleport_Appear.wav")
                         self.disappear(b)
                         self.disappear(self.blocks)
                         self.disappear(self.block1)
                         self.disappear(self.block2)
                         self.disappear(self.block3)
-                        self.player.keys -= 1
+                        INV["keys"] -= 1
                     elif type(b) == Trigger:
                         if b == self.trigger1:
                             self.transport(Entrance, 2)
@@ -712,7 +715,7 @@ class Grand_Chapel_L(AbstractEngine):
                     if b == self.trigger1:
                         self.transport(Grand_Chapel, 3, keepBGM=True)
                     elif b == self.trigger2:
-                        self.transport(Flame_1, 1)
+                        self.transport(Flame_entrance, 2)
                     elif b == self.trigger3:
                         self.transport(Frost_1, 0)
                     else:
@@ -1005,27 +1008,24 @@ class Entrance(AbstractEngine):
     class _EN(AE):
         def __init__(self):
             super().__init__()
+            self.healthBarLock = True
             self.bgm = "droplets.mp3"
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0
             self.background = Level("entrance.png")
-            """ self.npcs = [
-                David((COORD[2][5]), 1),
-                Flapper(COORD[5][5]),
-                Mofos(COORD[12][5]),
-                Gremlin(COORD[8][1], direction = 1)
-            ] """
             self.door1 = Trigger(door = 2)
             self.trigger1 = Trigger(text = SPEECH["intro_entrance"], door = 0)
 
             self.geemer = Geemer((16*8, 16*4), SPEECH["intro_geemer"], 0, 2)
             self.spawning.append(self.geemer)
-            #self.door2 = Trigger(door = 0)
-            self.npcs = [#David((COORD[2][5]))
+            self.npcs = [
                 ]
             self.doors = [0,2]
 
+        def initializeRoom(self, player=None, pos=None, keepBGM=False):
+            super().initializeRoom(player, pos, keepBGM)
+        
         #override
         def createBlocks(self):
             self.blocks.append(self.door1)
@@ -1053,6 +1053,13 @@ class Entrance(AbstractEngine):
                 self.enemyCollision(b)
         
         def update(self, seconds):
+            if self.healthBarLock:
+                self.player.keyLock()
+                self.timer += seconds
+                if self.timer >= 1.0:
+                    self.player.keyUnlock()
+                    self.healthBarLock = False
+                    self.timer = 0
             super().update(seconds)
 
 
@@ -1062,6 +1069,42 @@ class Entrance(AbstractEngine):
 """
 Fire
 """
+class Flame_entrance(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame_entrance()
+      
+        return cls._INSTANCE
+    
+    class _Flame_entrance(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "fire.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("flame_entrance.png")
+            self.trigger1 = Trigger(door = 0)
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                for n in self.npcs:
+                    if n.doesCollide(b):
+                        n.bounce(b)
+
+                self.projectilesOnBlocks(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Room, 0, keepBGM=True)
+                    else:
+                        self.player.handleCollision(b)
+
 class Flame_1(AbstractEngine):
     @classmethod
     def getInstance(cls):

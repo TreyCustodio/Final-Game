@@ -21,13 +21,12 @@ class DamageNumberManager(object):
         for num in self.numbers:
             engine.drawNumber(num.damagePos, num.damage, drawSurface, row = 3)
     
-    
     def updateNumbers(self, engine, seconds):
         for num in self.numbers:
             num.damagePos[1] -= 20 * seconds
             if num.damagePos[1] <= num.maxDamagePos:
                 self.numbers.pop(self.numbers.index(num))
-
+    
 
 class DamageNumber(object):
     def __init__(self, position, damage):
@@ -41,8 +40,9 @@ class AE(object):
         """
         __init__ is only ever called once
         """
+        self.timer = 0.0 #A universal timer; can be used for anything
         self.healthBarDrawn = False
-
+        self.healthBarLock = False #If True, don't draw healthbar
         self.area = 0
         self.roomId = 0
         self.itemsToCollect = 0
@@ -69,10 +69,11 @@ class AE(object):
         self.tra_pos = None
         self.tra_keepBGM = False
         self.enemyCounter = 0
+
         #Flash
-        self.black = Fade.getInstance()
         self.flashes = 0
         self.fading = False
+
         #Speaking
         self.textBox = False
         self.text = ""
@@ -109,7 +110,7 @@ class AE(object):
 
         #self.transparentSurf = pygame.Surface(RESOLUTION)
         #self.transparentSurf.set_alpha(200)
-        self.keyCount = Drawable((0, RESOLUTION[1]-16), "KeyCount.png")
+        self.keyImage = Drawable((0, RESOLUTION[1]-16), "drops.png", (1,3))
         self.healthBar = HealthBar.getInstance()
         self.ammoBar = AmmoBar()
         self.elementIcon = ElementIcon()
@@ -119,10 +120,34 @@ class AE(object):
         #self.enemyPlacement
         #self.bgm
     
+    """
+    Getter Methods
+    """
 
     """
-    Auxilary methods
+    Returns:
+    True if the healthbar is initialized.
+    False otherwise
     """
+    def getHealthbarInitialized(self):
+        return self.healthBarDrawn
+
+    """
+    Returns:
+    True if the healthbar is drawing damage.
+    False otherwise
+    """
+    def getHealthBarDrawingHurt(self):
+        return self.healthBar.drawingHurt
+    
+    """
+    Auxilary Methods
+    """
+    def stopFadeIn(self):
+        self.fading = False
+        self.player.keyUnlock()
+        self.player.keyDownUnlock()
+
     def reset(self):
         self.promptResult = False
         self.indicator.setImage(0)
@@ -131,7 +156,6 @@ class AE(object):
         self.tra_room = None
         self.tra_pos = None
         self.tra_keepBGM = False
-        self.fading = False
         
         
 
@@ -160,7 +184,6 @@ class AE(object):
         self.tra_room = None
         self.tra_pos = None
         self.tra_keepBGM = False
-        self.fading = False
 
         if self.spawning:
             for i in range (len(self.spawning)-1, -1, -1):
@@ -168,8 +191,40 @@ class AE(object):
                     self.disappear(self.spawning[i])
         self.dropCount = 0
 
-        
+    def lockHealth(self):
+        self.healthBarLock = True
+    
+    def unlockHealth(self):
+        self.healthBarLock = False
 
+    def healPlayer(self, integer):
+        amountHealed = self.player.heal(integer)
+        self.healthBar.drawHeal(amountHealed)
+
+    def getDrunk(self):
+        self.player.drink()
+    
+    def getHigh(self):
+        self.player.smoke()
+    
+    def zoom(self):
+        self.player.zoom()
+    
+    def useSyringe(self):
+        #damage = 3/4 of hp
+        damage = (self.player.hp // 4)
+        if damage < 1:
+            damage = 1
+        damage *= 3
+        if damage == self.player.hp:
+            damage -= 1
+        self.player.hurt(damage)
+        self.healthBar.drawHurt(self.player.hp, damage)
+
+        """ if self.player.hp > INV["max_hp"]//4:
+            damage = (INV["max_hp"] // 4) * 3
+            if self.player.hp < 1:
+                self.player.hp = 1 """
 
     def initializeRoom(self, player= None, pos = None, keepBGM = False):
         """
@@ -187,13 +242,8 @@ class AE(object):
             self.player.position = pos 
         else:
             self.player = Player(vec(16*9, (16*11) - 8))
-    
-        #if pos != None:
-        
-            #self.player.position = (pos + self.player.vel)
         
 
-        self.black.reset()
         self.createBounds()
         self.setDoors()
         self.createBlocks()
@@ -202,9 +252,6 @@ class AE(object):
             #SoundManager.getInstance().fadeoutBGM()
             if self.bgm != None:
                 SoundManager.getInstance().playBGM(self.bgm)
-        self.fading = False
-        self.player.keyDownUnlock()
-        self.player.keyUnlock()
 
 
     def createBounds(self):
@@ -330,8 +377,14 @@ class AE(object):
                     
 
     def fade(self):
+        """
+        Initializes fadeout by locking
+        player and setting self.fading to True
+        """
         self.player.keyLock()
         self.fading = True
+
+
 
     def transport(self, room=None, position=None, keepBGM = False, intro = False):
         """
@@ -341,32 +394,34 @@ class AE(object):
         keepBgm -> keeps the bgm
         intro -> special properties for transport because no player yet
         """
-        EventManager.getInstance().startTransition()
-        if intro:
-            self.transporting = True
-            self.tra_room = room.getInstance()
-            return
-        
-        self.player.keyDownLock()
-        self.fade()
-        self.transporting = True
-        self.tra_room = room.getInstance()
-        if position == 0:
-            self.tra_pos = vec(16*9, 16*11)
-        elif position == 1:
-            self.tra_pos = vec(16*16, 16*6 - 8)
-        elif position == 2:
-            self.tra_pos = vec(16*9, 8)
-        elif position == 3:
-            self.tra_pos = vec(16*2, 16*6-8)
-        else:
-            self.tra_pos = position
+        if not self.transporting:
+            #print("Transport")
+            EventManager.getInstance().startTransition()
+            if intro:
+                self.transporting = True
+                self.tra_room = room.getInstance()
+                return
             
-        self.tra_keepBGM = keepBGM
-        if not keepBGM:
-            SoundManager.getInstance().fadeoutBGM()
-        
-        pygame.event.clear()
+            #self.player.keyDownLock()
+            self.fade()
+            self.transporting = True
+            self.tra_room = room
+            if position == 0:
+                self.tra_pos = vec(16*9, 16*11)
+            elif position == 1:
+                self.tra_pos = vec(16*16, 16*6 - 8)
+            elif position == 2:
+                self.tra_pos = vec(16*9, 8)
+            elif position == 3:
+                self.tra_pos = vec(16*2, 16*6-8)
+            else:
+                self.tra_pos = position
+                
+            self.tra_keepBGM = keepBGM
+            if not keepBGM:
+                SoundManager.getInstance().fadeoutBGM()
+            
+            pygame.event.clear()
 
         
     def displayText(self, text = "", icon = None, large = True):
@@ -458,7 +513,7 @@ class AE(object):
             for n in self.spawning:
                 if not n.drop and self.player.interactable(n):
                     self.player.handleEvent(event, n, self)
-                    return
+                    return 
                 
         self.player.handleEvent(event)
 
@@ -634,6 +689,10 @@ class AE(object):
         """
         pass
     
+    """
+    projectile -> weapon
+    other -> enemy
+    """
     def projectilesOnEnemies(self, projectile, other):
         if other.doesCollideProjectile(projectile):
             if not projectile.hit:
@@ -646,9 +705,9 @@ class AE(object):
 
                     ##Display damage numbers appropriately
                     if projectile.id == "slash" or projectile.id == "blizz":
-                        self.damageNums.addNumber(vec(projectile.position[0]+8, projectile.position[1]), projectile.damage)
+                        self.damageNums.addNumber(vec(other.getCenterX(), other.position[1]), projectile.damage)
                     else:
-                        self.damageNums.addNumber(vec(projectile.position[0], projectile.position[1]), projectile.damage)
+                        self.damageNums.addNumber(vec(other.getCenterX(), other.position[1]), projectile.damage)
                     other.hit = False
                 projectile.handleCollision(self)
                 
@@ -727,6 +786,12 @@ class AE(object):
           
 
     def updatePlayer(self, seconds):
+        """
+        Updates the player's position and states as needed.
+        Player is not updated during fading,
+        but Player will still handle events in order
+        to have the smoothest room transitions.
+        """
         if self.player.dying:
             self.player.update(seconds)
             if self.player.headingOut:
@@ -743,7 +808,7 @@ class AE(object):
             self.dying = True
             SoundManager.getInstance().fadeoutBGM()
             self.player.update(seconds)
-        else:
+        elif not self.fading:
             self.player.update(seconds)
     
     #abstract
@@ -774,12 +839,20 @@ class AE(object):
     def updateHUD(self, seconds):
         self.indicator.update(seconds)
         self.damageNums.updateNumbers(self, seconds)
-        self.healthBar.update(seconds)
+        if not self.healthBarLock:
+            self.healthBar.update(seconds)
         
 
     def handlePrompt(self):
         pass
 
+    def finishFade(self):
+        """
+        Sets self.readyToTransition to True.
+        This lets the ScreenManager know
+        to switch game engines.
+        """
+        self.readyToTransition = True
 
     def update(self, seconds):
         if not self.mapCondition:
@@ -800,19 +873,6 @@ class AE(object):
                 self.deathTimer += seconds
                 if self.deathTimer >= 2:
                     self.dead = True
-                
-
-
-
-        if self.fading:
-            self.black.update(seconds)
-            if self.transporting and self.black.frame == 8:
-                """
-                Transition here!
-                """
-                self.readyToTransition = True
-                
-            return
 
             
         if self.torches:
@@ -898,28 +958,45 @@ class AE(object):
         
         
     def drawHud(self, drawSurface):
+        """
+        Money
+        """
         self.moneyImage.draw(drawSurface)        
-        Number((16, 16*10+4), row = 1).draw(drawSurface)
+        Number((14, 16*10+6), row = 1).draw(drawSurface)
         if INV["money"] == INV["wallet"]:
-            self.drawNumber(vec(28, 16*10+4), INV["money"], drawSurface, row = 2)
+            self.drawNumber(vec(34, 16*10+6), INV["money"], drawSurface, row = 2)
         else:
-            self.drawNumber(vec(28, 16*10+4), INV["money"], drawSurface)
-            #Number((28, 16*10+4), INV["money"]).draw(drawSurface)
+            self.drawNumber(vec(34, 16*10+6), INV["money"], drawSurface)
 
-
-        self.keyCount.draw(drawSurface)
-        Number((28, self.keyCount.position[1]), self.player.keys).draw(drawSurface)
-        if self.healthBar.drawn:
-            self.healthBar.draw(drawSurface, self.player)
-        else:
-            if not self.player.key_lock:
-                self.player.keyLock()
-            self.healthBar.drawFirst(drawSurface, self.player)
+        """
+        Keys
+        """
+        self.keyImage.draw(drawSurface)
+        Number((14, self.keyImage.position[1]), row = 1).draw(drawSurface)
+        self.drawNumber(vec(34, self.keyImage.position[1]), INV["keys"], drawSurface)
+        
+        """
+        Healthbar
+        """
+        ##  Heart Image to the left and HP count
+        self.healthBar.drawHeart(drawSurface, self.player)
+        self.drawNumber(vec(8,0), self.player.hp, drawSurface)
+        ##  Rest of the bar
+        if not self.healthBarLock:
+            if self.healthBar.drawn:
+                self.healthBarDrawn = True
+                self.healthBar.draw(drawSurface, self.player)
+            else:
+                if not self.player.key_lock:
+                    self.player.keyLock()
+                if not self.healthBarLock:
+                    self.healthBar.drawFirst(drawSurface, self.player)
+            
+        
         
         self.ammoBar.draw(drawSurface, self.player)
         self.elementIcon.draw(drawSurface)
         self.indicator.draw(drawSurface)
-        self.drawNumber(vec(0,0), self.player.hp, drawSurface)
         self.drawDamage(drawSurface)
 
         
@@ -935,26 +1012,8 @@ class AE(object):
         
         if self.player.drunk:
             self.drawNumber(vec(0,64), int(self.player.drunkTimer), drawSurface, row = 3)
-        #pygame.transform.scale(self.transparentSurf,
-                               #list(map(int, UPSCALED)),
-                               #self.transparentScreen)
-        
-        #self.keyCount.draw(self.transparentSurf)
-        
-        #if wind selected
-        
 
-        """ Text((1,16), "Ammo", (200,200,200)).draw(drawSurface)
-        if self.player.ammo == self.player.max_ammo:
-            Text((28,16), str(self.player.ammo), (0,220,0)).draw(drawSurface)
-        elif self.player.ammo == 0:
-            Text((28,16), str(0), (200,0,0)).draw(drawSurface)
-        else:
-            Text((28,16), str(self.player.ammo), (200,200,200)).draw(drawSurface) """
-
-    def drawFade(self, drawSurface):
-        self.black.draw(drawSurface)
-
+        
     def drawTiles(self, drawSurface):
         if self.tiles:
             for t in self.tiles:
@@ -966,10 +1025,14 @@ class AE(object):
             currentPos = vec(position[0]-3, position[1])
             number = str(number)
             for char in number:
-                Number(currentPos, int(char), row).draw(drawSurface)
+                num = Number(currentPos, int(char), row)
+                num.position[0] -= num.getSize()[0] // 2
+                num.draw(drawSurface)
                 currentPos[0] += 6
         else:
-            Number(position, number, row).draw(drawSurface)
+            num = Number(position, number, row)
+            num.position[0] -= num.getSize()[0] // 2
+            num.draw(drawSurface)
 
 
     def draw(self, drawSurface):
@@ -989,6 +1052,7 @@ class AE(object):
         #Background/Tiles
         
         self.background.draw(drawSurface)
+
         self.drawTiles(drawSurface)
         
         #Blocks
@@ -1012,10 +1076,7 @@ class AE(object):
         #HUD
         self.drawHud(drawSurface)
         
-        #Fade
-        if self.fading:
-            self.drawFade(drawSurface)
-
+        #Weapons
         self.weaponControl()
 
 class AbstractEngine(object):

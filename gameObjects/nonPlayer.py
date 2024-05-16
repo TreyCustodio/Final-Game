@@ -433,7 +433,7 @@ class Key(Drop):
     def interact(self, player, engine):
         if not self.interacted:
             self.interacted = True
-            player.keys += 1
+            INV["keys"] += 1
             engine.textBox = True
             engine.text = self.text
             player.vel = vec(0,0)

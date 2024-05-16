@@ -7,11 +7,6 @@ The highest class in the enemy hierarchy.
 A basic enemy that moves in a sqaure.
 """
 
-
-
-
-
-
 class Enemy(Animated):
     """
     Abstract Enemy Class
@@ -55,7 +50,8 @@ class Enemy(Animated):
         #4 -> Wind
         self.shield = 0
         self.type = Element(0)
-        
+    
+    
     def doesCollideBlock(self, block):
         return self.doesCollide(block)
 

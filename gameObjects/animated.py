@@ -170,7 +170,18 @@ class Animated(Drawable):
             self.image = SpriteManager.getInstance().getSprite("shotsfired.png",
                                                 (self.frame, self.row))
             
-
+    def updateReverse(self, seconds):
+        self.animationTimer += seconds
+        
+        if self.animationTimer > 1 / self.framesPerSecond:
+            
+            self.frame -= 1
+            self.frame %= self.nFrames
+            
+            self.animationTimer -= 1 / self.framesPerSecond
+            self.image = SpriteManager.getInstance().getSprite(self.fileName,
+                                                (self.frame, self.row))
+            
     def update(self, seconds):
         if not self.animate:
             return
@@ -219,20 +230,48 @@ class Fade():
     class _FA(Animated):
         def __init__(self):
             super().__init__((0,0), "black.png", (0,0))
-            #self.frame = 0
             self.nFrames = 9
             self.framesPerSecond = 20
             self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                                     (0, 0))
-            
+        
+        def setRow(self, integer=0):
+            self.row = integer
+            self.image = SpriteManager.getInstance().getSprite(self.fileName,
+                                                    (0, self.row))
+
+        def setFrame(self, integer=0):
+            self.frame = integer
+            self.image = SpriteManager.getInstance().getSprite(self.fileName,
+                                                    (self.frame, self.row))
+        
         def update(self, seconds):
-            #if self.frame < 9:
             super().update(seconds)
+        
+        def updateIn(self, seconds):
+            super().updateReverse(seconds)
         
         def reset(self):
             self.frame = 0
             self.image = SpriteManager.getInstance().getSprite(self.fileName,
-                                                    (0, 0))
+                                                    (0, self.row))
+
+class Pointer(Animated):
+    def __init__(self, position):
+        super().__init__(position, "pointer.png")
+        self.choice = 0
+    
+    def getChoice(self):
+        return self.choice
+    
+    def increaseChoice(self):
+        self.choice += 1
+    
+    def decreaseChoice(self):
+        self.choice -= 1
+    
+    def setChoice(self, integer=0):
+        self.choice = integer
 
 
 class Tile(Animated):

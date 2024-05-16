@@ -56,7 +56,7 @@ class SpriteManager(object):
       _DEFAULT_SPRITE = (18,26)
       
       # A list of images that require to be loaded with transparency
-      _TRANSPARENCY = ["portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
+      _TRANSPARENCY = ["pointer.png", "portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
                        "icon.png", "TextBox.png", "TextBox2.png", "geemer.png", "item.png", "fire.png", "black.png", "blessing.png",
                        "thunder.png", "energy.png", "gale.png", "indicator.png",
                        "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png",#Enemies

@@ -57,6 +57,15 @@ class Drawable(object):
     def getSize(self):
         return vec(*self.image.get_size())
     
+    """
+    Returns the x coordinate on the screen
+    representing the center point
+    """
+    def getCenterX(self):
+        size = self.getSize()
+        x = size[0] // 2
+        return self.position[0] + x
+    
     def handleEvent(self, event):
         pass
     
@@ -93,7 +102,7 @@ class Number(Drawable):
     """
     def __init__(self, position = vec(0,0), number = 0, row = 0):
         super().__init__(position, "numbers.png", (number,row))
-
+        
 class Text(Drawable):
     """
     Displays text using the font from A Link to the Past
@@ -238,13 +247,6 @@ class DamageIndicator(Drawable):
         self.currentDrawPos = (self.position[0]+53)
 
 
-
-        #print("black", str(black))
-        #print("drawPos", str(self.currentDrawPos))
-        #print("pixelsPerHit", str(pixelsPerHit))
-        #print("pixelsToDraw", str(pixelsToDraw))
-
-
         ##Set the indicator imagess
         if self.currentHp <= 0:
             #Enemy dead, make the indicator invisible
@@ -257,8 +259,6 @@ class DamageIndicator(Drawable):
         for i in range(self.pixelsToDraw):
             self.pixelBuilder.addPixel(currentPixels, vec(self.currentDrawPos - i, self.position[1]+8), 1, 8, color = (0,0,0))
         
-        ##Need to figure out how to free up memory from lists
-        #print("Pixels:", currentPixels)
         self.currentPixels = currentPixels
 
 
@@ -537,7 +537,8 @@ class HealthBar(object):
             self.drawPos = vec(16,0)
 
 
-
+        ##  For hurt:
+        ##  Draws in 2 stages: blinking and subtracting
         def drawRed(self, drawSurface, player, low = False):
             blackPix = (INV["max_hp"] * 5) - (player.hp * 5)
             pixelsToDraw = player.hp * 5
@@ -548,10 +549,6 @@ class HealthBar(object):
 
             ##Regular red pixels
             if self.drawingHurt:
-                """
-                
-                """
-                ##drawingHurt
                 for i in range(pixelsToDraw):
                     if low == True:
                         self.blit(drawSurface, self.low1)
@@ -561,12 +558,12 @@ class HealthBar(object):
 
 
                 if self.subtractingPixels:
-                    ##Subtracting pixels
+                    print("subtracting")
+                    ##Subtracting
                     """
                     Each frame, the number of red1 to draw decreases by 1
                     and the number of red5 to draw increases.
                     """
-                    #print("damage", self.damageToDraw)
                     for i in range(self.damageToDraw):
                         if low == True:
                             self.blit(drawSurface, self.low1)
@@ -574,8 +571,6 @@ class HealthBar(object):
                             drawSurface.blit(self.red1, self.drawPos)
                             self.drawPos[0] += 1
 
-
-                    
                     for i in range(self.pixelsToDraw):
                         ##Filler
                         if low == True:
@@ -586,7 +581,8 @@ class HealthBar(object):
 
 
                 else:
-                    ##Flashing white but not subtracting
+                    print("Blinking")
+                    ##Blinking
                     for i in range(self.damageToDraw-2):
                         if self.flashTick % 2 == 0:
                             if low == True:
@@ -635,6 +631,7 @@ class HealthBar(object):
                 else:
                     self.blit(drawSurface, self.red6)
 
+
             elif self.drawingHeal:
                 ##Cant be healing and hurting
                 pass
@@ -673,6 +670,8 @@ class HealthBar(object):
             drawSurface.blit(self.edge, self.drawPos)
             self.drawPos = vec(16,0)
 
+        def drawHeart(self, drawSurface, player):
+            drawSurface.blit(self.getHeartImage(player), self.position)
 
         def drawFirst(self, drawSurface, player):
             """
@@ -682,7 +681,6 @@ class HealthBar(object):
             """
             if not pygame.mixer.get_busy():
                 SoundManager.getInstance().playSFX("OOT_MagicRefill.wav")
-            drawSurface.blit(self.getHeartImage(player), self.position)
             for i in range(self.pixelsToDraw):
                 drawPos = vec(16,0)
                 if i >= 0:
@@ -709,30 +707,22 @@ class HealthBar(object):
             Turn damage * 5 pixels red
             Interrupt healing
             """
-            #damage = INV["max_hp"] - hp
-            #self.drawPos = INV["max_hp"] * 5
             self.drawingHeal = False
             self.drawingHurt = True
             self.hurtTimer = 0
             self.flashTick = 0
             self.damageToDraw += (damage * 5)
-            #print(self.getTotalPixels())
-            #Number of pixels to fill while the other pixels are flashing
-            #self.fillerPixels = self.getTotalPixels() - self.damageToDraw
             self.fillerPixels = ((INV["max_hp"] - hp) * 5) - 5
-            #print(self.fillerPixels)
 
-
+        def drawHeal(self, amountHealed):
+            return
+            self.drawingHeal = True
 
         def draw(self, drawSurface, player):
             """
             Green at full, red at low.
             Draw 5 pixels of the healthbar per 1 hp
             """
-            ##Draw the heart image to the left
-            drawSurface.blit(self.getHeartImage(player), self.position)
-            
-
             ##Full Health
             if player.hp == INV["max_hp"]:
                 self.drawFull(drawSurface, player)

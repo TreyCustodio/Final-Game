@@ -1,0 +1,6 @@
+- [ ] Indicator
+- [ ] Damage nums on all enemies
+- [ ] Healthbar hurt for damage > 1
+- [ ] Healthbar heal
+- [ ] reset the state of the game after quitting
+- [ ] menu cursor (moving yellow on four corners)

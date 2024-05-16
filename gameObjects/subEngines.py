@@ -342,6 +342,9 @@ class PauseEngine(object):
             i.draw
         
         """
+        self.inPosition = False
+        self.closed = False
+        self.closing = False
         self.mapOpen = False
         self.paused = False
         self.textBox = False
@@ -351,7 +354,7 @@ class PauseEngine(object):
         self.joyTimer = 0.0
         self.trackAnalog = True
 
-        self.menu = Drawable((0,0), "Pause.png")
+        self.menu = Drawable(vec(0,100), "Pause.png")
         self.timer = 0
         self.highlight = Highlight(COORD[3][4])
         self.highlightQuit = Highlight(COORD[3][8], flag = 1)
@@ -359,6 +362,14 @@ class PauseEngine(object):
         self.highlighted = vec(0,0)
         self.promptResult = False
         self.promptFlag = ""
+
+    def resetMenu(self):
+        self.menu.position = vec(0,100)
+        self.inPosition = False
+        self.closing = False
+        self.closed = False
+        self.paused = False
+
 
     def drawEquipped(self, drawSurf):
         #Arrow
@@ -399,6 +410,8 @@ class PauseEngine(object):
             return
         
         self.menu.draw(drawSurf)
+        if not self.inPosition or self.closing or self.closed:
+            return
         
         self.drawEquipped(drawSurf)
 
@@ -425,25 +438,31 @@ class PauseEngine(object):
         if INV["potion"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (2,0))
             drawSurf.blit(image, (COORD[4][7]))
-            #Text((16*4+12, 16*7+4), str(INV["potion"]), small = True).draw(drawSurf)
             Number(COORD[4][7], INV["potion"], row = 4).draw(drawSurf)
+        
+        if INV["smoothie"] >= 1:
+            image = SpriteManager.getInstance().getSprite("item.png", (9,0))
+            drawSurf.blit(image, (COORD[5][7]))
+            Number(COORD[5][7], INV["smoothie"], row = 4).draw(drawSurf)
+
         if INV["beer"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (6,0))
-            drawSurf.blit(image, (COORD[5][7]))
+            drawSurf.blit(image, (COORD[6][7]))
             #Text((16*4+12, 16*7+4), str(INV["beer"]), small = True).draw(drawSurf)
-            Number(COORD[5][7], INV["beer"], row = 4).draw(drawSurf)
+            Number(COORD[6][7], INV["beer"], row = 4).draw(drawSurf)
+        
         
         if INV["joint"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (7,0))
-            drawSurf.blit(image, (COORD[6][7]))
+            drawSurf.blit(image, (COORD[7][7]))
             #Text((16*4+12, 16*7+4), str(INV["beer"]), small = True).draw(drawSurf)
-            Number(COORD[6][7], INV["joint"], row = 4).draw(drawSurf)
+            Number(COORD[7][7], INV["joint"], row = 4).draw(drawSurf)
         
         if INV["speed"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (8,0))
-            drawSurf.blit(image, (COORD[7][7]))
+            drawSurf.blit(image, (COORD[8][7]))
             #Text((16*4+12, 16*7+4), str(INV["beer"]), small = True).draw(drawSurf)
-            Number(COORD[7][7], INV["speed"], row = 4).draw(drawSurf)
+            Number(COORD[8][7], INV["speed"], row = 4).draw(drawSurf)
 
         if INV["shoot"]:
             image = SpriteManager.getInstance().getSprite("item.png", (0,1))
@@ -494,8 +513,8 @@ class PauseEngine(object):
 
     def showInfo(self):
         if self.highlighted[1] == 4:
-                self.promptFlag = "quit"
-                self.text = "Y/NDo you wish to quit?"
+            self.promptFlag = "quit"
+            self.text = "Y/NReturn to title screen?"
 
         ##  Key items   ##
         elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*4:
@@ -548,22 +567,28 @@ class PauseEngine(object):
             if INV["syringe"]:
                 self.promptFlag = "syringe"
                 self.text = "Y/NUse the syringe?"
+        
         elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*7:
             if INV["potion"] >= 1:
                 self.promptFlag = "potion"
                 self.text = "Y/NDrink the potion?"
-        
+
         elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*7:
+            if INV["smoothie"] >= 1:
+                self.promptFlag = "smoothie"
+                self.text = "Y/NDrink delectable smoothie?"
+        
+        elif self.highlight.position[0] == 16*6 and self.highlight.position[1] == 16*7:
             if INV["beer"] >= 1:
                 self.promptFlag = "beer"
                 self.text = "Y/NDrink a beer?"
         
-        elif self.highlight.position[0] == 16*6 and self.highlight.position[1] == 16*7:
+        elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*7:
             if INV["joint"] >= 1:
                 self.promptFlag = "joint"
                 self.text = "Y/NSmoke a blunt?"
         
-        elif self.highlight.position[0] == 16*7 and self.highlight.position[1] == 16*7:
+        elif self.highlight.position[0] == 16*8 and self.highlight.position[1] == 16*7:
             if INV["speed"] >= 1:
                 self.promptFlag = "speed"
                 self.text = "Y/NDrink a can of speed?"
@@ -572,6 +597,9 @@ class PauseEngine(object):
             SoundManager.getInstance().playSFX("bump.mp3")
 
     def handleEvent_C(self, event):
+        if not self.inPosition:
+            return
+        
         if self.mapOpen and INV["map"+str(Map.getInstance().mapNum)]:
             if event.type == JOYBUTTONDOWN:
                 if event.button == 2:
@@ -641,18 +669,7 @@ class PauseEngine(object):
                     self.highlight.position[0] -= 16
                 self.trackAnalog = False
                     
-            """ 
-            elif event.axis == 0 and event.value < 0.1:
-                if self.highlighted[0] != 7 and self.highlighted[1] != 4:
-                    SoundManager.getInstance().playSFX("pause_cursor.wav")
-                    self.highlighted[0] += 1
-                    self.highlight.position[0] += 16
-
-            elif event.axis == 0 and event.value > 0.1:
-                if self.highlighted[0] != 0 and self.highlighted[1] != 4:
-                    SoundManager.getInstance().playSFX("pause_cursor.wav")
-                    self.highlighted[0] -= 1
-                    self.highlight.position[0] -= 16 """
+            
 
     def handleEvent(self, event):
         """
@@ -669,6 +686,8 @@ class PauseEngine(object):
         min offset[1] = 0
         max offset[1] = 5
         """
+        if not self.inPosition:
+            return
         if self.mapOpen and INV["map"+str(Map.getInstance().mapNum)]:
             if event.type == KEYDOWN:
                 if event.key == K_x:
@@ -754,11 +773,23 @@ class PauseEngine(object):
                 self.highlight.position[0] -= 16
 
     def update(self, seconds):
+        if self.closing:
+            self.menu.position[1] += 1000 * seconds
+            if self.menu.position[1] >= RESOLUTION[1]:
+                self.menu.position[1] = 0
+                self.closed = True
+            return
+        
+        if not self.inPosition:
+            self.menu.position[1] -= 1000 * seconds
+            if self.menu.position[1] <= 0:
+                self.menu.position[1] = 0
+                self.inPosition = True
+            return
+        
         if self.mapOpen:
             Map.getInstance().update(seconds)
-        if self.promptResult:
-            if self.promptFlag == "quit":
-                pygame.quit()
+        
 
         self.timer += seconds
         if self.timer >= .5:

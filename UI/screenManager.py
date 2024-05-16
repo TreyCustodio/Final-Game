@@ -15,30 +15,40 @@ class ScreenManager(object):
     def __init__(self):
         self.controller = "key"
         self.controllerSet = False
-
         self.inIntro = False
         self.game = None # Add your game engine here!
         self.pauseEngine = PauseEngine()
         self.textEngine = TextEngine.getInstance()
         self.state = ScreenManagerFSM(self)
         self.pausedText = TextEntry(vec(0,0),"Paused")
-        
+
+        ##  Main Menu transitioning states
+        self.startingGame = False
+        self.continuingGame = False
+        self.returningToMain = False
+
+        ##  Fade control
         self.fade = Fade.getInstance()
+        self.fade.setRow(1)
+        self.fade.setFrame(8)
         self.fading = False
+        self.fadingIn = True
         
         size = self.pausedText.getSize()
         midpoint = RESOLUTION // 2 - size
         self.pausedText.position = vec(*midpoint)
         self.mainMenu = EventMenu("title_screen.png", fontName="zelda")
 
-        self.mainMenu.addOption("start", "Press ENTER to start",
+        self.mainMenu.addOption("start", "New Game",
                                 RESOLUTION // 2 + vec(0,5),
-                                lambda x: x.type == KEYDOWN and x.key == K_RETURN,
                                 center="both")
         
-        self.mainMenu.addOption("tutorial", "Press SPACE to start in Grand Chapel",
+        self.mainMenu.addOption("continue", "Continue",
                                 RESOLUTION // 2 + vec(0,50),
-                                lambda x: x.type == KEYDOWN and x.key == K_SPACE,
+                                center="both")
+        
+        self.mainMenu.addOption("quit", "Quit",
+                                RESOLUTION // 2 + vec(0,90),
                                 center="both")
         
 
@@ -48,9 +58,9 @@ class ScreenManager(object):
         self.controller = text
         if self.controller == "Controller (Xbox One For Windows)":
             self.mainMenu.addEvent("start", lambda x: x.type == JOYBUTTONDOWN and x.button == 7)
-            self.mainMenu.addEvent("tutorial", lambda x: x.type == JOYBUTTONDOWN and x.button == 6)
+            self.mainMenu.addEvent("continue", lambda x: x.type == JOYBUTTONDOWN and x.button == 6)
             self.mainMenu.editText("start", "Press START to play")
-            self.mainMenu.editText("tutorial", "Press SELECT to start in Grand Chapel")
+            self.mainMenu.editText("continue", "Press SELECT to start in Grand Chapel")
 
 
     #Displaying Text
@@ -75,8 +85,15 @@ class ScreenManager(object):
             else:
                 self.textEngine.draw(self.game.boxPos, drawSurf)
 
+
         elif self.state == "paused":
+            if self.pauseEngine.closed:
+                self.pauseEngine.resetMenu()
+                self.state.pause()
+                return
+            self.game.draw(drawSurf)
             self.pauseEngine.draw(drawSurf)
+            
             
         elif self.state == "mainMenu":
             self.mainMenu.draw(drawSurf)
@@ -87,11 +104,21 @@ class ScreenManager(object):
                 self.state.speakI()
                 self.textEngine.setText(self.intro.text, self.intro.icon, self.intro.largeText)
         
-        if self.fading:
+        if (not (self.fading or self.fadingIn)) and self.game and self.game.fading:
+            self.fading = True
+
+        if self.fading or self.startingGame or self.continuingGame or self.returningToMain:
             self.fade.draw(drawSurf)
             return
+        
+        elif self.fadingIn:
+            self.fade.draw(drawSurf)
+            return
+        
     
-    ##Event handling methods
+    """
+    Handling Events
+    """
     def pause(self):
         self.game.player.stop()
         SoundManager.getInstance().playSFX("OOT_PauseMenu_Open.wav")
@@ -105,43 +132,61 @@ class ScreenManager(object):
         self.state.pause()
         self.pauseEngine.mapOpen = True
 
-    
+    def handleChoice(self, choice):
+        if choice == 0:
+            self.startingGame = True
+            self.fade.setRow(1)
 
-    #Entering game, pausing
+        elif choice == 1:
+            self.continuingGame = True
+            self.fade.setRow(1)
+            
+        elif choice == 2:
+            return pygame.quit()
+        
+
     def handleEvent(self, event):
+        ##Quick quit for debugging##
+        if event.type == pygame.KEYDOWN and event.key == K_DELETE:
+            return pygame.quit()
+            
         if self.state == "game":
+            ##  Pause the game if the window is moved   ##
             if not self.game.pause_lock:
                 if event.type == pygame.WINDOWMOVED:
                     self.state.pause()
                     return
 
-                if self.controller == "Controller (Xbox One For Windows)":
-                    if event.type == JOYBUTTONDOWN and event.button == 7:
-                        self.pause()
-                    
-                    elif event.type == JOYBUTTONDOWN and event.button == 6:
-                        self.openMap()
+                ##  Handle events once the healthbar is initialized   ##
+                if self.game.getHealthbarInitialized():
+                    if self.controller == "Controller (Xbox One For Windows)":
+                        if event.type == JOYBUTTONDOWN and event.button == 7:
+                            self.pause()
                         
-                    
-                    else:
-                        self.game.handleEvent_C(event)
+                        elif event.type == JOYBUTTONDOWN and event.button == 6:
+                            self.openMap()
+                            
+                        else:
+                            self.game.handleEvent_C(event)
 
-                else:
-
-                    if event.type == KEYDOWN and event.key == K_RETURN:
-                        self.pause()
-                        
-                    elif event.type == KEYDOWN and event.key == K_LSHIFT:
-                        self.openMap()
-                        
-                    
                     else:
+                        if not self.game.fading:
+                            if event.type == KEYDOWN and event.key == K_RETURN:
+                                self.pause()
+                                return
+                                
+                            elif event.type == KEYDOWN and event.key == K_LSHIFT:
+                                self.openMap()
+                                return
+                            
                         self.game.handleEvent(event)
 
-        elif self.state == "paused":
-            if self.controller == "Controller (Xbox One For Windows)":
-                
 
+
+        elif self.state == "paused":
+            if self.returningToMain:
+                return
+            if self.controller == "Controller (Xbox One For Windows)":
                 if event.type == JOYBUTTONDOWN and (event.button == 7):
                     self.pauseEngine.paused = False
                     SoundManager.getInstance().playSFX("OOT_PauseMenu_Close.wav")
@@ -159,57 +204,36 @@ class ScreenManager(object):
                             
                         else:
                             self.textEngine.setText(self.pauseEngine.text)
+            
             else:
-                if event.type == KEYDOWN and event.key == K_r:
-                    self.state.toMain()
-
-                elif event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_LSHIFT):
+                
+                if event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_LSHIFT):
                     self.pauseEngine.paused = False
+                    self.pauseEngine.closing = True
                     SoundManager.getInstance().playSFX("OOT_PauseMenu_Close.wav")
                     self.pauseEngine.mapOpen = False
-                    self.state.pause()
 
                 else:
                     self.pauseEngine.handleEvent(event)
                     if self.pauseEngine.text != "":
-                        
                         self.state.speakP()
-                        #self.textEngine = TextEngine.getInstance()
                         if "Y/N" in self.pauseEngine.text:
                             self.textEngine.setText(self.pauseEngine.text, prompt = True)
-                            
                         else:
                             self.textEngine.setText(self.pauseEngine.text)
                 
         elif self.state == "mainMenu":
-            
-            choice = self.mainMenu.handleEvent(event)
-
-            if choice == "start":
-                if FLAGS[51]:
-                    self.game = Grand_Chapel.getInstance()
-                    self.game.initializeRoom()
-                    self.state.startGame()
-
-                elif FLAGS[50]:
-                    self.game = Entrance.getInstance()
-                    self.game.initializeRoom()
-                    self.state.startGame()
-                    
+            if not self.fading and not self.fadingIn:
+                self.mainMenu.handleEvent(event)
+                if self.controller == "Controller (Xbox One For Windows)":
+                    if event.type == JOYBUTTONDOWN and (event.button == 0):
+                        choice = self.mainMenu.getChoice()
+                        self.handleChoice(choice)
                 else:
-                    FLAGS[50] = True
-                    self.intro = Intro_Cut.getInstance()
-                    self.inIntro = True
-                    self.state.toIntro()
-            
-            elif choice == "tutorial":
-                """Testing and Freeplay"""
-                self.game = Grand_Chapel.getInstance()
-                self.game.initializeRoom()
-                self.state.startGame()
-
-            elif choice == "exit":
-                return "exit"
+                    if event.type == pygame.KEYDOWN and event.key == K_z:
+                        choice = self.mainMenu.getChoice()
+                        self.handleChoice(choice)
+                    
             
 
 
@@ -241,6 +265,7 @@ class ScreenManager(object):
                     self.textEngine.reset()
                     return
                     ##Close the textBox
+
             else:
                 if event.type == KEYDOWN and event.key == K_SPACE:
                     if self.pauseEngine.paused:
@@ -281,22 +306,30 @@ class ScreenManager(object):
                         if self.pauseEngine.promptResult:
                             if self.pauseEngine.promptFlag == "potion":
                                 INV["potion"] -= 1
-                                self.game.player.heal(3)
+                                self.game.healPlayer(3)
+                            
+                            elif self.pauseEngine.promptFlag == "smoothie":
+                                INV["smoothie"] -= 1
+                                self.game.healPlayer(6)
+                            
                             elif self.pauseEngine.promptFlag == "beer":
                                 INV["beer"] -= 1
-                                self.game.player.drink()
+                                self.game.getDrunk()
+                            
                             elif self.pauseEngine.promptFlag == "joint":
                                 INV["joint"] -= 1
-                                self.game.player.smoke()
+                                self.game.getHigh()
+                            
                             elif self.pauseEngine.promptFlag == "speed":
                                 INV["speed"] -= 1
-                                self.game.player.smoke()
+                                self.game.zoom()
 
                             elif self.pauseEngine.promptFlag == "syringe":
-                                if self.game.player.hp > INV["max_hp"]//4:
-                                    self.game.player.hp //=4
-                                    if self.game.player.hp < 1:
-                                        self.game.player.hp = 1
+                                self.game.useSyringe()
+                            
+                            elif self.pauseEngine.promptFlag == "quit":
+                                self.returningToMain = True
+                                self.fade.setRow(1)                     
                                 
                         
 
@@ -343,36 +376,98 @@ class ScreenManager(object):
             if self.game.dead:
                 self.state.die()
                 self.game.deathReset()
-                self.game = AbstractEngine.tearDown()
+                #self.game = AbstractEngine.tearDown()
                 self.game = None
             
+            ##Room transition
             elif self.game.readyToTransition:
+                #print("transition")
                 pos = self.game.tra_pos
                 player = self.game.player
-                newGame = self.game.tra_room
+                newGame = self.game.tra_room.getInstance()
                 keepBGM = self.game.tra_keepBGM
                 self.game.reset()
-                self.game = AbstractEngine.tearDown()
                 self.game = newGame
                 self.game.initializeRoom(player, pos, keepBGM)
-            """ elif self.game.introDone:
-                self.game = Intro_1.getInstance()
-                self.game.initializeRoom()
-                #self.state.startGame() """
+                self.fade.frame = 9
+                self.fading = False
+                self.fadingIn = True
 
         elif self.state == "textBox":
             self.textEngine.update(seconds)
+
         elif self.state == "paused":
             self.pauseEngine.update(seconds)
+            if self.game.getHealthBarDrawingHurt():
+                self.game.updateHUD(seconds)
+            
+            if self.returningToMain:
+                self.fade.update(seconds)
+                if self.fade.frame == 8:
+                    self.state.toMain()
+                    self.fadingIn = True
+
         elif self.state == "mainMenu":
             self.mainMenu.update(seconds)
+            if self.startingGame:
+                self.fade.update(seconds)
+                if self.fade.frame == 8:
+                    if FLAGS[51]:
+                        self.game = Grand_Chapel.getInstance()
+                        self.game.initializeRoom()
+                        self.state.startGame()
+
+                    elif FLAGS[50]:
+                        self.game = Entrance.getInstance()
+                        self.game.initializeRoom()
+                        self.state.startGame()
+                        
+                    else:
+                        FLAGS[50] = True
+                        self.intro = Intro_Cut.getInstance()
+                        self.inIntro = True
+                        self.state.toIntro()
+                    
+                    self.fadingIn = True
+            
+            elif self.continuingGame:
+                self.fade.update(seconds)
+                if self.fade.frame == 8:
+                    self.game = Grand_Chapel.getInstance()
+                    self.game.lockHealth()
+                    self.game.initializeRoom()
+                    self.state.startGame()
+                    self.fadingIn = True
 
         elif self.state == "intro":
             self.intro.update(seconds)
             if self.intro.introDone:
+                self.fadingIn = True
                 ##Transition to Entrance##
                 self.inIntro = False
                 self.game = Entrance.getInstance()
                 self.game.initializeRoom()
                 self.state.toGame()
-                
+
+        if self.fading:
+            self.fade.update(seconds)
+            if self.fade.frame == 8:
+                self.game.finishFade()
+                self.fading = False
+
+        elif self.fadingIn:
+            self.fade.updateIn(seconds)
+            if self.fade.frame == 0:
+                self.fadingIn = False
+                if self.state == "game":
+                    if self.continuingGame:
+                        self.fade.setRow()
+                        self.continuingGame = False
+                        self.game.unlockHealth()
+                    self.game.stopFadeIn()
+                elif self.state == "intro":
+                    self.fade.setRow()
+                    self.startingGame = False
+                elif self.state == "mainMenu":
+                    self.fade.setRow()
+                    self.returningToMain = False              

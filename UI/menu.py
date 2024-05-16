@@ -1,5 +1,6 @@
-from gameObjects import Drawable, Text
+from gameObjects import Drawable, Text, Pointer
 from utils.vector import vec, magnitude
+from utils import SoundManager
 from . import TextEntry
 
 import pygame
@@ -8,7 +9,7 @@ class AbstractMenu(Drawable):
     def __init__(self, background, fontName="default",
                  color=(255,255,255)):
         super().__init__((0,0), background)
-           
+        
         self.options = {}
         
         self.color = color      
@@ -41,14 +42,21 @@ class AbstractMenu(Drawable):
 class EventMenu(AbstractMenu):
     def __init__(self, background, fontName="default",
                 color=(255,255,255)):
-        super().__init__(background, fontName, color)      
+        super().__init__(background, fontName, color)
+        self.pointer = Pointer(vec(16*6-8, 98))
         self.eventMap = {}
+        self.pointerTick = 0
      
-    def addOption(self, key, text, position, eventLambda,
+    def addOption(self, key, text, position, eventLambda=None,
                                               center=None):
         super().addOption(key, text, position, center)      
-        self.eventMap[key] = eventLambda
+        if eventLambda:
+            self.eventMap[key] = eventLambda
     
+    def draw(self, drawSurf):
+        super().draw(drawSurf)
+        self.pointer.draw(drawSurf)
+
     def addEvent(self, key, eventLambda):
         """
         Adjust the options for starting the game
@@ -61,11 +69,59 @@ class EventMenu(AbstractMenu):
         position = vec(self.options[key].position[0] + 18, self.options[key].position[1])
         self.options[key] = Text(position, text)
 
-    def handleEvent(self, event):      
-        for key in self.eventMap.keys():
-            function = self.eventMap[key]
-            if function(event):
-                return key
+    def getChoice(self):
+        return self.pointer.getChoice()
+    
+    def handleEvent(self, event):
+        
+        if self.pointer.choice == 0:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+                self.pointer.increaseChoice()
+                self.pointer.position[1] = self.options["continue"].position[1]
+                SoundManager.getInstance().playSFX("FF_cursor.wav")
+            
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                self.pointer.setChoice(2)
+                self.pointer.position[0] += 16
+                self.pointer.position[1] = self.options["quit"].position[1]
+                SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+        elif self.pointer.choice == 1:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                self.pointer.decreaseChoice()
+                self.pointer.position[1] = self.options["start"].position[1]
+                SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+                self.pointer.position[0] += 16
+                self.pointer.increaseChoice()
+                self.pointer.position[1] = self.options["quit"].position[1]
+                SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+        elif self.pointer.choice == 2:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                self.pointer.decreaseChoice()
+                self.pointer.position[0] -= 16
+                self.pointer.position[1] = self.options["continue"].position[1]
+                SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+                self.pointer.setChoice(0)
+                self.pointer.position[0] -= 16
+                self.pointer.position[1] = self.options["start"].position[1]
+                SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+    def update(self, seconds):
+        super().update(seconds)
+        if self.pointerTick < 10:
+            self.pointer.position[0] += 1
+            self.pointerTick += 1
+        else:
+            self.pointer.position[0] -= 1
+            self.pointerTick += 1
+            if self.pointerTick >= 20:
+                self.pointerTick = 0
+
     
     
         

@@ -107,6 +107,10 @@ class Player(Animated):
             self.hp = INV["max_hp"]
         else:
             self.hp += integer
+    
+    def hurt(self, integer):
+        self.hp -= integer
+        
     """
     Getter methods
     """

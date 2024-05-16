@@ -77,7 +77,7 @@ EQUIPPED = {
 The Player's inventory
 """
 INV = {
-    "max_hp": 3,
+    "max_hp": 20,
     "plant": 1,
     "shoot": True,
     "fire": True,
@@ -85,12 +85,14 @@ INV = {
     "slash": True,
     "cleats": True,
     "potion": 3,
-    "beer": 0,
-    "joint":0,
+    "smoothie": 1,
+    "beer": 8,
+    "joint":1,
     "speed":1,
     "wallet": 20,
     "money": 20,
-
+    "keys": 100,
+    
     "map0":True,
     "map1":False,
     "map2":False,
