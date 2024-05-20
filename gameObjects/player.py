@@ -438,8 +438,6 @@ class Player(Animated):
         self.stopMoving(event)
 
     def handleEvent_C(self, event, interactableObject = None, engine = None):
-        """ if event.type == pygame.JOYAXISMOTION:
-            print(event.axis) """
         #print(self.key_lock)
         if not self.key_lock:
             #print(1)

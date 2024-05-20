@@ -62,6 +62,7 @@ def main():
         setJoystick()
         gameEngine.draw(drawSurface)
         eventManager.handleEvents(gameEngine)
+        gameEngine.moveMenuCursor()
         gameEngine.handleCollision()
         gameClock.tick(60)
         seconds = gameClock.get_time() / 1000

@@ -1,5 +1,5 @@
 from FSMs import ScreenManagerFSM
-from gameObjects import PauseEngine, TextEngine
+from gameObjects import PauseEngine, TextEngine, HudImageManager
 from rooms import *
 
 from utils import SoundManager
@@ -13,6 +13,8 @@ from pygame.locals import *
 class ScreenManager(object):
       
     def __init__(self):
+        SoundManager.getInstance().playBGM("Jhené.mp3")
+        HudImageManager.initialize()
         self.controller = "key"
         self.controllerSet = False
         self.inIntro = False
@@ -56,11 +58,6 @@ class ScreenManager(object):
     
     def setController(self, text):
         self.controller = text
-        if self.controller == "Controller (Xbox One For Windows)":
-            self.mainMenu.addEvent("start", lambda x: x.type == JOYBUTTONDOWN and x.button == 7)
-            self.mainMenu.addEvent("continue", lambda x: x.type == JOYBUTTONDOWN and x.button == 6)
-            self.mainMenu.editText("start", "Press START to play")
-            self.mainMenu.editText("continue", "Press SELECT to start in Grand Chapel")
 
 
     #Displaying Text
@@ -134,16 +131,24 @@ class ScreenManager(object):
 
     def handleChoice(self, choice):
         if choice == 0:
+            SoundManager.getInstance().fadeoutBGM()
+            SoundManager.getInstance().playSFX("WW_PressStart.wav")
             self.startingGame = True
             self.fade.setRow(1)
 
+
         elif choice == 1:
+            SoundManager.getInstance().fadeoutBGM()
+            SoundManager.getInstance().playSFX("WW_PressStart.wav")
             self.continuingGame = True
             self.fade.setRow(1)
             
         elif choice == 2:
             return pygame.quit()
         
+    def moveMenuCursor(self):
+        if self.state == "mainMenu":
+            self.mainMenu.moveCursor()
 
     def handleEvent(self, event):
         ##Quick quit for debugging##
@@ -224,12 +229,13 @@ class ScreenManager(object):
                 
         elif self.state == "mainMenu":
             if not self.fading and not self.fadingIn:
-                self.mainMenu.handleEvent(event)
                 if self.controller == "Controller (Xbox One For Windows)":
+                    self.mainMenu.handleEvent_C(event)
                     if event.type == JOYBUTTONDOWN and (event.button == 0):
                         choice = self.mainMenu.getChoice()
                         self.handleChoice(choice)
                 else:
+                    self.mainMenu.handleEvent(event)
                     if event.type == pygame.KEYDOWN and event.key == K_z:
                         choice = self.mainMenu.getChoice()
                         self.handleChoice(choice)
@@ -409,35 +415,42 @@ class ScreenManager(object):
 
         elif self.state == "mainMenu":
             self.mainMenu.update(seconds)
-            if self.startingGame:
-                self.fade.update(seconds)
-                if self.fade.frame == 8:
-                    if FLAGS[51]:
-                        self.game = Grand_Chapel.getInstance()
-                        self.game.initializeRoom()
-                        self.state.startGame()
 
-                    elif FLAGS[50]:
-                        self.game = Entrance.getInstance()
+            ##New Game
+            if self.startingGame:
+                if self.fade.frame == 8:
+                    if not pygame.mixer.get_busy():
+                        if FLAGS[51]:
+                            self.game = Grand_Chapel.getInstance()
+                            self.game.initializeRoom()
+                            self.state.startGame()
+
+                        elif FLAGS[50]:
+                            self.game = Entrance.getInstance()
+                            self.game.initializeRoom()
+                            self.state.startGame()
+                            
+                        else:
+                            FLAGS[50] = True
+                            self.intro = Intro_Cut.getInstance()
+                            self.inIntro = True
+                            self.state.toIntro()
+                        
+                        self.fadingIn = True
+                else:
+                    self.fade.update(seconds)
+            
+            ##Continue
+            elif self.continuingGame:
+                if self.fade.frame == 8:
+                    if not pygame.mixer.get_busy():
+                        self.game = Grand_Chapel.getInstance()
+                        self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()
-                        
-                    else:
-                        FLAGS[50] = True
-                        self.intro = Intro_Cut.getInstance()
-                        self.inIntro = True
-                        self.state.toIntro()
-                    
-                    self.fadingIn = True
-            
-            elif self.continuingGame:
-                self.fade.update(seconds)
-                if self.fade.frame == 8:
-                    self.game = Grand_Chapel.getInstance()
-                    self.game.lockHealth()
-                    self.game.initializeRoom()
-                    self.state.startGame()
-                    self.fadingIn = True
+                        self.fadingIn = True
+                else:
+                    self.fade.update(seconds)
 
         elif self.state == "intro":
             self.intro.update(seconds)
@@ -469,5 +482,7 @@ class ScreenManager(object):
                     self.fade.setRow()
                     self.startingGame = False
                 elif self.state == "mainMenu":
-                    self.fade.setRow()
-                    self.returningToMain = False              
+                    if self.returningToMain:
+                        SoundManager.getInstance().playBGM("Jhené.mp3")
+                        self.fade.setRow()
+                        self.returningToMain = False              

@@ -1,5 +1,5 @@
 from . import Drawable
-from utils import SpriteManager, EQUIPPED, vec
+from utils import SpriteManager, EQUIPPED, vec, RESOLUTION
 
 class Animated(Drawable):
     
@@ -211,7 +211,37 @@ class Animated(Drawable):
             self.animationTimer -= 1 / self.framesPerSecond
             self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                                 (self.frame, self.row))
-            
+
+"""
+Represents animated images on the HUD
+"""
+class HudImage(Animated):
+    def __init__(self, position, offset, nFrames=4, fps=2):
+        super().__init__(position, fileName="drops.png", offset=(0,0))
+        self.row = offset[1]
+        self.nFrames = nFrames
+        self.framesPerSecond = fps
+
+    
+"""
+Manages images in the hud in a singleton style
+"""
+class HudImageManager(object):
+
+    MONEY = None
+    KEYS = None
+
+    def initialize():
+        HudImageManager.MONEY = HudImage((0, 16*10+6), offset= (0,1))
+        HudImageManager.KEYS = HudImage((0, RESOLUTION[1]-16), offset=(0,3))
+
+
+    def getMoney():
+        return HudImageManager.MONEY
+    
+    def getKeys():
+        return HudImageManager.KEYS
+
 class Fade():
     """
     If there's only going to be one animation of fades, a singleton class works.

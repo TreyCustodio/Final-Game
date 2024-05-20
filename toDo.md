@@ -4,3 +4,5 @@
 - [ ] Healthbar heal
 - [ ] reset the state of the game after quitting
 - [ ] menu cursor (moving yellow on four corners)
+- [ ] sound effect for selection on title screen
+- [ ] Upscale map when opening

@@ -1,7 +1,7 @@
 import pygame
 
 from UI import EventManager
-from . import (Drawable, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
+from . import (Drawable, HudImageManager, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
                WeightedSwitch, DamageIndicator, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
                PushableBlock, LockBlock, Bullet, Sword, Clap, Slash, Flapper, Number,
                Tile, Portal, Buck, Map)
@@ -99,7 +99,8 @@ class AE(object):
         self.tiles = []
         self.drops = []
         self.indicator = DamageIndicator()
-        self.moneyImage = Drawable((0, 16*10+6), fileName="Objects.png", offset= (0,6))
+        self.moneyImage = None
+        self.keyImage = None
         
         
 
@@ -110,7 +111,7 @@ class AE(object):
 
         #self.transparentSurf = pygame.Surface(RESOLUTION)
         #self.transparentSurf.set_alpha(200)
-        self.keyImage = Drawable((0, RESOLUTION[1]-16), "drops.png", (1,3))
+        
         self.healthBar = HealthBar.getInstance()
         self.ammoBar = AmmoBar()
         self.elementIcon = ElementIcon()
@@ -185,6 +186,7 @@ class AE(object):
         self.tra_pos = None
         self.tra_keepBGM = False
 
+
         if self.spawning:
             for i in range (len(self.spawning)-1, -1, -1):
                 if issubclass(type(self.spawning[i]), Drop):
@@ -234,6 +236,8 @@ class AE(object):
         3. call createBlocks
         4. place the enemies in self.enemies
         """
+        self.moneyImage = HudImageManager.getMoney()
+        self.keyImage = HudImageManager.getKeys()
         EventManager.getInstance().toggleFetching()
         #SoundManager.getInstance().stopAllSFX()
         EQUIPPED["room"] = self.roomId
@@ -242,7 +246,6 @@ class AE(object):
             self.player.position = pos 
         else:
             self.player = Player(vec(16*9, (16*11) - 8))
-        
 
         self.createBounds()
         self.setDoors()
@@ -837,6 +840,8 @@ class AE(object):
         pass
     
     def updateHUD(self, seconds):
+        self.moneyImage.update(seconds)
+        self.keyImage.update(seconds)
         self.indicator.update(seconds)
         self.damageNums.updateNumbers(self, seconds)
         if not self.healthBarLock:

@@ -46,6 +46,10 @@ class EventMenu(AbstractMenu):
         self.pointer = Pointer(vec(16*6-8, 98))
         self.eventMap = {}
         self.pointerTick = 0
+        self.eventBufferTimer = 0.0
+        self.eventHandle = True
+        self.movingDown = False
+        self.movingUp = False
      
     def addOption(self, key, text, position, eventLambda=None,
                                               center=None):
@@ -69,50 +73,135 @@ class EventMenu(AbstractMenu):
         position = vec(self.options[key].position[0] + 18, self.options[key].position[1])
         self.options[key] = Text(position, text)
 
+
     def getChoice(self):
         return self.pointer.getChoice()
     
-    def handleEvent(self, event):
+    def newGame_down(self):
+        self.eventHandle = False
+        self.pointer.increaseChoice()
+        self.pointer.position[1] = self.options["continue"].position[1]
+        SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+    def newGame_up(self):
+        self.eventHandle = False
+        self.pointer.setChoice(2)
+        self.pointer.position[0] += 16
+        self.pointer.position[1] = self.options["quit"].position[1]
+        SoundManager.getInstance().playSFX("FF_cursor.wav")
+    
+    def continueGame_down(self):
+        self.eventHandle = False
+        self.pointer.position[0] += 16
+        self.pointer.increaseChoice()
+        self.pointer.position[1] = self.options["quit"].position[1]
+        SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+    def continueGame_up(self):
+        self.eventHandle = False
+        self.pointer.decreaseChoice()
+        self.pointer.position[1] = self.options["start"].position[1]
+        SoundManager.getInstance().playSFX("FF_cursor.wav")
         
+    def quitGame_down(self):
+        self.eventHandle = False
+        self.pointer.setChoice(0)
+        self.pointer.position[0] -= 16
+        self.pointer.position[1] = self.options["start"].position[1]
+        SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+    def quitGame_up(self):
+        self.eventHandle = False
+        self.pointer.decreaseChoice()
+        self.pointer.position[0] -= 16
+        self.pointer.position[1] = self.options["continue"].position[1]
+        SoundManager.getInstance().playSFX("FF_cursor.wav")
+
+
+    def handleEvent(self, event):
+        ##On new Game
         if self.pointer.choice == 0:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                self.pointer.increaseChoice()
-                self.pointer.position[1] = self.options["continue"].position[1]
-                SoundManager.getInstance().playSFX("FF_cursor.wav")
+                self.newGame_down()
             
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-                self.pointer.setChoice(2)
-                self.pointer.position[0] += 16
-                self.pointer.position[1] = self.options["quit"].position[1]
-                SoundManager.getInstance().playSFX("FF_cursor.wav")
+                self.newGame_up()
 
+        ##On continue
         elif self.pointer.choice == 1:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-                self.pointer.decreaseChoice()
-                self.pointer.position[1] = self.options["start"].position[1]
-                SoundManager.getInstance().playSFX("FF_cursor.wav")
+                self.continueGame_up()
 
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                self.pointer.position[0] += 16
-                self.pointer.increaseChoice()
-                self.pointer.position[1] = self.options["quit"].position[1]
-                SoundManager.getInstance().playSFX("FF_cursor.wav")
+                self.continueGame_down()
 
+        ##On quit
         elif self.pointer.choice == 2:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-                self.pointer.decreaseChoice()
-                self.pointer.position[0] -= 16
-                self.pointer.position[1] = self.options["continue"].position[1]
-                SoundManager.getInstance().playSFX("FF_cursor.wav")
+                self.quitGame_up()
 
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                self.pointer.setChoice(0)
-                self.pointer.position[0] -= 16
-                self.pointer.position[1] = self.options["start"].position[1]
-                SoundManager.getInstance().playSFX("FF_cursor.wav")
+                self.quitGame_down()
+    
+    """
+    Returns:
+    True if the joystick is moved down
+    """
+    def movedDown(self, event):
+        if event.value < 0.8:
+            self.movingDown = False
+        else:
+            self.movingDown = True
+    
+    """
+    Returns:
+    True if the joystick is moved up
+    """
+    def movedUp(self, event):
+        if event.value > -0.8:
+            self.movingUp = False
+        else:
+            self.movingUp = True
+    
+    def handleEvent_C(self, event):
+        ##On new Game
+        if event.type == pygame.JOYAXISMOTION and event.axis == 1:
+            self.movedDown(event)
+            self.movedUp(event)
+                
+    def moveCursor(self):
+        if self.eventHandle:
+            if self.pointer.choice == 0:
+                if self.movingDown:
+                    self.newGame_down()
+                
+                elif self.movingUp:
+                    self.newGame_up()
+
+            ##On continue
+            elif self.pointer.choice == 1:
+                if self.movingUp:
+                    self.continueGame_up()
+
+                elif self.movingDown:
+                    self.continueGame_down()
+
+            ##On quit
+            elif self.pointer.choice == 2:
+                if self.movingUp:
+                    self.quitGame_up()
+
+                elif self.movingDown:
+                    self.quitGame_down()
 
     def update(self, seconds):
         super().update(seconds)
+        if not self.eventHandle:
+            self.eventBufferTimer += seconds
+            if self.eventBufferTimer >= 0.2:
+                self.eventHandle = True
+                self.eventBufferTimer = 0.0
+
         if self.pointerTick < 10:
             self.pointer.position[0] += 1
             self.pointerTick += 1

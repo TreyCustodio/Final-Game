@@ -174,12 +174,9 @@ class DamageIndicator(Drawable):
             if self.row > 0:
                 index = 0
                 for p in self.currentPixels:
-                    #print(index, p.getDrawPos())
                     index += 1
                     drawSurface.blit(p.getPixel(), p.getDrawPos())
-                
-                #self.currentPixels = []
-                #self.pixelBuilder.draw(drawSurface)
+
 
     def setPixelsToDraw(self, value):
         self.pixelsToDraw = value
@@ -556,7 +553,6 @@ class HealthBar(object):
                         drawSurface.blit(self.red1, self.drawPos)
                         self.drawPos[0] += 1
 
-
                 if self.subtractingPixels:
                     print("subtracting")
                     ##Subtracting
@@ -651,7 +647,9 @@ class HealthBar(object):
                 if low == True:
                     self.blit(drawSurface, self.low2)
                     self.blit(drawSurface, self.low3)
+                    #print(blackPix)
                     for i in range(blackPix):
+                        print("A")
                         self.blit(drawSurface, self.low5)
                     
                     self.blit(drawSurface, self.edgeL)
@@ -660,6 +658,7 @@ class HealthBar(object):
                     self.drawPos[0] += 1
                     drawSurface.blit(self.red3, self.drawPos)
                     self.drawPos[0] += 1
+
                     for i in range(blackPix):
                         drawSurface.blit(self.red5, self.drawPos)
                         self.drawPos[0] += 1
@@ -687,7 +686,6 @@ class HealthBar(object):
                     drawSurface.blit(self.edgeG, drawPos)
                     drawPos[0] += 1
                 if i >= 1:
-                    #print(self.drawPos)
                     for j in range(i):
                         drawSurface.blit(self.green, drawPos)
                         drawPos[0] += 1
