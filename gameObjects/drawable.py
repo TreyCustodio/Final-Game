@@ -649,7 +649,6 @@ class HealthBar(object):
                     self.blit(drawSurface, self.low3)
                     #print(blackPix)
                     for i in range(blackPix):
-                        print("A")
                         self.blit(drawSurface, self.low5)
                     
                     self.blit(drawSurface, self.edgeL)

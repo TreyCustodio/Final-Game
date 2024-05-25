@@ -311,13 +311,21 @@ class Tile(Animated):
 
 
 class ForceField(Animated):
+    """
+    Should be converted into an enemy type
+    or simply add a damaging effect.
+    """
     def __init__(self, position, color = 0):
         super().__init__(position, "barrier.png", (0, color))
+        self.top = True
         self.nFrames = 4
         self.framesPerSecond = 8
         self.dead = False
         self.row = color
         self.frame += color
+    
+    def update(self, seconds, position = None):
+        super().update(seconds)
 
 
 class Portal(Animated):

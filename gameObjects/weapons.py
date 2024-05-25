@@ -124,6 +124,7 @@ class Bullet(AbstractWeapon):
         self.setVelocity(self.direction, self.speed)
         self.type = 0
         self.frame = 0
+        self.id = "arrow"
 
     def setVelocity(self, direction, speed):
         if direction == 0:

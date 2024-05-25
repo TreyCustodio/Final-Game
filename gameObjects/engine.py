@@ -81,23 +81,23 @@ class AE(object):
         self.icon = None
         self.boxPos = vec(30,64)
         self.promptResult = False
-        #Puzzle conditions
+        ##Puzzle conditions
         self.room_set = False
         self.room_clear = False
         self.clearFlag = 0
-        #Player
-        #Enemy list to pass into placeEnemies
-        self.enemies = []
-        self.pushableBlocks = []
-        self.npcs = []
-        self.spawning = []
-        self.projectiles = []
+        ##Object Lists
+        self.enemies = [] #list of enemies to be used for placeEnemies()
+        self.pushableBlocks = [] #pushable blocks
+        self.npcs = [] #enemies that have been positioned properly
+        self.spawning = [] #interactable objects and drops
+        self.projectiles = [] #weapons
         self.switches = []
         self.blocks = []
         self.torches = []
         self.doors = []
         self.tiles = []
         self.drops = []
+        self.topObjects = [] #Objects that need to be drawn after the player
         self.indicator = DamageIndicator()
         self.moneyImage = None
         self.keyImage = None
@@ -471,6 +471,18 @@ class AE(object):
         
     def playSound(self, name):
         SoundManager.getInstance().playSFX(name)
+    
+    def stopSound(self, name):
+        SoundManager.getInstance().stopSFX(name)
+    
+    def stopAllSounds(self):
+        SoundManager.getInstance().stopAllSFX()
+
+    def playBgm(self, name):
+        SoundManager.getInstance().playBGM(name)
+    
+    def fadeBgm(self):
+        SoundManager.getInstance().fadeoutBGM()
 
     """
     Event control methods
@@ -602,24 +614,20 @@ class AE(object):
 
         for n in self.npcs:
         #Check if it collides with the player first
-            if self.player.doesCollide(n):
-                #Push blocks
-                if issubclass(type(n), Enemy):
-                # Handle it within the player class (enemies)
-                    if self.player.running:
-                        if not n.freezeShield and not n.frozen:
-                            self.player.stop()
-                            n.freeze()
+            if not self.player.ignoreCollision and self.player.doesCollide(n):
+                if self.player.running:
+                    if not n.freezeShield and not n.frozen:
+                        self.player.stop()
+                        n.freeze()
 
-                    if not n.frozen:
-                        if not self.player.invincible:
-                            if n.handlePlayerCollision(self.player):
-                                self.player.handleCollision(n)
-                                #player should be invincible now
-                                if self.player.invincible and not self.healthBar.drawingHurt:
-                                    self.healthBar.drawHurt(self.player.hp, n.damage)
-                else:
-                    self.player.handleCollision(n)
+                if not n.frozen:
+                    if not self.player.invincible:
+                        if n.handlePlayerCollision(self.player):
+                            self.player.handleCollision(n)
+                            #player should be invincible now
+                            if self.player.invincible and not self.healthBar.drawingHurt:
+                                self.healthBar.drawHurt(self.player.hp, n.damage)
+           
 
             #Enemies
             if issubclass(type(n),Enemy):
@@ -698,6 +706,8 @@ class AE(object):
     """
     def projectilesOnEnemies(self, projectile, other):
         if other.doesCollideProjectile(projectile):
+            if other.ignoreCollision:
+                return
             if not projectile.hit:
                 other.handleCollision(projectile)
                 if other.hit:
@@ -748,35 +758,40 @@ class AE(object):
         
         #Call super().handleCollision()
         #Then self.spawn/despawn however you want
-    
     """
     Update methods
     """
-    def updateNpcs(self, seconds):
-        ##Enemies
-        for n in self.npcs:
-            #if issubclass(type(n), Enemy):
-            n.update(seconds)
-            if n.dead:
-                self.playSound("enemydies.wav")
-                self.disappear((n))
-                if self.dropCount < 5:
-                    if self.player.hp == INV["max_hp"]:
-                        drop = n.getMoney()
-                        if drop != None:
-                            self.spawning.append(drop)
-                    else:
-                        drop = n.getDrop()
-                        
-                        if drop != None:
-                            self.spawning.append(drop)
-                    self.dropCount += 1
-                self.enemyCounter += 1
-            
+    def update_Enemy(self, seconds, n):
+        n.update(seconds, self.player.position)
+        if n.dead:
+            self.playSound("enemydies.wav")
+            self.disappear((n))
+            if self.dropCount < 5:
+                if self.player.hp == INV["max_hp"]:
+                    drop = n.getMoney()
+                    if drop != None:
+                        self.spawning.append(drop)
+                else:
+                    drop = n.getDrop()
+                    
+                    if drop != None:
+                        self.spawning.append(drop)
+                self.dropCount += 1
+            self.enemyCounter += 1
+        
         
         if not self.ignoreClear and not self.room_clear and self.enemyCounter == self.max_enemies:
             self.playSound("room_clear.mp3")
             self.room_clear = True
+    
+
+    def updateNpcs(self, seconds):
+        ##Enemies
+        for n in self.npcs:
+            self.update_Enemy(seconds, n)
+            
+        for n in self.topObjects:
+            self.update_Enemy(seconds, n)
     
     #Most likely to be modified for cutscenes
     def updateSpawning(self, seconds):
@@ -924,14 +939,9 @@ class AE(object):
         if self.npcs:
             for n in self.npcs:
             #Consider making enemies appear right before the player
-                if issubclass(type(n), Enemy):
-                    n.draw(drawSurface)
-                else:
+                if not n.top:
                     n.draw(drawSurface)
         
-        
-        
-    
     def drawProjectiles(self, drawSurface):
         #Projectiles/weapons
         if self.projectiles:
@@ -960,7 +970,15 @@ class AE(object):
 
     def drawDamage(self, drawSurface):
         self.damageNums.draw(self, drawSurface)
+    
+    def drawTopLayer(self, drawSurface):
+        if self.topObjects:
+            for o in self.topObjects:
+                o.draw(drawSurface)
         
+        for n in self.npcs:
+            if n.top:
+                n.drawTop(drawSurface)
         
     def drawHud(self, drawSurface):
         """
@@ -1075,8 +1093,12 @@ class AE(object):
         self.drawPushable(drawSurface)
         
         self.drawProjectiles(drawSurface)
+
         #Player
         self.player.draw(drawSurface)
+
+        #Objects above player
+        self.drawTopLayer(drawSurface)
 
         #HUD
         self.drawHud(drawSurface)

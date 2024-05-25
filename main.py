@@ -9,9 +9,12 @@ def main():
     pygame.font.init()
 
     ##Set the screen up
-    flags = pygame.SCALED
+    flags = pygame.SCALED #| pygame.NOFRAME
     screen = pygame.display.set_mode(list(map(int, UPSCALED)), flags=flags)
     drawSurface = pygame.Surface(list(map(int, RESOLUTION)))
+    transparentSurface = textSurface = drawSurface.subsurface(drawSurface.get_rect())
+    textSurface = drawSurface.subsurface(drawSurface.get_rect())
+    
 
     rand = randint(0,5)
     if rand == 1:
@@ -57,10 +60,35 @@ def main():
         pygame.transform.scale(drawSurface,
                                list(map(int, UPSCALED)),
                                screen)
-        pygame.display.flip()
+        
+        
+        #pygame.display.flip()
         gameClock = pygame.time.Clock()
         setJoystick()
-        gameEngine.draw(drawSurface)
+        
+        if gameEngine.state == "textBox":
+            
+            pygame.transform.scale(textSurface,
+                               list(map(int, UPSCALED)),
+                               screen)
+            pygame.display.flip()
+            gameEngine.drawText(textSurface)
+
+        elif gameEngine.state == "mainMenu":
+            pygame.transform.scale(transparentSurface,
+                               list(map(int, UPSCALED)),
+                               screen)
+            pygame.display.flip()
+            gameEngine.drawTitle(transparentSurface)
+            
+        else:
+            pygame.display.flip()
+            gameEngine.draw(drawSurface)
+
+        
+
+        
+
         eventManager.handleEvents(gameEngine)
         gameEngine.moveMenuCursor()
         gameEngine.handleCollision()

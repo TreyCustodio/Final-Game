@@ -7,13 +7,14 @@ from . import TextEntry, EventMenu
 
 from utils import vec, RESOLUTION
 
+from pygame import Surface
 from pygame.locals import *
 
 
 class ScreenManager(object):
       
     def __init__(self):
-        SoundManager.getInstance().playBGM("Jhené.mp3")
+        self.playTheme()
         HudImageManager.initialize()
         self.controller = "key"
         self.controllerSet = False
@@ -23,6 +24,7 @@ class ScreenManager(object):
         self.textEngine = TextEngine.getInstance()
         self.state = ScreenManagerFSM(self)
         self.pausedText = TextEntry(vec(0,0),"Paused")
+        self.transparency = False #Boolean that activates the transparent surface
 
         ##  Main Menu transitioning states
         self.startingGame = False
@@ -39,6 +41,9 @@ class ScreenManager(object):
         size = self.pausedText.getSize()
         midpoint = RESOLUTION // 2 - size
         self.pausedText.position = vec(*midpoint)
+
+        self.displayTitle = False
+        self.titleTimer = 0.0
         self.mainMenu = EventMenu("title_screen.png", fontName="zelda")
 
         self.mainMenu.addOption("start", "New Game",
@@ -55,11 +60,108 @@ class ScreenManager(object):
         
 
                                     
-    
+    def playTheme(self):
+        SoundManager.getInstance().playBGM("Fontaines.mp3")
+
     def setController(self, text):
         self.controller = text
 
+    def drawText(self, drawSurf):
+        if self.textEngine.done:
+            if self.pauseEngine.paused:
+                if "Y/N" in self.pauseEngine.text:
+                    
+                    self.pauseEngine.promptResult = self.textEngine.promptResult
+                    if self.pauseEngine.promptResult:
+                        if self.pauseEngine.promptFlag == "potion":
+                            INV["potion"] -= 1
+                            self.game.healPlayer(3)
+                        
+                        elif self.pauseEngine.promptFlag == "smoothie":
+                            INV["smoothie"] -= 1
+                            self.game.healPlayer(6)
+                        
+                        elif self.pauseEngine.promptFlag == "beer":
+                            INV["beer"] -= 1
+                            self.game.getDrunk()
+                        
+                        elif self.pauseEngine.promptFlag == "joint":
+                            INV["joint"] -= 1
+                            self.game.getHigh()
+                        
+                        elif self.pauseEngine.promptFlag == "speed":
+                            INV["speed"] -= 1
+                            self.game.zoom()
 
+                        elif self.pauseEngine.promptFlag == "syringe":
+                            self.game.useSyringe()
+                        
+                        elif self.pauseEngine.promptFlag == "quit":
+                            SoundManager.getInstance().fadeoutBGM()
+                            self.returningToMain = True
+                            self.fade.setRow(1)             
+                            
+                    
+
+                self.pauseEngine.textBox = False
+                self.pauseEngine.text = ""
+                self.state.speakP()
+
+            elif self.inIntro:
+                self.intro.textBox = False
+                self.intro.text = ""
+                self.intro.icon = None
+                if self.intro.textInt == 9:
+                    self.intro.fading = True
+                self.state.speakI()
+            else:
+                if "Y/N" in self.game.text:
+                    self.game.promptResult = self.textEngine.promptResult
+                self.game.textBox = False
+                self.game.text = ""
+                self.game.icon = None
+                self.state.speak()
+            #self.textEngine = TextEngine.tearDown()
+            self.textEngine.reset()
+            return
+
+        
+        if self.pauseEngine.paused:
+            if self.textEngine.closing:
+                self.drawGame(drawSurf)
+                self.drawPause(drawSurf)
+            self.textEngine.draw(self.pauseEngine.boxPos, drawSurf)
+
+        elif self.inIntro:
+            if self.textEngine.closing:
+                self.intro.draw(drawSurf)
+            self.textEngine.draw(self.intro.boxPos, drawSurf)
+
+        else:
+            if self.textEngine.closing:
+                self.drawGame(drawSurf)
+            self.textEngine.draw(self.game.boxPos, drawSurf)
+
+    def drawGame(self, drawSurf):
+        self.game.draw(drawSurf)
+    
+    def drawPause(self, drawSurf):
+        self.pauseEngine.draw(drawSurf)
+
+    def drawTitle(self, drawSurf):
+        if self.displayTitle:
+            self.mainMenu.draw(drawSurf)
+            if self.fadingIn:
+                self.fade.draw(drawSurf)
+        else:
+            self.fade.draw(drawSurf)
+            self.mainMenu.drawText(drawSurf)
+            
+
+        if self.startingGame or self.continuingGame or self.returningToMain:
+                self.fade.draw(drawSurf)
+                return
+        
     #Displaying Text
     def draw(self, drawSurf):
         """
@@ -73,14 +175,7 @@ class ScreenManager(object):
                     self.textEngine.setText(self.game.text, self.game.icon, prompt = True)
                 else:
                     self.textEngine.setText(self.game.text, self.game.icon, self.game.largeText)
-                        
-        elif self.state == "textBox":
-            if self.pauseEngine.paused:
-                self.textEngine.draw(self.pauseEngine.boxPos, drawSurf)
-            elif self.inIntro:
-                self.textEngine.draw(self.intro.boxPos, drawSurf)
-            else:
-                self.textEngine.draw(self.game.boxPos, drawSurf)
+
 
 
         elif self.state == "paused":
@@ -89,12 +184,18 @@ class ScreenManager(object):
                 self.state.pause()
                 return
             self.game.draw(drawSurf)
+            
+
+            if self.pauseEngine.text != "":
+                self.state.speakP()
+                #self.textEngine = TextEngine.getInstance()
+                if "Y/N" in self.pauseEngine.text:
+                    self.textEngine.setText(self.pauseEngine.text, prompt = True)
+                    
+                else:
+                    self.textEngine.setText(self.pauseEngine.text)
             self.pauseEngine.draw(drawSurf)
-            
-            
-        elif self.state == "mainMenu":
-            self.mainMenu.draw(drawSurf)
-        
+
         elif self.state == "intro":
             self.intro.draw(drawSurf)
             if self.intro.textBox:
@@ -104,7 +205,7 @@ class ScreenManager(object):
         if (not (self.fading or self.fadingIn)) and self.game and self.game.fading:
             self.fading = True
 
-        if self.fading or self.startingGame or self.continuingGame or self.returningToMain:
+        if self.fading or self.returningToMain:
             self.fade.draw(drawSurf)
             return
         
@@ -159,6 +260,8 @@ class ScreenManager(object):
             ##  Pause the game if the window is moved   ##
             if not self.game.pause_lock:
                 if event.type == pygame.WINDOWMOVED:
+                    if self.game.player:
+                        self.game.player.stop()
                     self.state.pause()
                     return
 
@@ -200,15 +303,7 @@ class ScreenManager(object):
 
                 else:
                     self.pauseEngine.handleEvent_C(event)
-                    if self.pauseEngine.text != "":
-                        
-                        self.state.speakP()
-                        #self.textEngine = TextEngine.getInstance()
-                        if "Y/N" in self.pauseEngine.text:
-                            self.textEngine.setText(self.pauseEngine.text, prompt = True)
-                            
-                        else:
-                            self.textEngine.setText(self.pauseEngine.text)
+                    
             
             else:
                 
@@ -228,17 +323,18 @@ class ScreenManager(object):
                             self.textEngine.setText(self.pauseEngine.text)
                 
         elif self.state == "mainMenu":
-            if not self.fading and not self.fadingIn:
-                if self.controller == "Controller (Xbox One For Windows)":
-                    self.mainMenu.handleEvent_C(event)
-                    if event.type == JOYBUTTONDOWN and (event.button == 0):
-                        choice = self.mainMenu.getChoice()
-                        self.handleChoice(choice)
-                else:
-                    self.mainMenu.handleEvent(event)
-                    if event.type == pygame.KEYDOWN and event.key == K_z:
-                        choice = self.mainMenu.getChoice()
-                        self.handleChoice(choice)
+            if self.mainMenu.readyToDisplay:
+                if not self.fadingIn and not self.continuingGame and not self.startingGame:
+                    if self.controller == "Controller (Xbox One For Windows)":
+                        self.mainMenu.handleEvent_C(event)
+                        if event.type == JOYBUTTONDOWN and (event.button == 0):
+                            choice = self.mainMenu.getChoice()
+                            self.handleChoice(choice)
+                    else:
+                        self.mainMenu.handleEvent(event)
+                        if event.type == pygame.KEYDOWN and event.key == K_z:
+                            choice = self.mainMenu.getChoice()
+                            self.handleChoice(choice)
                     
             
 
@@ -304,61 +400,7 @@ class ScreenManager(object):
             else:
                 self.textEngine.handleEvent(event)
 
-            if self.textEngine.done:
-                if self.pauseEngine.paused:
-                    if "Y/N" in self.pauseEngine.text:
-                        
-                        self.pauseEngine.promptResult = self.textEngine.promptResult
-                        if self.pauseEngine.promptResult:
-                            if self.pauseEngine.promptFlag == "potion":
-                                INV["potion"] -= 1
-                                self.game.healPlayer(3)
-                            
-                            elif self.pauseEngine.promptFlag == "smoothie":
-                                INV["smoothie"] -= 1
-                                self.game.healPlayer(6)
-                            
-                            elif self.pauseEngine.promptFlag == "beer":
-                                INV["beer"] -= 1
-                                self.game.getDrunk()
-                            
-                            elif self.pauseEngine.promptFlag == "joint":
-                                INV["joint"] -= 1
-                                self.game.getHigh()
-                            
-                            elif self.pauseEngine.promptFlag == "speed":
-                                INV["speed"] -= 1
-                                self.game.zoom()
-
-                            elif self.pauseEngine.promptFlag == "syringe":
-                                self.game.useSyringe()
-                            
-                            elif self.pauseEngine.promptFlag == "quit":
-                                self.returningToMain = True
-                                self.fade.setRow(1)                     
-                                
-                        
-
-                    self.pauseEngine.textBox = False
-                    self.pauseEngine.text = ""
-                    self.state.speakP()
-
-                elif self.inIntro:
-                    self.intro.textBox = False
-                    self.intro.text = ""
-                    self.intro.icon = None
-                    if self.intro.textInt == 9:
-                        self.intro.fading = True
-                    self.state.speakI()
-                else:
-                    if "Y/N" in self.game.text:
-                        self.game.promptResult = self.textEngine.promptResult
-                    self.game.textBox = False
-                    self.game.text = ""
-                    self.game.icon = None
-                    self.state.speak()
-                #self.textEngine = TextEngine.tearDown()
-                self.textEngine.reset()
+            
 
         elif self.state == "intro":
             if self.controller == "Controller (Xbox One For Windows)":
@@ -414,6 +456,19 @@ class ScreenManager(object):
                     self.fadingIn = True
 
         elif self.state == "mainMenu":
+            if not self.displayTitle:
+                self.titleTimer += seconds
+                if self.titleTimer >= 10:
+                    self.displayTitle = True
+                    self.titleTimer = 0.0
+                return
+            
+            elif not self.mainMenu.readyToDisplay:
+                self.titleTimer += seconds
+                if self.titleTimer >= 6.8:
+                    self.mainMenu.setReady()
+                    self.titleTimer = 0.0
+            
             self.mainMenu.update(seconds)
 
             ##New Game
@@ -444,7 +499,7 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Grand_Chapel.getInstance()
+                        self.game = Knight.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()
@@ -483,6 +538,6 @@ class ScreenManager(object):
                     self.startingGame = False
                 elif self.state == "mainMenu":
                     if self.returningToMain:
-                        SoundManager.getInstance().playBGM("Jhené.mp3")
+                        self.playTheme()
                         self.fade.setRow()
                         self.returningToMain = False              

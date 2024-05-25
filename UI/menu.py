@@ -43,13 +43,20 @@ class EventMenu(AbstractMenu):
     def __init__(self, background, fontName="default",
                 color=(255,255,255)):
         super().__init__(background, fontName, color)
+        self.readyToDisplay = False
         self.pointer = Pointer(vec(16*6-8, 98))
+        self.titleTimer = 0.0
         self.eventMap = {}
         self.pointerTick = 0
         self.eventBufferTimer = 0.0
         self.eventHandle = True
         self.movingDown = False
         self.movingUp = False
+        self.colorVal = 0
+        self.greenVal = 0
+        self.colorId = 0 #0-> orange, 1 -> blue, 2 -> yellow, 3 -> wind
+        self.increasing = True
+        self.frameCounter = 50
      
     def addOption(self, key, text, position, eventLambda=None,
                                               center=None):
@@ -57,9 +64,54 @@ class EventMenu(AbstractMenu):
         if eventLambda:
             self.eventMap[key] = eventLambda
     
+    def adjustColor(self):
+        self.frameCounter += 1
+        ##Getting brighter
+        if self.increasing:
+            if self.frameCounter >= 10:
+                if self.frameCounter % 2 == 0:
+                    self.colorVal += 2
+                    self.greenVal += 1
+                    if self.greenVal == 40:
+                        self.increasing = False
+        ##Dimming out
+        else:
+            if self.frameCounter % 2 == 0:
+                self.colorVal -= 2
+                self.greenVal -= 1
+                if self.greenVal == 0:
+                    self.colorId += 1
+                    self.colorId %= 4
+                    self.increasing = True
+                    self.frameCounter = 0
+                    
+    def setReady(self):
+        self.readyToDisplay = True
+    
+    def drawText(self, drawSurf):
+        if self.titleTimer >= 8:
+                return
+        elif self.titleTimer >= 6.5:
+            Text((16*7-4,16*4+8), "Designed in PyGame", color = (200,170,0)).draw(drawSurf)
+        elif self.titleTimer >= 4:
+            return
+        elif self.titleTimer >= 1.0:
+            Text((16*6-10,16*4+8), "YungTrey Games Presents...", color = (210,0,0)).draw(drawSurf)
+
     def draw(self, drawSurf):
-        super().draw(drawSurf)
-        self.pointer.draw(drawSurf)
+        if self.colorId == 0:
+            drawSurf.fill(pygame.Color(self.colorVal+8, self.greenVal, 0))
+        elif self.colorId == 1:
+            drawSurf.fill(pygame.Color(0, self.colorVal, self.colorVal+4))
+        elif self.colorId == 2:
+            drawSurf.fill(pygame.Color(self.colorVal+4, self.colorVal, 0))
+        elif self.colorId == 3:
+            drawSurf.fill(pygame.Color(self.greenVal, self.colorVal, 0))
+
+        self.adjustColor()
+        if self.readyToDisplay:
+            super().draw(drawSurf)
+            self.pointer.draw(drawSurf)
 
     def addEvent(self, key, eventLambda):
         """

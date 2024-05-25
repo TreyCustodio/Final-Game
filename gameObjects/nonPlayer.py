@@ -347,9 +347,10 @@ class Drop(NonPlayer):
     
     def update(self, seconds):
         super().update(seconds)
-        self.timer += seconds
-        if self.timer >= self.lifeTime:
-            self.disappear = True
+        if self.lifeTime > 0:
+            self.timer += seconds
+            if self.timer >= self.lifeTime:
+                self.disappear = True
         
 class Frost(Drop):
     def __init__(self, position = vec(0,0)):
@@ -394,6 +395,21 @@ class BigHeart(Drop):
                 if player.hp > INV["max_hp"]: 
                     player.hp = INV["max_hp"]
 
+class GreenHeart(Drop):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, 5, lifeTime=0)
+    
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0], self.position[1]+1), (16,14))
+    
+    def interact(self, player):
+        if not self.interacted:
+            SoundManager.getInstance().playSFX("solve.wav")
+            self.interacted = True
+            INV["max_hp"] += 1
+            player.hp = INV["max_hp"]
+            
+
 class Buck(Drop):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, 1)
@@ -407,6 +423,34 @@ class Buck(Drop):
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 1
+
+class Buck_R(Drop):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, 7)
+    
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0], self.position[1]+3), (16,10))
+    
+    def interact(self, player):
+        if not self.interacted:
+            SoundManager.getInstance().playSFX("solve.wav")
+            self.interacted = True
+            if INV["money"] < INV["wallet"]:
+                INV["money"] += 10
+
+class Buck_B(Drop):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, 6)
+    
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0], self.position[1]+3), (16,10))
+    
+    def interact(self, player):
+        if not self.interacted:
+            SoundManager.getInstance().playSFX("solve.wav")
+            self.interacted = True
+            if INV["money"] < INV["wallet"]:
+                INV["money"] += 5
             
 class FireShard(Drop):
     def __init__(self, position = vec(0,0)):

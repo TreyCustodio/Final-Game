@@ -27,6 +27,7 @@ class TextEngine(object):
         def __init__(self):
             self.text = ""
             self.line = ""
+            self.starting = True
             self.displayIcon = None
 
             self.large = False #Boolean determining if you display the large textbox or not
@@ -36,9 +37,10 @@ class TextEngine(object):
             self.ready_to_display = True
             self.ready_to_continue = False
             self.end = False
+            self.closing = False
             self.done = False
+            self.frame = 1
             self.textBox = SpriteManager.getInstance().getSprite("TextBox.png", (0,0))
-            
             
             self.displayTimer = 0.0
 
@@ -51,12 +53,19 @@ class TextEngine(object):
             self.choosing = False#The state of choosing yes or no
             self.promptResult = False
 
-
+        def setImage(self):
+            if self.large:
+                self.textBox = SpriteManager.getInstance().getSprite("TextBox2.png", (self.frame,0))
+            else:
+                self.textBox = SpriteManager.getInstance().getSprite("TextBox.png", (self.frame,0))
+        
         def reset(self):
             self.text = ""
             self.line = ""
             self.displayIcon = None
+            self.starting = True
 
+            self.frame = 1
             self.large = False #Boolean determining if you display the large textbox or not
 
             self.charIndex = 0
@@ -64,6 +73,7 @@ class TextEngine(object):
             self.ready_to_display = True
             self.ready_to_continue = False
             self.end = False
+            self.closing = False
             self.done = False
             self.textBox = SpriteManager.getInstance().getSprite("TextBox.png", (0,0))
             
@@ -117,8 +127,16 @@ class TextEngine(object):
         
 
         def draw(self,position,drawSurface):
-
-
+            #Still drawing previous frame
+            if self.starting:
+                drawSurface.blit(self.textBox, position)
+                return
+            elif self.closing:
+                drawSurface.blit(self.textBox, position)
+                return
+            elif self.done:
+                return
+            
             if self.end:
                 if self.prompt:
                     self.choosing = True
@@ -141,7 +159,6 @@ class TextEngine(object):
                 self.displayText(position, drawSurface)
         
             elif self.ready_to_continue:
-                #drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox.png", (0,1)), position)
                 self.drawContinue(position, drawSurface)
 
             elif self.displayTimer > 0 and self.displayTimer < 0.1:
@@ -256,7 +273,7 @@ class TextEngine(object):
 
                 elif (event.type == pygame.KEYDOWN and event.key == pygame.K_z):
                     self.playSFX("WW_Textbox_Close.wav")
-                    self.done = True
+                    self.setClosing()
                     if self.highlighted == 0:
                         self.promptResult = False
                     elif self.highlighted == 1:
@@ -266,7 +283,7 @@ class TextEngine(object):
             elif (event.type == pygame.KEYDOWN and event.key == pygame.K_z) and self.ready_to_continue:
                 if self.end == True:
                     self.playSFX("WW_Textbox_Close.wav")
-                    self.done = True
+                    self.setClosing()
                 else:
                     self.playSFX("OOT_Dialogue_Next.wav")
                     self.box_drawn = False
@@ -286,7 +303,7 @@ class TextEngine(object):
                         self.playSFX("pause_cursor.wav")
                 elif event.type == JOYBUTTONDOWN and event.button == 0:
                     self.playSFX("WW_Textbox_Close.wav")
-                    self.done = True
+                    self.setClosing()
                     if self.highlighted == 0:
                         self.promptResult = False
                     elif self.highlighted == 1:
@@ -296,14 +313,51 @@ class TextEngine(object):
             elif (event.type == pygame.JOYBUTTONDOWN and event.button == 0) and self.ready_to_continue:
                 if self.end == True:
                     self.playSFX("WW_Textbox_Close.wav")
-                    self.done = True
+                    self.setClosing()
                 else:
                     self.playSFX("OOT_Dialogue_Next.wav")
                     self.box_drawn = False
                     self.ready_to_continue = False
 
+        def setClosing(self):
+            self.closing = True
+            self.frame = 5
 
         def update(self, seconds):
+            if self.starting:
+                if self.large:
+                    self.frame += 1
+                    self.frame %= 6
+                    self.setImage()
+                    if self.frame == 0:
+                        self.starting = False
+                    return
+                else:
+                    self.frame += 1
+                    self.frame %= 5
+                    self.setImage()
+                    if self.frame == 0:
+                        self.starting = False
+                    return
+            
+            elif self.closing:
+                if self.large:
+                    self.frame -= 1
+                    if self.frame == 0:
+                        self.closing = False
+                        self.done = True
+                    else:
+                        self.setImage()
+                    return
+                else:
+                    self.frame -= 1
+                    if self.frame == 0:
+                        self.closing = False
+                        self.done = True
+                    else:
+                        self.setImage()
+                    return
+                
             self.displayTimer += seconds
             self.highlightTimer += seconds
 

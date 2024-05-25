@@ -64,7 +64,7 @@ Indicates what C attack and what type of arrow is equipped
 """
 EQUIPPED = {
 
-    "C": 3,
+    "C": 1,
     "Arrow": 0,
     "room":0,
     #0 -> regular, 1 -> fire, 2 -> ice, 3- -> thunder, 4-> wind, 5-> super, 6-> hyper
@@ -77,7 +77,7 @@ EQUIPPED = {
 The Player's inventory
 """
 INV = {
-    "max_hp": 20,
+    "max_hp": 10,
     "plant": 1,
     "shoot": True,
     "fire": True,
@@ -474,12 +474,7 @@ but enjoy fighting a bunch\n\
 of Davids instead.\n",
 
 "chapel_geemer":
-"This is the Grand Chapel.&&\n\
-The ancient ones used this\n\
-room to worship the Gods.\n\
-Though they have ceased to\n\
-be, their influence remains.\n\
-Praise be to Majestus.&&\n",
+"Praise be to Majestus.&&",
 
 "skipping_text":
 "Dude... You can skip\n\

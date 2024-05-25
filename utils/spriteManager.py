@@ -48,7 +48,8 @@ class SpriteManager(object):
                        "spinner.png":(32,32), "shotsfired.png":(16,16), "drops.png":(16,16),
                        "baller.png":(16,16), "barrier.png":(16,16), "pixels.png":(16,16), "map.png":(240,160),
                        "numbers.png":(16,16), 
-                       "mapRooms.png":(8,8)
+                       "mapRooms.png":(8,8),
+                       "knight.png":(32,32)
          
       }
       
@@ -56,7 +57,7 @@ class SpriteManager(object):
       _DEFAULT_SPRITE = (18,26)
       
       # A list of images that require to be loaded with transparency
-      _TRANSPARENCY = ["pointer.png", "portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
+      _TRANSPARENCY = ["title_screen.png", "pointer.png", "portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
                        "icon.png", "TextBox.png", "TextBox2.png", "geemer.png", "item.png", "fire.png", "black.png", "blessing.png",
                        "thunder.png", "energy.png", "gale.png", "indicator.png",
                        "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png",#Enemies
@@ -66,7 +67,8 @@ class SpriteManager(object):
                        ]
       
       # A list of images that require to be loaded with a color key
-      _COLOR_KEY = ["Link.png", "Stalfos.png", "blizz.png", "slash.png", "spinner.png", "heater.png"]
+      _COLOR_KEY = ["Link.png", "Stalfos.png", "blizz.png", "slash.png", "spinner.png", "heater.png",
+                    "knight.png"]
       
       def __init__(self):
          # Stores the surfaces indexed based on file name
@@ -107,6 +109,7 @@ class SpriteManager(object):
             self._loadImage(fileName, sheet = True, enemy = True)
          return self[fileName][direction][0]
       
+   
       def _loadImage(self, fileName, sheet=False, level = False, enemy = False):
          # Load the full image
          if level:

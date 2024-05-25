@@ -8,6 +8,7 @@ class Player(Animated):
     
     def __init__(self, position=vec(0,0), direction=2):
         super().__init__(position, "Link.png", (0, direction))  
+        self.hp = INV["max_hp"]
         #Frames, vel, speed, and row
         #Must reach this far to move player
         self.analogTrack = 0.40
@@ -42,7 +43,6 @@ class Player(Animated):
         self.positionLock = False
         self.collisionRect = pygame.Rect((self.position[0]+1,self.position[1]+7),(16,16))
         ##Weapons/items##
-        self.keys = 1
         #Bullet
         self.bullet = None
         self.arrowCount = 1
@@ -53,7 +53,7 @@ class Player(Animated):
         self.chargeTimer = 0
         self.charged = False
         self.charging = False
-        #Sword
+        #Flame Sword
         self.sword = None
         self.swordReady = True
         self.swordSound = "DarkLink1.wav"
@@ -72,12 +72,8 @@ class Player(Animated):
         #Blizzard
         self.freezing = False
         self.blizzard = None
-        #Else
+
         
-        self.hp = INV["max_hp"]
-        #self.max_hp = 5
-        #self.ammo = F
-        #self.max_ammo = 10
         self.ignoreCollision = False
         self.event = None
         self.invincible = False
@@ -236,7 +232,7 @@ class Player(Animated):
         self.running = False
         self.vel = vec(0,0)
         SoundManager.getInstance().stopSFX("screwattack_loop.wav")
-        #SoundManager.getInstance().stopSFX("footsteps.wav")
+
     def slow(self):
         self.running = False
         self.vel /= 3

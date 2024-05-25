@@ -1,4 +1,4 @@
-from . import Animated, Bullet, Element, Blizzard, Heart, BigHeart, Buck, FireShard
+from . import Drawable, Animated, Bullet, Element, Blizzard, Heart, BigHeart, Buck, FireShard, GreenHeart, Buck_B, Buck_R
 from utils import SoundManager, SpriteManager, SCALE, RESOLUTION, vec
 from random import randint
 import pygame
@@ -15,6 +15,8 @@ class Enemy(Animated):
         if fileName != "":
             self.image = SpriteManager.getInstance().getEnemy(fileName, direction)
         
+        self.ignoreCollision = False
+        self.top = False #Boolean that controls what layer the enemy is drawn on
         self.hit = False
         #Animation properties
         self.indicatorRow = 0
@@ -119,9 +121,13 @@ class Enemy(Animated):
         else:
             self.hp = self.maxHp
 
-    def hurt(self, damage):
-        self.hit = True
+    def hurt(self, damage, setHit = True):
+        self.hit = setHit
         self.hp -= damage
+        if self.hp > 0: 
+            SoundManager.getInstance().playSFX("enemyhit.wav")
+        else:
+            self.dead = True
 
     def handlePlayerCollision(self, player):
         """
@@ -276,12 +282,10 @@ class Enemy(Animated):
             if self.flashTimer >= 0.2:
                 self.row -= self.hurtRow
 
-    def update(self, seconds):
+    def update(self, seconds, position = None):
         if self.dead:
         #Add death animation here if self.hp = 0
             pass
-
-        
         
         self.unfreeze(seconds)
 
@@ -291,8 +295,385 @@ class Enemy(Animated):
         ##Move
         self.move(seconds)
         
-       
 
+class LavaKnight(Enemy):
+    def __init__(self, position=vec(0,0), fall = False, boss = True):
+        """
+        Position of shadow does not move unless
+        the knight moves its position.
+        Moving its position is not the same as
+        jumping up or down.
+        """
+        super().__init__(position, "knight.png", 0)
+        self.boss = boss
+        ##Startup animation
+        self.vibrationTick = 0
+        self.startupTimer = 0.0
+        self.fallTimer = 0.0 #timer for off screen
+        self.shaking = False #vibrating bool
+        self.moving = False #done with animation
+        self.respawning = False
+        self.falling = False
+        self.targetPos = vec(0,0)
+
+        self.desperate = False #True if final phase is active
+        self.damage = 3
+        self.nFrames = 1
+        self.maxHp = 1
+        self.freezeShield = True
+        self.hp = self.maxHp
+        self.jumpingUp = False
+        self.jumpingDown = False
+        self.movingLeft = False
+        self.movingRight = False
+        self.movingUp = False
+        self.movingDown = False
+
+        self.frozen = False
+        self.jumpTimer = 0.0
+        self.pause = True
+        self.speed = 30
+        self.freezeCounter = 1 #Once this gets to zero, it becomes vulnerable to Bombofauns
+        self.maxCount = 10 #The maximum integer the freezeCount can be
+        self.cold = False #Able to be blown up
+        self.vulnerable = False #Able to be frozen
+        self.iframeTimer = 0.0
+        self.shadow = Animated(vec(self.position[0], self.position[1]), "knight.png", (1,0))
+        self.xVals = [] #list of possible positions in the collisionRect
+        self.yVals = []
+
+    def getDrop(self):
+        return GreenHeart((self.position[0]+16, self.position[1]+16))
+    
+    def hurt(self, damage, setHit = True):
+        self.hit = setHit
+        self.hp -= damage
+        if self.desperate:
+            if self.hp <= 0:
+                self.dead = True
+            else:
+                SoundManager.getInstance().playSFX("enemyhit.wav")
+
+        elif self.hp <= 0:
+            self.desperate = True
+            self.hp = 2
+        else:
+            SoundManager.getInstance().playSFX("enemyhit.wav")
+
+    def bounce(self, other):
+        if not self.cold and not self.falling and not self.respawning:
+            self.fullStop()
+            self.respawning = True
+    
+    def startRespawn(self):
+        SoundManager.getInstance().playSFX("big_jump.wav")
+        self.fullStop()
+        self.respawning = True
+        self.top = True
+
+    def fullStop(self):
+        self.stop()
+        self.jumpingUp = False
+        self.jumpingDown = False
+        self.jumpTimer = 0.0
+
+    def stop(self):
+        self.movingLeft = False
+        self.movingRight = False
+        self.movingUp = False
+        self.movingDown = False
+
+    def setCold(self):
+        self.cold = True
+        self.movingDown = False
+        self.movingUp = False
+        self.movingLeft = False
+        self.movingRight = False
+        self.row = 1
+    
+    def unsetCold(self):
+        self.cold = False
+        self.vulnerable = False
+        self.freezeCounter = self.maxCount
+        self.fullStop()
+        self.respawning = True
+        self.top = True
+        self.row = 0
+    
+    def stopMotion(self, position):
+        self.setCollisionRange()
+        if int(position[1]) in self.yVals:
+            print("pos in x vals")
+            self.movingUp = False
+            self.movingDown = False
+        if int(position[0]) in self.xVals:
+            print("pos in x vals")
+            self.movingRight = False
+            self.movingLeft = False
+
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0], self.position[1]+8), (32,24))
+    
+    def setImage(self):
+        self.image = SpriteManager.getInstance().getSprite("knight.png", (self.frame, self.row))
+    
+    def draw(self, drawSurface):
+        super().draw(drawSurface)
+    
+    def drawTop(self, drawSurface):
+        self.shadow.draw(drawSurface)
+        super().draw(drawSurface)
+
+    """
+    Only damage player when on the ground
+    """
+
+    def handlePlayerCollision(self, player):
+        if self.ignoreCollision:
+            return False
+        else:
+            return True
+        
+    def handleCollision(self, other=None):
+        if self.cold:
+            if other.id == "arrow":
+                self.hurt(other.damage)
+                self.unsetCold()
+            return
+
+        if not self.ignoreCollision:
+            if self.vulnerable and other.id == "blizz":
+                self.freezeCounter -= 1
+                if self.freezeCounter <= 0:
+                    self.setCold()
+                    SoundManager.getInstance().playSFX("freeze.wav")
+                else:
+                    SoundManager.getInstance().playSFX("enemyhit.wav")
+                    self.vulnerable = False
+                    self.row = 2                
+    
+    def setTargetPos(self, position):
+        self.targetPos = vec(position[0]-16, position[1]-16)
+
+    def setCollisionRange(self):
+        self.xVals = []
+        self.yVals = []
+        pos = self.getCollisionRect().topleft
+        for i in range(16):
+            for j in range(16):
+                self.xVals.append(pos[0] + i)
+                self.yVals.append(pos[1] + i)
+        
+        
+    """
+    Sets the position of the shadow and the knight
+    """
+    def setActualPos(self, axis = 0, add = True, value = 1):
+        if add:
+            self.position[axis] += value
+            self.shadow.position[axis] += value
+        else:
+            self.position[axis] -= value
+            self.shadow.position[axis] -= value
+
+    """
+    The knight chooses which direction 
+    to move based on the player's position.
+
+    position -> player's current position
+    """
+    def setDirection(self, position):
+        if self.cold:
+            return
+        
+        if int(position[0]) < int(self.position[0] + 16):
+            self.movingLeft = True
+            self.movingRight = False
+        
+        elif int(position [0]) > int(self.position[0] + 16):
+            self.movingRight = True
+            self.movingLeft = False
+
+        if int(position[1]) < int(self.position[1] + 32):
+            self.movingUp = True
+            self.movingDown = False
+        
+        elif int(position [1]) > int(self.position[1] + 32):
+            self.movingDown = True
+            self.movingUp = False
+        
+        
+
+    def update(self, seconds, position = None):
+        ##I-frame update
+        if not self.vulnerable:
+            self.iframeTimer += seconds
+            if self.iframeTimer >= 0.4:
+                self.row = 0
+                self.vulnerable = True
+                self.iframeTimer = 0.0
+                self.setImage()
+
+        ##Jumping off screen and reappearing
+        if self.respawning and not self.pause:
+            if self.falling:
+                ##Shadow reappears
+                if self.top:
+                    if self.shadow.frame == 1:
+                        self.fallTimer += seconds
+                        ##Falling down
+                        if self.fallTimer >= 0.2:
+                            self.position[1] += 12
+                            ##Crashed
+                            if self.position[1] >= self.targetPos[1]:
+                                SoundManager.getInstance().stopAllSFX()                            
+                                SoundManager.getInstance().playSFX("crash.wav")
+                                self.position[1] = self.targetPos[1]
+                                self.falling = False
+                                self.top = False
+                                self.fallTimer = 0.0
+                                self.respawning = False
+                                self.pause = True
+                    ##Decrement shadow frame
+                    else:
+                        self.shadow.frame -= 1
+                        self.shadow.image = SpriteManager.getInstance().getSprite("knight.png", (self.shadow.frame, 0))
+
+                ##Off screen, ready to set target
+                else:
+                    self.fallTimer += seconds
+                    if self.fallTimer >= 1.0:
+                        self.fallTimer = 0.0
+                        self.setTargetPos(position)
+                        self.shadow.position = self.targetPos
+                        self.position[0] = self.targetPos[0]
+                        self.shadow.position[0] = self.targetPos[0]
+                        self.top = True
+            
+            ##Jumping up  
+            else:
+                self.position[1] -= 4
+                if self.position[1] + 32 <= -64:
+                    self.shadow.frame += 1
+                    self.shadow.frame %= 3
+                    if self.shadow.frame == 0:
+                        self.shadow.frame = 3
+                        self.top = False
+                        self.falling = True
+                    self.shadow.image = SpriteManager.getInstance().getSprite("knight.png", (self.shadow.frame, 0))
+            self.setImage()
+            return
+        
+        ##Startup Animation
+        if not self.moving:
+            if not self.shaking:
+                self.startupTimer += seconds
+                if self.startupTimer >= 2:
+                    self.startupTimer = 0.0
+                    self.shaking = True
+            else:
+                self.startupTimer += seconds
+                if self.startupTimer >= 2:
+                    SoundManager.getInstance().stopSFX("LA_Rock_Push.wav")
+                    self.moving = True
+                else:
+                    SoundManager.getInstance().playSFX("LA_Rock_Push.wav")
+                    if self.vibrationTick == 0:
+                        self.setActualPos(0, True)
+                        self.vibrationTick += 1
+                    elif self.vibrationTick == 1:
+                        self.setActualPos(0, False)
+                        self.vibrationTick += 1
+                    elif self.vibrationTick == 2:
+                        self.setActualPos(0, False)
+                        self.vibrationTick += 1
+                    elif self.vibrationTick == 3:
+                        self.setActualPos(0, True)
+                        self.vibrationTick = 0
+                    return
+            return
+        
+        
+        ##Mid air movement
+        if not self.pause:
+            ##Jumping
+            self.jumpTimer += seconds
+            if self.jumpingUp:
+                self.ignoreCollision = True
+                self.position[1] -= 1
+                if self.cold:
+                    if self.jumpTimer >= 0.1:
+                        self.jumpingUp = False
+                        self.jumpingDown = True
+                        self.jumpTimer = 0.0
+                else:
+                    if self.jumpTimer >= 0.5:
+                        self.jumpingUp = False
+                        self.jumpingDown = True
+                        self.jumpTimer = 0.0
+            elif self.jumpingDown:
+                self.ignoreCollision = True
+                if self.cold:
+                    self.position[1] += 6
+                else:
+                    self.position[1] += 4
+                if self.position[1] >= self.shadow.position[1]:
+                    SoundManager.getInstance().stopAllSFX()
+                    SoundManager.getInstance().playSFX("crash.wav")
+                    self.position[1] = self.shadow.position[1]
+                    self.pause = True
+                    self.movingUp = False
+                    self.movingDown = False
+                    self.top = False
+                    self.jumpingDown = False
+                    self.jumpTimer = 0.0
+                    return
+
+
+            ##Moving
+            if self.movingLeft:
+                self.setActualPos(0, False)
+            elif self.movingRight:
+                self.setActualPos(0, True)
+
+            if self.movingUp:
+                self.setActualPos(1, False)
+            elif self.movingDown:
+                self.setActualPos(1, True)
+
+            
+            ##Player inside collision rect (able to be crushed)
+            if self.getCollisionRect().collidepoint(position):
+                self.stop()
+            else:
+                self.stopMotion(position)
+
+            
+        ##Ground (no movement)
+        else:
+            self.ignoreCollision = False
+            self.jumpTimer += seconds
+            if self.jumpTimer >= 0.5:
+                self.jumpTimer = 0.0
+                self.pause = False
+                if self.desperate:
+                    if self.cold:
+                        self.setDirection(position)
+                        SoundManager.getInstance().playSFX("big_jump.wav")
+                        self.top = True
+                        self.jumpingUp = True
+                    else:
+                        self.startRespawn()
+                else:
+                    self.setDirection(position)
+                    SoundManager.getInstance().playSFX("big_jump.wav")
+                    self.top = True
+                    self.jumpingUp = True
+        
+        
+        
+        ##Set the image
+        self.setImage()
 
 class Mofos(Enemy):
     def __init__(self, position = vec(0,0), direction = 0):
@@ -324,7 +705,7 @@ class Mofos(Enemy):
             if self.flashTimer >= 0.4:
                 self.row -= 4
 
-    def update(self, seconds):
+    def update(self, seconds, position = None):
         super().update(seconds)
         
 
@@ -396,7 +777,7 @@ class Baller(Enemy):
             self.heal(other.damage)
 
 
-    def update(self, seconds):
+    def update(self, seconds, position = None):
         super().update(seconds)
 
 class Heater(Enemy):
@@ -624,7 +1005,7 @@ class Flapper(Enemy):
             if self.flashTimer >= 0.2:
                 self.row = self.typeRow
 
-    def update(self, seconds):
+    def update(self, seconds, position = None):
         super().update(seconds)
 
 
@@ -812,7 +1193,7 @@ class David(Enemy):
 
 
 
-    def update(self, seconds):
+    def update(self, seconds, position = None):
         if self.dead:
         #Add death animation here if self.hp = 0
             pass

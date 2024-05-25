@@ -87,10 +87,61 @@ class Intro_Cut(AbstractEngine):
                 
                 
                     
-            
+"""
+Testing
+"""
+class Knight(AbstractEngine):
 
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Kn()
+      
+        return cls._INSTANCE
+    
+    class _Kn(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = None
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("test.png")
+            self.npcs = [
+                LavaKnight(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
+            ]
+            self.playingMusic = False
+            #self.trigger1 = Trigger(door = 0)
 
+        #override
+        def createBlocks(self):
+           return
+           #self.blocks.append(self.trigger1)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                for n in self.npcs:
+                    if n.doesCollide(b):
+                        n.bounce(b)
 
+                self.projectilesOnBlocks(b)
+                if self.player.doesCollide(b):
+                    if False:
+                        return
+                        self.transport(Room, 0, keepBGM=True)
+                    else:
+                        self.player.handleCollision(b)
+
+        def update(self, seconds):
+            super().update(seconds)
+            if not self.playingMusic:
+                for n in self.npcs:
+                    if n.jumpingUp:
+                        self.playBgm("megalomania.mp3")
+                        self.playingMusic = True
+            elif not self.npcs:
+                self.fadeBgm()
 """
 Entrance Hall
 """
