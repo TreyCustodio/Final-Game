@@ -53,6 +53,9 @@ class TextEngine(object):
             self.choosing = False#The state of choosing yes or no
             self.promptResult = False
 
+        def setPromptHighlight(self, position):
+            self.promptHighlight.position = vec(position[0]+64-6, position[1]+32-6)
+
         def setImage(self):
             if self.large:
                 self.textBox = SpriteManager.getInstance().getSprite("TextBox2.png", (self.frame,0))
@@ -89,8 +92,12 @@ class TextEngine(object):
             self.choosing = False#The state of choosing yes or no
         
 
-        def playSFX(self, name):
-            SoundManager.getInstance().playSFX(name)
+        def playSFX(self, name, checkBusy = False):
+            if checkBusy:
+                if not pygame.mixer.get_busy():
+                    SoundManager.getInstance().playSFX(name)
+            else:
+                SoundManager.getInstance().playSFX(name)
 
 
         def setText(self, text, icon = None, large = False, prompt = False):
@@ -126,7 +133,7 @@ class TextEngine(object):
                 self.line = self.text
         
 
-        def draw(self,position,drawSurface):
+        def draw(self, position, drawSurface):
             #Still drawing previous frame
             if self.starting:
                 drawSurface.blit(self.textBox, position)
@@ -140,12 +147,16 @@ class TextEngine(object):
             if self.end:
                 if self.prompt:
                     self.choosing = True
-                    self.drawPrompt(position, drawSurface)
-                    if self.prompt:
-                        if self.highlightTimer >= 0.3:
-                            pass
-                        else:
-                            self.promptHighlight.draw(drawSurface)
+                    if self.promptHighlight.initialized:
+                        self.drawPrompt(position, drawSurface)
+                        if self.prompt:
+                            if self.highlightTimer >= 0.3:
+                                pass
+                            else:
+                                self.promptHighlight.draw(drawSurface)
+                    else:
+                        self.setPromptHighlight(position)
+                        self.promptHighlight.setInitialized()
 
                 else:
                     self.drawEnd(position, drawSurface)
@@ -163,12 +174,10 @@ class TextEngine(object):
 
             elif self.displayTimer > 0 and self.displayTimer < 0.1:
                 self.drawYellow1(position, drawSurface)
-                #drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox.png", (0,3)), position)
-                #self.displayText(position, drawSurface)
+                
             else:
                 self.drawYellow2(position, drawSurface)
-                #drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox.png", (0,4)), position)
-                #self.displayText(position, drawSurface)
+               
         
         
         def drawPrompt(self, position, drawSurface):
@@ -212,9 +221,11 @@ class TextEngine(object):
                 drawSurface.blit(SpriteManager.getInstance().getSprite("TextBox.png", (0,2)), position)
 
         
-
+        """
+        Main text display method.
+        Try if not mixer busy for slower text
+        """
         def displayText(self, position, drawSurface, question = False): 
-            
                 
             if self.lineNum == 2:
                 Text(((position[0] + 10) + (8 * self.charIndex), position[1]+34), self.line[self.charIndex]).draw(drawSurface)
@@ -224,14 +235,11 @@ class TextEngine(object):
                 Text(((position[0] + 10) + (8 * self.charIndex), position[1]+7), self.line[self.charIndex]).draw(drawSurface)
             
             self.charIndex += 1
-            self.playSFX("message.wav")
-        
             if self.charIndex == len(self.line):
-                SoundManager.getInstance().stopAllSFX()
+                SoundManager.getInstance().stopSFX("message.wav")
                 self.text = self.text[self.charIndex+1:]
 
                 if self.text == "":
-                    #SoundManager.getInstance().stopAllSFX()
                     self.end = True
                     self.ready_to_continue = True
                     self.playSFX("OOT_Dialogue_Done.wav")
@@ -254,7 +262,8 @@ class TextEngine(object):
                     self.line = self.text
                     self.charIndex = 0
                     self.playSFX("message-finish.wav")
-            
+            else:
+                self.playSFX("message.wav")
                     
                 
                 
@@ -428,7 +437,7 @@ class PauseEngine(object):
     def drawEquipped(self, drawSurf):
         #Arrow
         arrow = EQUIPPED["Arrow"]
-        imageA = SpriteManager.getInstance().getSprite("item.png", (arrow, 1))
+        imageA = SpriteManager.getInstance().getSprite("item.png", (arrow, 3))
         drawSurf.blit(imageA, (COORD[14][4]))
         #Element
         element = EQUIPPED["C"]
@@ -519,9 +528,13 @@ class PauseEngine(object):
             Number(COORD[8][7], INV["speed"], row = 4).draw(drawSurf)
 
         if INV["shoot"]:
-            image = SpriteManager.getInstance().getSprite("item.png", (0,1))
+            image = SpriteManager.getInstance().getSprite("item.png", (0,3))
             drawSurf.blit(image, (COORD[3][5]))
         
+        if INV["bombo"]:
+            image = SpriteManager.getInstance().getSprite("item.png", (1,3))
+            drawSurf.blit(image, (COORD[4][5]))
+
         if INV["fire"]:
             image = SpriteManager.getInstance().getSprite("item.png", (0,2))
             drawSurf.blit(image, (COORD[3][6]))
@@ -550,8 +563,8 @@ class PauseEngine(object):
 
     def equipElement(self):
         if self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*6:
-                SoundManager.getInstance().playSFX("TextBox_Open.wav")
-                EQUIPPED["C"] = 0
+            SoundManager.getInstance().playSFX("TextBox_Open.wav")
+            EQUIPPED["C"] = 0
         elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*6:
             SoundManager.getInstance().playSFX("TextBox_Open.wav")
             EQUIPPED["C"] = 1
@@ -564,6 +577,20 @@ class PauseEngine(object):
         else:
             SoundManager.getInstance().playSFX("bump.mp3")
 
+
+    def equipArrow(self):
+        if self.highlight.position[1] == 16*5:
+            if self.highlight.position[0] == 16*3:
+                SoundManager.getInstance().playSFX("TextBox_Open.wav")
+                EQUIPPED["Arrow"] = 0
+            elif self.highlight.position[0] == 16*4:
+                SoundManager.getInstance().playSFX("TextBox_Open.wav")
+                EQUIPPED["Arrow"] = 1
+            else:
+                SoundManager.getInstance().playSFX("bump.mp3")
+        else:
+            print("A")
+            SoundManager.getInstance().playSFX("bump.mp3")
 
     def showInfo(self):
         if self.highlighted[1] == 4:
@@ -591,6 +618,11 @@ class PauseEngine(object):
         elif self.highlight.position[0] == 16*3 and self.highlight.position[1] == 16*5:
             if INV["shoot"]:
                 self.text = INFO["shoot"]
+                return
+        
+        elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*5:
+            if INV["bombo"]:
+                self.text = INFO["bombo"]
                 return
             
         
@@ -769,19 +801,22 @@ class PauseEngine(object):
         if event.type == KEYDOWN and event.key == K_c:
             self.equipElement()
 
-        if event.type == KEYDOWN and event.key == K_z:
+        elif event.type == KEYDOWN and event.key == K_z:
             ##Selecting an item and pulling up textbox
             ##Will have to switch the order of conditionals. Check position first so that the program
             ##Doesn't check every inventory slot
             self.showInfo()
         
-        """
-        Highlight positions
-        Top left (plant) = (16*3, 16*4)
-        highlighted = integer value corresponding to inv item
-        highlight.position = actual value to draw at (mult. of 16)
-        """
-        if event.type == KEYDOWN and event.key == K_UP:
+        elif event.type == KEYDOWN and event.key == K_x:
+            self.equipArrow()
+        
+            """
+            Highlight positions
+            Top left (plant) = (16*3, 16*4)
+            highlighted = integer value corresponding to inv item
+            highlight.position = actual value to draw at (mult. of 16)
+            """
+        elif event.type == KEYDOWN and event.key == K_UP:
             if self.highlighted[1] == 0:
                 SoundManager.getInstance().playSFX("pause_cursor.wav")
                 self.highlighted[1] = 4

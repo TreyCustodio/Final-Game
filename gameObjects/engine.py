@@ -113,8 +113,8 @@ class AE(object):
         #self.transparentSurf.set_alpha(200)
         
         self.healthBar = HealthBar.getInstance()
-        self.ammoBar = AmmoBar()
-        self.elementIcon = ElementIcon()
+        self.ammoBar = AmmoBar.getInstance()
+        self.elementIcon = ElementIcon.getInstance()
         self.energyBar = EnergyBar()
         #Unique room elements:
         #self.max_enemies
@@ -200,6 +200,7 @@ class AE(object):
         self.healthBarLock = False
 
     def healPlayer(self, integer):
+        print("A")
         amountHealed = self.player.heal(integer)
         self.healthBar.drawHeal(amountHealed)
 
@@ -431,6 +432,17 @@ class AE(object):
         """
         Display text
         """
+        self.boxPos = vec(self.player.position[0]-122, self.player.position[1]-32)
+        if self.boxPos[0] < 16:
+            self.boxPos[0] = 16
+        elif self.boxPos[0]+244 > RESOLUTION[0]-16:
+            self.boxPos[0] = (RESOLUTION[0] - 16) - 244
+
+        if self.boxPos[1] < 16:
+            self.boxPos[1] = 16
+        elif self.boxPos[1]+64 > RESOLUTION[1]-16:
+            self.boxPos[1] = (RESOLUTION[1] - 16)-64
+
         self.textBox = True
         self.text = text
         self.largeText = large
@@ -674,7 +686,7 @@ class AE(object):
     def interactableCollision(self):
         if self.spawning:
             for n in self.spawning: 
-                if not issubclass(type(n), Drop):
+                if n.drop:
                     for p in self.projectiles:
                         self.projectilesOnSpawning(p, n)
                     self.enemyCollision(n)
@@ -683,7 +695,7 @@ class AE(object):
                     if type(n) == Key:
                         self.disappear(n)
                         n.interact(self.player, self)
-                    elif issubclass(type(n), Drop):
+                    elif n.drop:
                         self.disappear(n)
                         self.dropCount -= 1
                         n.interact(self.player)
@@ -1034,7 +1046,7 @@ class AE(object):
             self.energyBar.draw(drawSurface)
         
         if self.player.drunk:
-            self.drawNumber(vec(0,64), int(self.player.drunkTimer), drawSurface, row = 3)
+            self.drawNumber(vec(8,64), int(self.player.drunkTimer), drawSurface, row = 3)
 
         
     def drawTiles(self, drawSurface):

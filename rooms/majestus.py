@@ -34,7 +34,15 @@ class Intro_Cut(AbstractEngine):
 
             self.timer = 0
             SoundManager.getInstance().playBGM("still-dreaming.mp3")
-
+        
+        def displayText(self, text = "", icon = None, large = True):
+            """
+            Display text
+            """
+            self.textBox = True
+            self.text = text
+            self.largeText = large
+          
 
         def draw(self, drawSurface):
             
@@ -110,13 +118,14 @@ class Knight(AbstractEngine):
             self.npcs = [
                 LavaKnight(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
             ]
+            self.spawning = [ 
+                #GreenHeart(vec(16*2, 16*10))
+                ]
             self.playingMusic = False
-            #self.trigger1 = Trigger(door = 0)
 
         #override
         def createBlocks(self):
            return
-           #self.blocks.append(self.trigger1)
            
         #override
         def blockCollision(self):
@@ -235,7 +244,6 @@ class Intro_1(AbstractEngine):
             #self.sign = Sign((COORD[8][2]), SPEECH["intro_sign"])
             self.key = Key((COORD[4][5]))
             
-            #self.geemer = Geemer((142,46), SPEECH["intro_geemer"], 0, 2)
             self.geemer2 = Geemer(((16*7)-3, (16*5)-4), SPEECH["intro_switches"], 1)
             self.geemer2.frame = 2
             self.geemer2.framesPerSecond = 8
@@ -244,12 +252,8 @@ class Intro_1(AbstractEngine):
             self.geemer3 = Geemer((self.lightSwitch.position[0]-2, self.lightSwitch.position[1]-2), SPEECH["intro_plantgeemer"], 2)
             self.geemer3.framesPerSecond = 6
             self.geemer4 = Geemer((COORD[2][8]), SPEECH["intro_pushableblocks"])
-            #self.geemer5 = Geemer((COORD[4][8]), SPEECH["skipping_text"])
-            self.spawning = [#self.sign, 
-                            #self.geemer, 
+            self.spawning = [
                             self.geemer2, self.geemer3, self.geemer4,
-                            #Mage((COORD[9][8]), "Hello!")
-                            #self.geemer5
                             ]
             
             #Projectiles/weapons
@@ -259,16 +263,16 @@ class Intro_1(AbstractEngine):
             Display elements
             """
             #Background/room
-            #self.background = Drawable((0,0), "test.png")
             self.background = Level("test.png")
 
             
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
+            
+            
+            super().initializeRoom(player, pos, keepBGM)
             if FLAGS[2] == False:
                 self.displayText("       Entrance Hall    ", large = False)
                 FLAGS[2] = True
-            
-            super().initializeRoom(player, pos, keepBGM)
 
         """
         Auxilary
@@ -438,7 +442,16 @@ class Intro_2(AbstractEngine):
             #Switches
             
             #Npcs
-
+            self.npcs = [GremlinB(COORD[5][7])
+                #Flapper(COORD[2][9]), 
+                         #FireFlapper(COORD[3][9]),
+                         #FireFlapper(COORD[4][9]),
+                         #FireFlapper(COORD[5][9]),
+                         #FireFlapper(COORD[6][9]),
+                         #IceFlapper(COORD[4][9]), 
+                         #ThunderFlapper(COORD[5][9]), 
+                         #WindFlapper(COORD[6][9])
+                         ]
 
             #Spawnable Objects
             self.spawning = [Geemer(COORD[2][9], SPEECH["intro_combat"], fps = 32),

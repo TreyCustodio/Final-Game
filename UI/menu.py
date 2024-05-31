@@ -43,7 +43,12 @@ class EventMenu(AbstractMenu):
     def __init__(self, background, fontName="default",
                 color=(255,255,255)):
         super().__init__(background, fontName, color)
-        self.readyToDisplay = False
+
+        ##Display Control for debugging
+        displayBool = True
+        self.readyToDisplay = displayBool
+        self.initialized = displayBool
+
         self.pointer = Pointer(vec(16*6-8, 98))
         self.titleTimer = 0.0
         self.eventMap = {}
@@ -97,7 +102,7 @@ class EventMenu(AbstractMenu):
             return
         elif self.titleTimer >= 1.0:
             Text((16*6-10,16*4+8), "YungTrey Games Presents...", color = (210,0,0)).draw(drawSurf)
-
+        
     def draw(self, drawSurf):
         if self.colorId == 0:
             drawSurf.fill(pygame.Color(self.colorVal+8, self.greenVal, 0))
@@ -247,6 +252,19 @@ class EventMenu(AbstractMenu):
                     self.quitGame_down()
 
     def update(self, seconds):
+        if not self.initialized:
+            self.titleTimer += seconds
+            if self.titleTimer >= 10:
+                self.initialized = True
+                self.titleTimer = 0.0
+            return
+            
+        elif not self.readyToDisplay:
+            self.titleTimer += seconds
+            if self.titleTimer >= 6.8:
+                self.setReady()
+                self.titleTimer = 0.0
+            
         super().update(seconds)
         if not self.eventHandle:
             self.eventBufferTimer += seconds

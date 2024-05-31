@@ -36,7 +36,7 @@ class ScreenManager(object):
         self.fade.setRow(1)
         self.fade.setFrame(8)
         self.fading = False
-        self.fadingIn = True
+        self.fadingIn = False
         
         size = self.pausedText.getSize()
         midpoint = RESOLUTION // 2 - size
@@ -149,7 +149,7 @@ class ScreenManager(object):
         self.pauseEngine.draw(drawSurf)
 
     def drawTitle(self, drawSurf):
-        if self.displayTitle:
+        if self.mainMenu.initialized:
             self.mainMenu.draw(drawSurf)
             if self.fadingIn:
                 self.fade.draw(drawSurf)
@@ -159,8 +159,8 @@ class ScreenManager(object):
             
 
         if self.startingGame or self.continuingGame or self.returningToMain:
-                self.fade.draw(drawSurf)
-                return
+            self.fade.draw(drawSurf)
+            return
         
     #Displaying Text
     def draw(self, drawSurf):
@@ -231,6 +231,7 @@ class ScreenManager(object):
         self.pauseEngine.mapOpen = True
 
     def handleChoice(self, choice):
+        self.fade.setFrame(0)
         if choice == 0:
             SoundManager.getInstance().fadeoutBGM()
             SoundManager.getInstance().playSFX("WW_PressStart.wav")
@@ -456,20 +457,8 @@ class ScreenManager(object):
                     self.fadingIn = True
 
         elif self.state == "mainMenu":
-            if not self.displayTitle:
-                self.titleTimer += seconds
-                if self.titleTimer >= 10:
-                    self.displayTitle = True
-                    self.titleTimer = 0.0
-                return
-            
-            elif not self.mainMenu.readyToDisplay:
-                self.titleTimer += seconds
-                if self.titleTimer >= 6.8:
-                    self.mainMenu.setReady()
-                    self.titleTimer = 0.0
-            
             self.mainMenu.update(seconds)
+            
 
             ##New Game
             if self.startingGame:
@@ -499,7 +488,7 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Knight.getInstance()
+                        self.game = Intro_2.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()

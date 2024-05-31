@@ -19,17 +19,24 @@ class Element(object):
     def __init__(self, integer = 0):
         self.type = integer
     
+    def getValue(self):
+        return self.type
+
     def beats(self, otherInt = 0):
         """
-        Compares the instantiated Element to an integer that corresponds
-        to another element's value. Returns True if the instantiated Element
-        beats the other element.
+        Returns True if this element beats the specified value
         Fire (1) beats Ice (2)
         Ice (2) beats Fire (1)
         Thunder (3) beats Wind(4)
         Wind (4) beats Thunder (3)
         """
         return (otherInt == 1 and self.type == 2) or (otherInt == 2 and self.type == 1) or (otherInt == 3 and self.type == 4) or (otherInt == 4 and self.type == 3)
+    
+    """
+    Returns True if this element is weak to the specified value.
+    """
+    def weakTo(self, otherInt = 0):
+        return (self.type == 1 and otherInt == 2) or (self.type == 2 and otherInt == 1) or (self.type == 3 and otherInt == 4) or (self.type == 4 and otherInt == 3)
     
 class AbstractWeapon(Animated):
     def __init__(self, position = vec(0,0), fileName = "", column = 0, direction = 0):
@@ -42,7 +49,19 @@ class AbstractWeapon(Animated):
 
     def setDrunk(self):
         self.damage = int(self.damage * 1.5)
-        
+    
+    def setArrowVelocity(self, direction, speed):
+        if direction == 0:
+            self.vel = vec(0,speed)
+        elif direction == 1:
+            self.position[1] = self.position[1] + 4
+            self.vel = vec(speed,0)
+        elif direction == 2:
+            self.vel = vec(0,-speed)
+        elif direction == 3:
+            self.position[1] = self.position[1] + 4
+            self.vel = vec(-speed,0)
+
     def setVelocity(self, direction, speed):
         if direction == 0:
             self.vel = vec(0,speed)
@@ -93,17 +112,76 @@ class AbstractWeapon(Animated):
         self.vanish(seconds, engine)
 
 
+class Bombo(AbstractWeapon):
+    def __init__(self, position = vec(0,0), direction = 0, hp = 5):
+        if hp == INV["max_hp"]:
+            self.speed = 300
+            damage = 4
+            column = 4
+        elif hp <= INV["max_hp"]/4 or hp == 1:
+            self.speed = 175
+            damage = 10
+            column = 5
+        else:
+            damage = 4
+            self.speed = 175
+            column = 3
+    
+        super().__init__(position, "Bullet.png", column, direction)
+        self.damage = damage
+        self.setArrowVelocity(self.direction, self.speed)
+        self.type = 0
+        self.id = "bombo"
+
+    def getCollisionRect(self):
+        if self.direction == 0:
+            return pygame.Rect((self.position[0]+5,self.position[1]+1), (5,15))
+        elif self.direction == 1:
+            return pygame.Rect((self.position[0]+1,self.position[1]+5), (15,5))
+        elif self.direction == 2:
+            return pygame.Rect((self.position[0]+5,self.position[1]), (5,15))
+        elif self.direction == 3:
+            return pygame.Rect((self.position[0],self.position[1]+5), (15,5))
+        
+
+    
+    def handleCollision(self, engine):
+        self.hit = True
+        engine.playSound("SM_missile.wav")
+        #engine.playSound("OOT_DekuSeed_Hit.wav")
+        #engine.disappear(self)
+        engine.player.arrowCount += 1
+        engine.player.shooting = False
 
 
+    def handleOtherCollision(self, engine):
+        if not self.hit:
+            self.hit = True
+            engine.playSound("SM_missile.wav")
+            #engine.playSound("OOT_DekuSeed_Hit.wav")
+            
+            
+            #engine.disappear(self)
+            engine.player.arrowCount += 1
+            engine.player.shooting = False
 
+
+    def update(self, seconds, engine):
+        if self.hit:
+            super().updateShotParticle(seconds)
+            if self.frame == 6:
+                engine.disappear(self)
+        else:
+            self.vanish(seconds, engine, 16)
+            
 class Bullet(AbstractWeapon):
     """
     Arrows. Speed boost at full health. Damage boost at low health.
     """
     
     def __init__(self, position = vec(0,0), direction = 0, hp = 5):
-        
-        
+
+
         if hp == INV["max_hp"]:
             self.speed = 900
             damage = 2

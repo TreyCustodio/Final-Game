@@ -395,20 +395,30 @@ class BigHeart(Drop):
                 if player.hp > INV["max_hp"]: 
                     player.hp = INV["max_hp"]
 
-class GreenHeart(Drop):
+
+class GreenHeart(NonPlayer):
     def __init__(self, position = vec(0,0)):
-        super().__init__(position, 5, lifeTime=0)
-    
+        super().__init__(position, "drops.png", (0,5))
+        self.animate = True
+        self.row = 5
+        self.nFrames = 4
+        self.framesPerSecond = 8
+
     def getCollisionRect(self):
         return pygame.Rect((self.position[0], self.position[1]+1), (16,14))
     
-    def interact(self, player):
+    def draw(self, drawSurface, drawHitbox = False):
+        NonPlayer.draw(self, drawSurface, drawHitbox)
+
+    def interact(self, engine):
         if not self.interacted:
             SoundManager.getInstance().playSFX("solve.wav")
             self.interacted = True
             INV["max_hp"] += 1
-            player.hp = INV["max_hp"]
-            
+            engine.healPlayer(INV["max_hp"])
+            engine.displayText("You got a Green Heart!&&\nMaximum health increased\nby 1!\n")
+            engine.disappear(self)
+    
 
 class Buck(Drop):
     def __init__(self, position = vec(0,0)):

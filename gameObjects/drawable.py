@@ -128,23 +128,71 @@ class Text(Drawable):
             self.image = Text.FONT.render(text, False, color)
 
 
-class AmmoBar(Drawable):
+class AmmoBar(object):
     """
     Displays the currently selected arrow on the HUD
     """
-    def __init__(self):
-        super().__init__(vec(0,15), "ammo.png", (0,0))
-
-    def draw(self, drawSurface, player):
-        row = player.arrowCount
-        if player.hp == INV["max_hp"]:
-            self.image = SpriteManager.getInstance().getSprite("ammo.png", (1,row))
-
-        elif player.hp <= INV["max_hp"]/4 or player.hp == 1:
-            self.image = SpriteManager.getInstance().getSprite("ammo.png", (2,row))
+    _INSTANCE = None
+    
+    @classmethod
+    def getInstance(cls):
+        if AmmoBar._INSTANCE == None:
+            AmmoBar._INSTANCE = cls._AB()
+            return AmmoBar._INSTANCE
         else:
-            self.image = SpriteManager.getInstance().getSprite("ammo.png", (0,row))
-        super().draw(drawSurface)
+            return AmmoBar._INSTANCE
+    
+    class _AB(Drawable):
+        def __init__(self):
+            super().__init__(vec(0,15), "ammo.png", (0, EQUIPPED["Arrow"]+1))
+            self.damageId = 0
+            self.backImage = SpriteManager.getInstance().getSprite("ammo.png", (self.damageId, 0))
+            
+
+        def setArrow(self, player):
+            if player.arrowCount == 0:
+                self.backImage = SpriteManager.getInstance().getSprite("ammo.png", (3, 0))
+                self.image = SpriteManager.getInstance().getSprite("ammo.png", (self.damageId, EQUIPPED["Arrow"]+1))
+            else:
+                self.backImage = SpriteManager.getInstance().getSprite("ammo.png", (self.damageId, 0))
+                self.image = SpriteManager.getInstance().getSprite("ammo.png", (self.damageId, EQUIPPED["Arrow"]+1))
+            
+        def draw(self, drawSurface, player):
+            if player.hp == INV["max_hp"]:
+                self.damageId = 1
+
+            elif player.hp <= INV["max_hp"]/4 or player.hp == 1:
+                self.damageId = 2
+            else:
+                self.damageId = 0
+            
+            self.setArrow(player)
+            drawSurface.blit(self.backImage, self.position)
+            super().draw(drawSurface)
+
+"""
+Displays the currently selected element on the HUD
+"""
+class ElementIcon(object):
+    _INSTANCE = None
+    
+    @classmethod
+    def getInstance(cls):
+        if ElementIcon._INSTANCE == None:
+            ElementIcon._INSTANCE = cls._EI()
+            return ElementIcon._INSTANCE
+        else:
+            return ElementIcon._INSTANCE
+    
+    class _EI(Drawable):
+        def __init__(self):
+            super().__init__(vec(15,15), "element.png", (0,0))
+
+        def draw(self, drawSurface):
+            equipped = EQUIPPED["C"]
+            if equipped != None:
+                self.image = SpriteManager.getInstance().getSprite("element.png", (equipped+1, 0))
+            super().draw(drawSurface)
 
 
 class DamageIndicator(Drawable):
@@ -296,18 +344,6 @@ class DamageIndicator(Drawable):
 
 
 
-class ElementIcon(Drawable):
-    """
-    Displays the currently selected element on the HUD
-    """
-    def __init__(self):
-        super().__init__(vec(15,15), "ammo.png", (0,2))
-
-    def draw(self, drawSurface):
-        equipped = EQUIPPED["C"]
-        if equipped != None:
-            self.image = SpriteManager.getInstance().getSprite("ammo.png", (equipped+1, 2))
-        super().draw(drawSurface)
         
 
 class EnergyBar(Drawable):
@@ -507,7 +543,6 @@ class HealthBar(object):
             return INV["max_hp"] * 5
         
         def getHeartImage(self, player):
-            #print(self.getLength())
             if player.hp == INV["max_hp"]:
                 return SpriteManager.getInstance().getSprite(self.fileName, (0,1))
             elif player.hp <= INV["max_hp"] / 4:
@@ -538,94 +573,84 @@ class HealthBar(object):
         ##  Draws in 2 stages: blinking and subtracting
         def drawRed(self, drawSurface, player, low = False):
             blackPix = (INV["max_hp"] * 5) - (player.hp * 5)
-            pixelsToDraw = player.hp * 5
+            pixelsToDraw = player.hp * 5 #Regular hp, no shading
             if low == True:
                 self.blit(drawSurface, self.edgeL)
             else:
                 self.blit(drawSurface, self.red6)
 
-            ##Regular red pixels
+            
             if self.drawingHurt:
-                for i in range(pixelsToDraw):
+                #pixelsToDraw - self.damageToDraw//5 - 1
+                #Red pixels
+                for i in range(pixelsToDraw-(self.damageToDraw//5)-1):
                     if low == True:
                         self.blit(drawSurface, self.low1)
                     else:
-                        drawSurface.blit(self.red1, self.drawPos)
-                        self.drawPos[0] += 1
-
+                        self.blit(drawSurface, self.red1)
+                
                 if self.subtractingPixels:
-                    print("subtracting")
                     ##Subtracting
                     """
                     Each frame, the number of red1 to draw decreases by 1
                     and the number of red5 to draw increases.
                     """
-                    for i in range(self.damageToDraw):
-                        if low == True:
+                    for i in range(self.damageToDraw//5 + 1):
+                        if low:
                             self.blit(drawSurface, self.low1)
                         else:
-                            drawSurface.blit(self.red1, self.drawPos)
-                            self.drawPos[0] += 1
+                            self.blit(drawSurface, self.red1)
 
-                    for i in range(self.pixelsToDraw):
-                        ##Filler
-                        if low == True:
+                    for i in range(self.damageToDraw):
+                        if low:
+                            self.blit(drawSurface, self.low1)
+                        else:
+                            self.blit(drawSurface, self.red1)
+                    
+                    for i in range(self.fillerPixels-(self.damageToDraw - 5)):
+                        if low:
                             self.blit(drawSurface, self.low5)
                         else:
-                            drawSurface.blit(self.red5, self.drawPos)
-                            self.drawPos[0] += 1
-
+                            self.blit(drawSurface, self.red5)
+                    if low:
+                        self.blit(drawSurface, self.edgeL)
+                    else:
+                        self.blit(drawSurface, self.red6)
 
                 else:
-                    print("Blinking")
                     ##Blinking
-                    for i in range(self.damageToDraw-2):
+                    #red pixels
+                    for i in range(self.damageToDraw//5 + 1):
+                        if low:
+                            self.blit(drawSurface, self.low1)
+                        else:
+                            self.blit(drawSurface, self.red1)
+
+                    #White flashing
+                    for i in range(self.damageToDraw):
                         if self.flashTick % 2 == 0:
-                            if low == True:
+                            if low:
                                 self.blit(drawSurface, self.whiteL)
                             else:
-                                drawSurface.blit(self.white, self.drawPos)
-                                self.drawPos[0] += 1
+                                self.blit(drawSurface, self.white)
                         else:
-                            if low == True:
+                            if low:
                                 self.blit(drawSurface, self.low1)
                             else:
-                                drawSurface.blit(self.red1, self.drawPos)
-                                self.drawPos[0] += 1
-
-                    ##2 pixels for shading
-                    if self.flashTick % 2 == 0:
-                        if low == True:
-                            self.blit(drawSurface, self.whiteL)
-                            self.blit(drawSurface, self.whiteL)
+                                self.blit(drawSurface, self.red1)
+                    
+                    #Filler
+                    for i in range(self.fillerPixels-(self.damageToDraw - 5)):
+                        if low:
+                            self.blit(drawSurface, self.low5)
                         else:
-                            drawSurface.blit(self.white, self.drawPos)
-                            self.drawPos[0] += 1
-                            drawSurface.blit(self.white, self.drawPos)
-                            self.drawPos[0] += 1
-
+                            self.blit(drawSurface, self.red5)
+                    
+                    if low:
+                        self.blit(drawSurface, self.edgeL)
                     else:
-                        if low == True:
-                            self.blit(drawSurface, self.low2)
-                            self.blit(drawSurface, self.low3)
+                        self.blit(drawSurface, self.red6)
 
-                        else:
-                            drawSurface.blit(self.red2, self.drawPos)
-                            self.drawPos[0] += 1
-                            drawSurface.blit(self.red3, self.drawPos)
-                            self.drawPos[0] += 1
-
-                for i in range(self.fillerPixels):
-                    if low == True:
-                        self.blit(drawSurface, self.low5)
-                    else:
-                        drawSurface.blit(self.red5, self.drawPos)
-                        self.drawPos[0] += 1
-                
-                if low == True:
-                    self.blit(drawSurface, self.edgeL)
-                else:
-                    self.blit(drawSurface, self.red6)
 
 
             elif self.drawingHeal:
@@ -635,19 +660,17 @@ class HealthBar(object):
                         
             else:
                 ##Regular draw routine
-                ##Make it flash on low
+                #Red pixels
                 for i in range(pixelsToDraw-2):
                     if low == True:
                         self.blit(drawSurface,self.low1)
                     else:
-                        drawSurface.blit(self.red1, self.drawPos)
-                        self.drawPos[0] += 1
+                        self.blit(drawSurface, self.red1)
                 
                 ##2 pixels for shading
                 if low == True:
                     self.blit(drawSurface, self.low2)
                     self.blit(drawSurface, self.low3)
-                    #print(blackPix)
                     for i in range(blackPix):
                         self.blit(drawSurface, self.low5)
                     
@@ -704,15 +727,18 @@ class HealthBar(object):
             Turn damage * 5 pixels red
             Interrupt healing
             """
+            self.subtractingPixels = False
             self.drawingHeal = False
             self.drawingHurt = True
             self.hurtTimer = 0
             self.flashTick = 0
-            self.damageToDraw += (damage * 5)
+            self.damageToDraw = (damage * 5)
             self.fillerPixels = ((INV["max_hp"] - hp) * 5) - 5
 
+
         def drawHeal(self, amountHealed):
-            return
+            print("B")
+            self.fillerPixels = amountHealed * 5
             self.drawingHeal = True
 
         def draw(self, drawSurface, player):
@@ -733,6 +759,13 @@ class HealthBar(object):
 
         def reload(self):
             self.reloading = True
+            self.hurtTimer = 0
+            self.drawingHurt = False
+            self.drawingHeal = False
+            self.subtractingPixels = False
+            self.flashTick = 0
+            self.damageToDraw = 0
+            self.fillerPixels = 0
             self.pixelsToDraw = INV["max_hp"]
             self.drawPos = vec(18+self.pixelsToDraw, 0)
 
@@ -745,7 +778,6 @@ class HealthBar(object):
             if self.drawingHurt:
                 if self.subtractingPixels:
                     self.damageToDraw -= 1
-                    self.pixelsToDraw += 1
                     if self.damageToDraw == 0:
                         self.pixelsToDraw = 0
                         self.fillerPixels = 0
@@ -755,16 +787,16 @@ class HealthBar(object):
                     self.hurtTimer += seconds
                     if self.hurtTimer >= 0.2:
                         self.flashTick += 1
-                        #Iframes last 2 seconds or 10 flashTicks
-                        if self.flashTick == 5:
-                            self.subtractingPixels = True
-                            #set up for first round of pixel subtraction
-                            self.damageToDraw -= 1
-                            self.pixelsToDraw += 1
+                        #Iframes last 3 flashticks
+                        if self.flashTick == 3:
                             self.flashTick = 0
+                            self.subtractingPixels = True
                         self.hurtTimer = 0
                 
-
+            elif self.drawingHeal:
+                #increment pixelsToDraw
+                #decrement fillerPixels
+                pass
             elif self.reloading:
                 ##Reload the hp bar after getting an upgrade
                 self.pixelsToDraw -= 1
@@ -840,8 +872,12 @@ class Highlight(Drawable):
         0-> Regular 16x16, 1 -> quit, 2 -> Y/N prompt, 3 -> map
         """
         super().__init__(position, "Objects.png", (0,0))
+        self.initialized = False
         self.displayFlag = flag
         self.timer = 0
+
+    def setInitialized(self):
+        self.initialized = True
 
     def draw(self, drawSurface):
         super().draw(drawSurface, True)

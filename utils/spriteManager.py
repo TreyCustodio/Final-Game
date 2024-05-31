@@ -37,18 +37,18 @@ class SpriteManager(object):
 
       _ROOM_FOLDER = "images\\levels"
       # Static information about the sprite sizes of particular image sheets.
-      _SPRITE_SIZES = {"Objects.png":(16,16), "Bullet.png":(16,16), "blizz.png":(32,32), "slash.png": (32,32),"TextBox.png": (244,32), "geemer.png": (22,18),
+      _SPRITE_SIZES = {"Objects.png":(16,16), "element.png":(16,16), "Bullet.png":(16,16), "blizz.png":(32,32), "slash.png": (32,32),"TextBox.png": (244,32), "geemer.png": (22,18),
                        "TextBox2.png": (244,64), "indicator.png":(58,32),
                        "icon.png": (32,32), "blockP.png":(16,16), "fire.png":(18,18), "black.png": (304, 208), 
                        "bar.png":(16,16), "ammo.png": (16,16), "torch.png": (16,16), 
                        "blessing.png":(16,16), "thunder.png":(64,64), "gale.png": (18,18),
                        "energy.png":(16,32), "item.png":(16,16),
-                       "flapper.png":(16,16), "dummy.png":(16,16), "david.png":(19,26), "thunderTiles.png":(16,16),
+                       "bopper.png":(16,16), "flapper.png":(16,16), "dummy.png":(16,16), "david.png":(19,26), "thunderTiles.png":(16,16),
                        "portal.png":(16,16), "exclamation.png":(16,16), "z.png": (16,16), "fireIcon.png":(16,16),
                        "spinner.png":(32,32), "shotsfired.png":(16,16), "drops.png":(16,16),
                        "baller.png":(16,16), "barrier.png":(16,16), "pixels.png":(16,16), "map.png":(240,160),
                        "numbers.png":(16,16), 
-                       "mapRooms.png":(8,8),
+                       "mapRooms.png":(8,8), 
                        "knight.png":(32,32)
          
       }
@@ -57,7 +57,7 @@ class SpriteManager(object):
       _DEFAULT_SPRITE = (18,26)
       
       # A list of images that require to be loaded with transparency
-      _TRANSPARENCY = ["title_screen.png", "pointer.png", "portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
+      _TRANSPARENCY = ["ammo.png", "title_screen.png", "pointer.png", "portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
                        "icon.png", "TextBox.png", "TextBox2.png", "geemer.png", "item.png", "fire.png", "black.png", "blessing.png",
                        "thunder.png", "energy.png", "gale.png", "indicator.png",
                        "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png",#Enemies

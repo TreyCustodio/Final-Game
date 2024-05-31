@@ -1,4 +1,4 @@
-from . import Bullet, Sword, Dummy, Drop, David, Blizzard, Clap, Hook, Slash, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
+from . import Bullet, Bombo, Sword, Dummy, Drop, David, Blizzard, Clap, Hook, Slash, Animated, Enemy, Geemer, PushableBlock, NonPlayer, Block, HBlock, LockBlock
 from utils import SpriteManager, SoundManager, SCALE, RESOLUTION, INV, EQUIPPED, vec
 import pygame
 
@@ -89,7 +89,7 @@ class Player(Animated):
         self.drunk = True
     
     def undrink(self):
-        #print("A")
+        self.drunkTimer = 0
         self.speed = 100
         self.drunk = False
 
@@ -101,9 +101,11 @@ class Player(Animated):
         difference = INV["max_hp"] - self.hp
         if integer > difference:
             self.hp = INV["max_hp"]
+            return difference
         else:
             self.hp += integer
-    
+            return integer
+        
     def hurt(self, integer):
         self.hp -= integer
         
@@ -359,15 +361,26 @@ class Player(Animated):
                 if event.button == 3:
                     self.shootSlash()
     
-
-    def buttonsDown(self, event):
-        if event.button == 2 and INV["shoot"] and self.arrowCount > 0 and self.arrowReady and not self.invincible: #and self.ammo > 0:
-            #Fire bullet
+    def shootArrow(self):
+        equipped = EQUIPPED["Arrow"]
+        if equipped == 0:
             SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
             self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp)
             self.arrowCount -= 1
             self.arrowReady = False
             self.setWeaponDamage(self.bullet)
+
+        elif equipped == 1:
+            SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
+            self.bullet = Bombo(self.position, self.getDirection(self.row), self.hp)
+            self.arrowCount -= 1
+            self.arrowReady = False
+            self.setWeaponDamage(self.bullet)
+
+    def buttonsDown(self, event):
+        if event.button == 2 and INV["shoot"] and self.arrowCount > 0 and self.arrowReady and not self.invincible: #and self.ammo > 0:
+            #Fire bullet
+            self.shootArrow()
         
         if event.button == 1:
             #Hook
@@ -485,11 +498,7 @@ class Player(Animated):
 
                     if event.key == pygame.K_x and INV["shoot"] and self.arrowCount > 0 and self.arrowReady and not self.invincible: #and self.ammo > 0:
                         #Fire bullet
-                        SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
-                        self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp)
-                        self.arrowCount -= 1
-                        self.arrowReady = False
-                        self.setWeaponDamage(self.bullet)
+                        self.shootArrow()
                     
                     if event.key == pygame.K_a:
                         #Hook
@@ -878,7 +887,6 @@ class Player(Animated):
         if self.drunk:
             self.drunkTimer -= seconds
             if self.drunkTimer <= 0:
-                self.drunkTimer = 30
                 self.undrink()
 
         if not self.arrowReady:
@@ -921,37 +929,15 @@ class Player(Animated):
         elif self.blizzard != None:
             self.blizzard = None
         
-        
-        """ if self.moving:
-            if self.inPosition(self.movingTo):
-                self.vel = vec(0,0)
-                self.movingTo = None
-                self.keyUnlock()
-            else:
-                if self.position[0] < self.movingTo[0]:
-                    self.vel[0] = self.speed
-                elif self.position[0] > self.movingTo[0]:
-                    self.vel[0] = -self.speed
-                if self.position[1] < self.movingTo[1]:
-                    self.vel[1] = self.speed
-                elif self.position[1] > self.movingTo[1]:
-                    self.vel[1] = -self.speed
-            self.position += self.vel * seconds
-            
-            return """
-        
-        
-    
-        
-        
+       
         #Update invincibility if needed
         if self.invincible:
             self.iframeTimer += seconds 
-            if self.iframeTimer >= 2:
+            if self.iframeTimer >= 0.8:
                 self.iframeTimer = 0
                 self.invincible = False
 
-            elif self.iframeTimer <= 1.85:
+            elif self.iframeTimer <= 0.7:
                 self.image = SpriteManager.getInstance().getSprite("null.png")
         
         #Update clap cooldown

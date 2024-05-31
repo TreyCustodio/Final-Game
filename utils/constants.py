@@ -66,6 +66,7 @@ EQUIPPED = {
 
     "C": 1,
     "Arrow": 0,
+    #0 -> regular, 1 -> bombo, 
     "room":0,
     #0 -> regular, 1 -> fire, 2 -> ice, 3- -> thunder, 4-> wind, 5-> super, 6-> hyper
     "area":0,
@@ -80,12 +81,13 @@ INV = {
     "max_hp": 10,
     "plant": 1,
     "shoot": True,
+    "bombo": True,
     "fire": True,
     "clap": True,
     "slash": True,
     "cleats": True,
     "potion": 3,
-    "smoothie": 1,
+    "smoothie": 3,
     "beer": 8,
     "joint":1,
     "speed":1,
@@ -239,6 +241,10 @@ Geemers seem to love it.",
 "shoot":
 "Old reliable.\n\
 Press X to shoot.",
+
+"bombo":
+"Bombofauns.\n\
+Shoot explosive plants.",
 
 "fire":
 "The blessing of fire.\n\
