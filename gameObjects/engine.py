@@ -138,8 +138,8 @@ class AE(object):
     True if the healthbar is drawing damage.
     False otherwise
     """
-    def getHealthBarDrawingHurt(self):
-        return self.healthBar.drawingHurt
+    def getHealthBarDrawing(self):
+        return self.healthBar.drawingHurt or self.healthBar.drawingHeal
     
     """
     Auxilary Methods
@@ -200,7 +200,8 @@ class AE(object):
         self.healthBarLock = False
 
     def healPlayer(self, integer):
-        print("A")
+        if self.player.hp == INV["max_hp"]:
+            return
         amountHealed = self.player.heal(integer)
         self.healthBar.drawHeal(amountHealed)
 
@@ -399,7 +400,6 @@ class AE(object):
         intro -> special properties for transport because no player yet
         """
         if not self.transporting:
-            #print("Transport")
             EventManager.getInstance().startTransition()
             if intro:
                 self.transporting = True
@@ -866,13 +866,16 @@ class AE(object):
         """
         pass
     
+    def updateHealthBar(self, seconds):
+        self.healthBar.update(seconds)
+
     def updateHUD(self, seconds):
         self.moneyImage.update(seconds)
         self.keyImage.update(seconds)
         self.indicator.update(seconds)
         self.damageNums.updateNumbers(self, seconds)
         if not self.healthBarLock:
-            self.healthBar.update(seconds)
+            self.updateHealthBar(seconds)
         
 
     def handlePrompt(self):
@@ -1024,8 +1027,7 @@ class AE(object):
             else:
                 if not self.player.key_lock:
                     self.player.keyLock()
-                if not self.healthBarLock:
-                    self.healthBar.drawFirst(drawSurface, self.player)
+                self.healthBar.drawFirst(drawSurface, self.player)
             
         
         

@@ -447,8 +447,8 @@ class ScreenManager(object):
 
         elif self.state == "paused":
             self.pauseEngine.update(seconds)
-            if self.game.getHealthBarDrawingHurt():
-                self.game.updateHUD(seconds)
+            if self.game.getHealthBarDrawing():
+                self.game.updateHealthBar(seconds)
             
             if self.returningToMain:
                 self.fade.update(seconds)

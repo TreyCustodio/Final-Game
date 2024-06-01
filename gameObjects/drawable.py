@@ -534,6 +534,7 @@ class HealthBar(object):
             self.fillerPixels = 0 #Background of red hp bar
             self.subtractingPixels = False
             self.drawingHeal = False
+            self.healthPixels = 0
 
         
         def getLength(self):
@@ -573,7 +574,10 @@ class HealthBar(object):
         ##  Draws in 2 stages: blinking and subtracting
         def drawRed(self, drawSurface, player, low = False):
             blackPix = (INV["max_hp"] * 5) - (player.hp * 5)
-            pixelsToDraw = player.hp * 5 #Regular hp, no shading
+            if self.drawingHeal:
+                pixelsToDraw = (player.hp - self.amountToFill // 5) * 5
+            else:
+                pixelsToDraw = player.hp * 5 #Regular hp, no shading
             if low == True:
                 self.blit(drawSurface, self.edgeL)
             else:
@@ -640,7 +644,7 @@ class HealthBar(object):
                                 self.blit(drawSurface, self.red1)
                     
                     #Filler
-                    for i in range(self.fillerPixels-(self.damageToDraw - 5)):
+                    for i in range(self.fillerPixels - (self.damageToDraw - 5)):
                         if low:
                             self.blit(drawSurface, self.low5)
                         else:
@@ -654,10 +658,37 @@ class HealthBar(object):
 
 
             elif self.drawingHeal:
-                ##Cant be healing and hurting
-                pass
+                print(self.healthPixels)
+                print(self.fillerPixels)
+                ##Healing
+                for i in range((pixelsToDraw-2) + self.healthPixels):
+                    if low:
+                        self.blit(drawSurface, self.low1)
+                    else:
+                        self.blit(drawSurface, self.red1)
+                
+                ##2 pixels for shading
+                if low:
+                    self.blit(drawSurface, self.low2)
+                    self.blit(drawSurface, self.low3)
+                    for i in range(self.fillerPixels):
+                        self.blit(drawSurface, self.low5)
+                    
+                    self.blit(drawSurface, self.edgeL)
+                
+                else:
+                    drawSurface.blit(self.red2, self.drawPos)
+                    self.drawPos[0] += 1
+                    drawSurface.blit(self.red3, self.drawPos)
+                    self.drawPos[0] += 1
 
-                        
+                    for i in range(self.fillerPixels):
+                        drawSurface.blit(self.red5, self.drawPos)
+                        self.drawPos[0] += 1
+
+                    drawSurface.blit(self.red6, self.drawPos)
+                    self.drawPos[0] += 1
+
             else:
                 ##Regular draw routine
                 #Red pixels
@@ -720,7 +751,7 @@ class HealthBar(object):
                     self.pixelsToDraw = 0
                     player.keyUnlock()
                     SoundManager.getInstance().stopSFX("OOT_MagicRefill.wav")
-        
+            
 
         def drawHurt(self, hp, damage):
             """
@@ -737,9 +768,10 @@ class HealthBar(object):
 
 
         def drawHeal(self, amountHealed):
-            print("B")
-            self.fillerPixels = amountHealed * 5
+            self.amountToFill = amountHealed * 5
+            self.fillerPixels = self.amountToFill
             self.drawingHeal = True
+
 
         def draw(self, drawSurface, player):
             """
@@ -748,7 +780,10 @@ class HealthBar(object):
             """
             ##Full Health
             if player.hp == INV["max_hp"]:
-                self.drawFull(drawSurface, player)
+                if not self.drawingHeal:
+                    self.drawFull(drawSurface, player)
+                else:
+                    self.drawRed(drawSurface, player)
             
             elif player.hp == 1 or player.hp <= INV["max_hp"] / 4:
                 self.drawRed(drawSurface, player, low = True)
@@ -794,9 +829,10 @@ class HealthBar(object):
                         self.hurtTimer = 0
                 
             elif self.drawingHeal:
-                #increment pixelsToDraw
-                #decrement fillerPixels
-                pass
+                self.healthPixels += 1
+                self.fillerPixels -= 1
+                if self.healthPixels > self.amountToFill:
+                    self.drawingHeal = False
             elif self.reloading:
                 ##Reload the hp bar after getting an upgrade
                 self.pixelsToDraw -= 1
@@ -804,66 +840,6 @@ class HealthBar(object):
                 ##Initialization of the healthbar
                 self.pixelsToDraw += 1
 
-        
-
-        
-        
-
-        
-
-
-
-
-
-
-
-
-
-        """ if player.hp == INV["max_hp"]:
-            pixelsToDraw = INV["max_hp"] * 5
-            for i in range(pixelsToDraw):
-                ##
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,1))
-            super().draw(drawSurface)
-            return
-        
-        elif player.hp <= INV["max_hp"] / 4:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,3))
-        else:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,2))
-        
-        super().draw(drawSurface)
-
-        pixelCount = 93 // INV["max_hp"]
-        pixelsToDraw = pixelCount * player.hp
-        
-        for i in range(pixelsToDraw-3):
-            pixel = SpriteManager.getInstance().getSprite("pixels.png", (0,0))
-            drawSurface.blit(pixel, (self.position[0]+17+i, self.position[1]+2))
-        for i in range(3):
-            pixel = SpriteManager.getInstance().getSprite("pixels.png", (i+1,0))
-            drawSurface.blit(pixel, (self.position[0]+17+(pixelsToDraw-3)+i, self.position[1]+2))
- """
-        
-        """ if player.hp == INV["max_hp"]:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,1))
-
-        elif player.hp <= INV["max_hp"]/5 or player.hp == 1:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,6))
-        elif player.hp <= INV["max_hp"]/3.5:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,5))
-            #Text((20,0), str(self.player.hp), (255,0,0)).draw(drawSurface)
-
-        elif player.hp <= INV["max_hp"] / 2.5:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,4))
-
-        elif player.hp <= INV["max_hp"]/1.5:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,3))
-            #Text((20,0), str(self.player.hp), (225,228,0)).draw(drawSurface)    
-        else:
-            self.image = SpriteManager.getInstance().getSprite("bar.png", (0,2)) """
-            
-        
 
 class Highlight(Drawable):
     def __init__(self, position, flag = 0):

@@ -1,9 +1,7 @@
 - [ ] Indicator
-- [ ] LavaKnight
 - [ ] Boppers
 - [ ] Bombofauns
 - [ ] Boss health
-- [ ] Healthbar hurt for damage > 1
 - [ ] Healthbar heal
 - [ ] reset the state of the game after quitting
 - [ ] menu cursor (moving yellow on four corners)
