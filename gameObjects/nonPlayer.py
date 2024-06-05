@@ -77,10 +77,6 @@ class Chest(NonPlayer):
             else:
                 engine.displayText(self.text)
 
-    
-    
-    
-
 
 class Sign(NonPlayer):
     def __init__(self, position = vec(0,0), text = ""):
@@ -261,6 +257,15 @@ class Geemer(NonPlayer):
             
 
     def interact(self, engine):
+        if self.variant == "dispo":
+            if INV["plant"] >= 1:
+                self.text = SPEECH["flame_roll"]
+            else:
+                self.text = SPEECH["flame_dispo"]
+            engine.displayText(self.text, self.icon)
+            engine.selectedItem = "roll"
+            return
+        
         if not self.interacted:
             #Display based on variant and inventory
             if self.variant == 2:
@@ -429,7 +434,7 @@ class Buck(Drop):
     
     def interact(self, player):
         if not self.interacted:
-            SoundManager.getInstance().playSFX("solve.wav")
+            SoundManager.getInstance().playSFX("buck.wav")
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 1
@@ -443,7 +448,7 @@ class Buck_R(Drop):
     
     def interact(self, player):
         if not self.interacted:
-            SoundManager.getInstance().playSFX("solve.wav")
+            SoundManager.getInstance().playSFX("buck.wav")
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 10
@@ -457,7 +462,7 @@ class Buck_B(Drop):
     
     def interact(self, player):
         if not self.interacted:
-            SoundManager.getInstance().playSFX("solve.wav")
+            SoundManager.getInstance().playSFX("buck.wav")
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 5

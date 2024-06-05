@@ -1,6 +1,7 @@
 import pygame
 
 from UI import EventManager
+from utils import SpriteManager
 from . import (Drawable, HudImageManager, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
                WeightedSwitch, DamageIndicator, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
                PushableBlock, LockBlock, Bullet, Sword, Clap, Slash, Flapper, Number,
@@ -47,7 +48,7 @@ class AE(object):
         self.roomId = 0
         self.itemsToCollect = 0
         self.mapCondition = False #True if pink, False if green
-
+        self.textBoxBackground = SpriteManager.getInstance().getSprite("TextBox2.png", (0,7))
 
         self.damageNums = DamageNumberManager()
         self.player = None
@@ -410,6 +411,7 @@ class AE(object):
             self.fade()
             self.transporting = True
             self.tra_room = room
+            
             if position == 0:
                 self.tra_pos = vec(16*9, 16*11)
             elif position == 1:
@@ -427,7 +429,25 @@ class AE(object):
             
             pygame.event.clear()
 
-        
+    """
+    Transports the player to a specified position
+    """
+    def transportPos(self, room = None, position = None, keepBGM = False):
+        if not self.transporting:
+            EventManager.getInstance().startTransition()
+            
+            self.fade()
+            self.transporting = True
+            self.tra_room = room
+            
+            self.tra_pos = position
+                
+            self.tra_keepBGM = keepBGM
+            if not keepBGM:
+                SoundManager.getInstance().fadeoutBGM()
+            
+            pygame.event.clear()
+
     def displayText(self, text = "", icon = None, large = True):
         """
         Display text
@@ -734,6 +754,9 @@ class AE(object):
                     else:
                         self.damageNums.addNumber(vec(other.getCenterX(), other.position[1]), projectile.damage)
                     other.hit = False
+                    if projectile.id == "arrow":
+                        projectile.handleOtherCollision(self)
+                        return
                 projectile.handleCollision(self)
                 
                 
@@ -760,7 +783,6 @@ class AE(object):
 
 
     def handleCollision(self):
-        #self.projectileCollision()
         self.npcCollision()
         if not self.dying:
             self.blockCollision()
@@ -776,7 +798,6 @@ class AE(object):
     def update_Enemy(self, seconds, n):
         n.update(seconds, self.player.position)
         if n.dead:
-            self.playSound("enemydies.wav")
             self.disappear((n))
             if self.dropCount < 5:
                 if self.player.hp == INV["max_hp"]:
@@ -1119,6 +1140,11 @@ class AE(object):
         
         #Weapons
         self.weaponControl()
+    
+    def drawText(self, drawSurface):
+        self.draw(drawSurface)
+        image = Drawable(self.boxPos, "TextBox2.png", (0,7))
+        image.draw(drawSurface)
 
 class AbstractEngine(object):
 

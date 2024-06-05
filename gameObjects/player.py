@@ -364,14 +364,12 @@ class Player(Animated):
     def shootArrow(self):
         equipped = EQUIPPED["Arrow"]
         if equipped == 0:
-            SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
             self.bullet = Bullet(self.position, self.getDirection(self.row), self.hp)
             self.arrowCount -= 1
             self.arrowReady = False
             self.setWeaponDamage(self.bullet)
 
         elif equipped == 1:
-            SoundManager.getInstance().playSFX("OOT_DekuSeed_Shoot.wav")
             self.bullet = Bombo(self.position, self.getDirection(self.row), self.hp)
             self.arrowCount -= 1
             self.arrowReady = False
@@ -731,12 +729,12 @@ class Player(Animated):
                     self.hp -= enemy.getDamage()
                     if self.hp <= 0:
                         self.hp = 1
-                    SoundManager.getInstance().playSFX("samus_damage.wav")
+                    SoundManager.getInstance().playSFX("hurt.wav")
                     self.invincible = True
                     self.knockback(side)
             else:
                 self.hp -= enemy.getDamage()
-                SoundManager.getInstance().playSFX("samus_damage.wav")
+                SoundManager.getInstance().playSFX("hurt.wav")
                 self.invincible = True
                 self.knockback(side)
             
@@ -905,6 +903,7 @@ class Player(Animated):
             #SoundManager.getInstance().stopSFX("footsteps.wav")
             self.walking = False
         else:
+            #SoundManager.getInstance().playSFX("step.wav")
             self.walking = True
 
         if self.charging:

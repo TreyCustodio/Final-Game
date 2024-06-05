@@ -1,5 +1,5 @@
 import pygame
-from utils import SpriteManager, SCALE, RESOLUTION, vec, INV
+from utils import SoundManager, SpriteManager, SCALE, RESOLUTION, vec, INV
 from . import Drawable, Animated, ShotParticle
 """
 This file contains everything pertenent to dealing
@@ -203,6 +203,7 @@ class Bullet(AbstractWeapon):
         self.type = 0
         self.frame = 0
         self.id = "arrow"
+        SoundManager.getInstance().playSFX("shoot.wav")
 
     def setVelocity(self, direction, speed):
         if direction == 0:
@@ -231,9 +232,7 @@ class Bullet(AbstractWeapon):
     
     def handleCollision(self, engine):
         self.hit = True
-        engine.playSound("SM_missile.wav")
-        #engine.playSound("OOT_DekuSeed_Hit.wav")
-        #engine.disappear(self)
+        engine.playSound("dink.wav")
         engine.player.arrowCount += 1
         engine.player.shooting = False
 
@@ -241,11 +240,6 @@ class Bullet(AbstractWeapon):
     def handleOtherCollision(self, engine):
         if not self.hit:
             self.hit = True
-            engine.playSound("SM_missile.wav")
-            #engine.playSound("OOT_DekuSeed_Hit.wav")
-            
-            
-            #engine.disappear(self)
             engine.player.arrowCount += 1
             engine.player.shooting = False
 

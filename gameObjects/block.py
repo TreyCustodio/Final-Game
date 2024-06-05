@@ -11,13 +11,9 @@ class Block(Drawable):
         super().__init__(position, "Objects.png", offset)
         self.width = 16
         self.height = 16
-        
     
-    """ def appear(self):
-        self.spawned = True
-    
-    def disappear(self):
-        self.spawned = False """
+    def draw(self, drawSurface, drawBox = False):
+        super().draw(drawSurface, drawBox)
         
     def update(self, player):
         if player.pushing == True:
@@ -27,11 +23,16 @@ class IBlock(Block):
     """
     Invisible blocks
     """
-    def __init__(self, position = vec(0,0), offset = (0,0)):
-        super().__init__(position, offset)
+    def __init__(self, position = vec(0,0), width = 16, height = 16):
+        super().__init__(position, (0,0))
+        self.width = width
+        self.height = height
 
-    def draw(self, drawSurface):
-        super().draw(drawSurface)
+    def getCollisionRect(self):
+        return pygame.Rect(self.position, (self.width, self.height))
+    
+    def draw(self, drawSurface, drawBox = False):
+        super().draw(drawSurface, drawBox)
 
 
 
@@ -60,7 +61,7 @@ class Trigger(IBlock):
     Colliding with this invisible trigger will
     Cause text to be displayed
     """
-    def __init__(self, position = vec(0,0), text="", door = -1):
+    def __init__(self, position = vec(0,0), text="", door = -1, width = 16, height = 16):
         if door == 0:
             super().__init__((16*9, (16*12 + 8)))
         elif door == 3:
@@ -76,17 +77,22 @@ class Trigger(IBlock):
             super().__init__(position, (1,0))
         else:
             super().__init__(position)
+            self.width = width
+            self.height = height
         
         self.door = door
         self.text = text
     
+    def draw(self, drawSurface):
+        super().draw(drawSurface)
+
     def getCollisionRect(self):
         if self.door == 0 or self.door == 2:
             return pygame.Rect((self.position[0]-8, self.position[1]), (32, 16))
         elif self.door == 1 or self.door == 3:
             return pygame.Rect((self.position[0],self.position[1]-8), (16,32))
         else:
-            return super().getCollisionRect()
+            return pygame.Rect(self.position, (self.width, self.height))
     def interact(self, player, engine):
         engine.displayText(self.text)
         player.vel = vec(0,0)

@@ -64,7 +64,7 @@ Indicates what C attack and what type of arrow is equipped
 """
 EQUIPPED = {
 
-    "C": 1,
+    "C": 0,
     "Arrow": 0,
     #0 -> regular, 1 -> bombo, 
     "room":0,
@@ -78,7 +78,7 @@ EQUIPPED = {
 The Player's inventory
 """
 INV = {
-    "max_hp": 10,
+    "max_hp": 3,
     "plant": 1,
     "shoot": True,
     "bombo": True,
@@ -108,7 +108,7 @@ INV = {
     "boltShard": 0,
     "galeShard": 0,
 
-    "flameCost": 1,
+    "flameCost": 5,
     "frostCost": 1,
     "boltCost": 1,
     "galeCost": 1,
@@ -517,6 +517,31 @@ young traveller.\n",
 "shopkeep":
 "If ya see anything you want,\n\
 i'll sell it to ya.\n",
+
+"flame_entrance_geemer":
+"Ya don't see too many\n\
+Geemers around these parts.\n\
+Not anymore that is.&&\n\
+Everyone used to grow their\n\
+bud and farm together...\n\
+But those lava knights\n\
+have ruined the land.\n\
+What a shame...&&\n",
+
+"flame_dispo":
+"If you're lookin to buy,\n\
+sorry man but I'm all out.\n\
+Haven't been able to grow\n\
+in so long, dude...\n\
+But if you've got any\n\
+green on you...\n\
+I can roll you up something\n\
+really nice, man!\n",
+
+"flame_roll":
+"Y/NLooks like you've got\n\
+summa that good good!\n\
+Want me to roll for ya?\n",
 
 "null":
 "Nothing to see here."

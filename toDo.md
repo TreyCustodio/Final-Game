@@ -1,10 +1,12 @@
 - [ ] Indicator
-- [ ] Boppers
+- [ ] Boppers, enemy fixes
+- [ ] Lava Knight Knockback
 - [ ] Bombofauns
 - [ ] Boss health
 - [ ] Healthbar heal
 - [ ] reset the state of the game after quitting
-- [ ] menu cursor (moving yellow on four corners)
+- [ ] menu cursor
 - [ ] Upscale map when opening
 - [ ] Revamp forcefields
 - [ ] Death reset
+- [ ] out of bounds safety

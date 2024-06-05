@@ -1,4 +1,5 @@
 from . import Drawable
+import pygame
 from utils import SpriteManager, EQUIPPED, vec, RESOLUTION
 
 class Animated(Drawable):
@@ -286,10 +287,73 @@ class Fade():
             self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                                     (0, self.row))
 
+class Highlight(Animated):
+    def __init__(self, position, flag = 0):
+        """
+        flags:
+        0-> Regular 16x16, 1 -> quit, 2 -> Y/N prompt, 3 -> map
+        """
+        if flag == 0:
+            super().__init__(position, "cursor.png", (0,0))
+        else:
+            super().__init__(position, "Objects.png", (0,0))
+        
+        self.frameSet = False
+        self.framesPerSecond = 8
+        self.nFrames = 6
+        self.initialized = False
+        self.displayFlag = flag
+        self.timer = 0
+
+    def setInitialized(self):
+        self.initialized = True
+
+    def setRow(self, integer):
+        self.row = integer
+        
+    def draw(self, drawSurface):
+        if self.displayFlag == 0:
+            super().draw(drawSurface)
+        else:
+            super().draw(drawSurface, True)
+    
+    def drawBlack(self, drawSurface):
+        pass
+
+    def getCollisionRect(self):
+        if self.displayFlag == 1:
+            return pygame.Rect((self.position), (16*8,32))
+        elif self.displayFlag == 2:
+            return pygame.Rect((self.position), (36,32))
+        elif self.displayFlag == 3:
+            return pygame.Rect((self.position[0]-1, self.position[1]-1), (10,10))
+        else:
+            return super().getCollisionRect()
+    
+    def updateFlashTimer(self, seconds):
+        self.timer += seconds
+    
+    def update(self, seconds):
+        super().update(seconds)
+
+"""
+Display flags:
+0 -> normal, 1 -> elements
+"""
 class Pointer(Animated):
-    def __init__(self, position):
-        super().__init__(position, "pointer.png")
+    def __init__(self, position, displayFlag = 0):
+        if displayFlag > 0:
+            super().__init__(position, "pointer.png", (0,1))
+            self.row = 1
+        else:
+            super().__init__(position, "pointer.png")
+            if displayFlag == 2:
+                self.image = pygame.transform.flip(self.image, flip_x=True, flip_y=False)
+        self.nFrames = 4
+        self.framesPerSecond = 2
+        self.displayFlag = displayFlag
         self.choice = 0
+        self.timer = 0.0
     
     def getChoice(self):
         return self.choice
@@ -302,6 +366,16 @@ class Pointer(Animated):
     
     def setChoice(self, integer=0):
         self.choice = integer
+    
+    def update(self, seconds):
+        self.timer += seconds
+        if self.timer >= 2.8:
+            self.frame += 1
+            self.frame %= self.nFrames
+            self.image = SpriteManager.getInstance().getSprite(self.fileName, (self.frame, self.row))
+            if self.displayFlag == 2:
+                self.image = pygame.transform.flip(self.image, flip_x=True, flip_y=False)
+            self.timer = 0.0
 
 
 class Tile(Animated):

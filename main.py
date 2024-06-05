@@ -9,10 +9,10 @@ def main():
     pygame.font.init()
 
     ##Set the screen up
-    flags = pygame.SCALED #| pygame.NOFRAME
+    flags = pygame.SCALED | pygame.NOFRAME
     screen = pygame.display.set_mode(list(map(int, UPSCALED)), flags=flags)
     drawSurface = pygame.Surface(list(map(int, RESOLUTION)))
-    transparentSurface = textSurface = drawSurface.subsurface(drawSurface.get_rect())
+    transparentSurface = drawSurface.subsurface(drawSurface.get_rect())
     textSurface = drawSurface.subsurface(drawSurface.get_rect())
     
 
@@ -62,7 +62,6 @@ def main():
                                screen)
         
         
-        #pygame.display.flip()
         gameClock = pygame.time.Clock()
         setJoystick()
         
@@ -84,10 +83,6 @@ def main():
         else:
             pygame.display.flip()
             gameEngine.draw(drawSurface)
-
-        
-
-        
 
         eventManager.handleEvents(gameEngine)
         gameEngine.moveMenuCursor()

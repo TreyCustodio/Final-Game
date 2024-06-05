@@ -288,8 +288,7 @@ class Intro_1(AbstractEngine):
         """
         Draw
         """
-        def draw(self, drawSurface):
-            super().draw(drawSurface)
+        
         
 
         """
@@ -415,8 +414,6 @@ class Intro_2(AbstractEngine):
             Initial conditions
             """
             super().__init__()
-            #print((16*9, 16*12))
-            #print(COORD[9][11])
             self.roomId = 2
             self.ignoreClear = True
             self.trigger1 = Trigger(door = 0)
@@ -427,7 +424,8 @@ class Intro_2(AbstractEngine):
 
            
             #Music
-            self.bgm = "Furious_Anger.mp3"
+            self.bgm = None
+            #self.bgm = "Furious_Anger.mp3"
             #Puzzle conditions
             self.resetting = True
             self.enemyPlacement = 2
@@ -442,8 +440,9 @@ class Intro_2(AbstractEngine):
             #Switches
             
             #Npcs
-            self.npcs = [GremlinB(COORD[5][7])
-                #Flapper(COORD[2][9]), 
+            self.npcs = [#Spinner(COORD[5][7]), 
+                         #GremlinB(COORD[5][7])
+                         #Flapper(COORD[2][9]), 
                          #FireFlapper(COORD[3][9]),
                          #FireFlapper(COORD[4][9]),
                          #FireFlapper(COORD[5][9]),
@@ -465,6 +464,8 @@ class Intro_2(AbstractEngine):
             #Background/room
             self.background = Level("intro_2.png")
 
+            
+            
             for i in range(2):
                 self.enemies.append(Mofos(direction = 1))
             for i in range(2):
@@ -474,6 +475,7 @@ class Intro_2(AbstractEngine):
             self.enemies.append(Spinner())
             self.enemies.append(Spinner())
             self.enemies.append(Spinner())
+            
 
 
             """ 
@@ -504,8 +506,7 @@ class Intro_2(AbstractEngine):
         """
         Draw
         """
-        def draw(self, drawSurface):
-            super().draw(drawSurface)
+        
         
         """
         Collision
@@ -732,8 +733,7 @@ class Intro_3(AbstractEngine):
                     else:
                         self.player.handleCollision(b)
 
-        def draw(self, drawSurface):
-            super().draw(drawSurface)
+        
 
         def update(self, seconds):
             super().update(seconds)
@@ -844,7 +844,7 @@ class Grand_Chapel(AbstractEngine):
         def __init__(self):
             super().__init__()
             self.roomId = 4
-            self.bgm = None
+            self.bgm = "hymn.mp3"
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0
@@ -1144,16 +1144,39 @@ class Flame_entrance(AbstractEngine):
     class _Flame_entrance(AE):
         def __init__(self):
             super().__init__()
-            self.bgm = "fire.mp3"
+            self.bgm = "pso.mp3"
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0
             self.background = Level("flame_entrance.png")
-            self.trigger1 = Trigger(door = 0)
-
+            self.doors = [2,3]
+            self.trigger1 = Trigger(door = 3)
+            self.trigger2 = Trigger(door = 2)
+            self.trigger3 = Trigger(vec(16*13 - 2, 16*5), width = 20, height = 12)
+            self.motionTick = 0
+            self.motionTimer = 0.0
+            self.geemer = Geemer(COORD[4][3], text = SPEECH["flame_entrance_geemer"])
+            self.spawning = [self.geemer]
+            self.enemies = [Baller(COORD[8][10]),
+                         Baller(COORD[10][10], 1)]
         #override
         def createBlocks(self):
+           for i in range(11, 16):
+               for j in range(3, 6):
+                if i == 13 and j == 5:
+                    pass
+                elif j == 5:
+                    if i == 12:
+                        self.blocks.append(IBlock(COORD[i][j], width = 14))
+                    elif i == 14:
+                        self.blocks.append(IBlock((16*i +2, 16*j), width = 14))
+                    else:
+                        self.blocks.append(IBlock(COORD[i][j]))
+                else:
+                    self.blocks.append(IBlock(COORD[i][j]))
            self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           self.blocks.append(self.trigger3)
            
         #override
         def blockCollision(self):
@@ -1165,9 +1188,93 @@ class Flame_entrance(AbstractEngine):
                 self.projectilesOnBlocks(b)
                 if self.player.doesCollide(b):
                     if b == self.trigger1:
-                        self.transport(Room, 0, keepBGM=True)
+                        self.transport(Flame_1, 1)
+                    elif b == self.trigger2:
+                        self.transport(Grand_Chapel_L, 0)
+                    elif b == self.trigger3:
+                        self.transportPos(Flame_dispensary, vec(16*9, 16*8))
                     else:
                         self.player.handleCollision(b)
+
+        def update(self, seconds):
+            super().update(seconds)
+            if self.motionTick == 0:
+                self.geemer.position[0] += 0.2
+            elif self.motionTick == 1:
+                pass
+            elif self.motionTick == 2:
+                self.geemer.position[0] -= 0.2
+            elif self.motionTick == 3:
+                pass
+            """ elif self.motionTick == 2:
+                self.geemer.position[0] -= 0.2
+            elif self.motionTick == 3:
+                self.geemer.position[1] -= 0.2 """
+            self.motionTimer += seconds
+            if self.motionTimer >= 2.0:
+                self.motionTimer = 0.0
+                self.motionTick += 1
+                self.motionTick %= 4
+
+class Flame_dispensary(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._FD()
+      
+        return cls._INSTANCE
+    
+    class _FD(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "Jhene.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("dispensary_flame.png")
+            self.trigger1 = Trigger(vec(16*9, 16*9 + 12), height = 12)
+            self.shopkeep = Geemer(vec(16*9 - 2, 16*4), variant = "dispo")
+            self.spawning = [self.shopkeep]
+
+        #override
+        def createBlocks(self):
+            self.blocks.append(self.trigger1)
+            for i in range(6, 13):
+                if i == 9:
+                    pass
+                else:
+                    self.blocks.append(IBlock((16*i, 16*9 + 8)))
+
+            for i in range(6, 13):
+                self.blocks.append(IBlock(COORD[i][2]))
+            for i in range(3, 9):
+                self.blocks.append(IBlock(COORD[5][i]))
+            for i in range(3, 9):
+                self.blocks.append(IBlock(COORD[13][i]))
+
+
+
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                for n in self.npcs:
+                    if n.doesCollide(b):
+                        n.bounce(b)
+
+                self.projectilesOnBlocks(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transportPos(Flame_entrance, vec(16*13, 16*6))
+                    else:
+                        self.player.handleCollision(b)
+
+        def handlePrompt(self):
+            if self.selectedItem == "roll":
+                INV["plant"] -= 1
+                self.displayText("He rolled you a blunt!&&\nSmoke it to see things\nunseen by the sober eye!\n")
+                INV["joint"] += 1
+                self.promptResult = False
+                self.selectedItem = ""
 
 class Flame_1(AbstractEngine):
     @classmethod
@@ -1225,7 +1332,7 @@ class Flame_1(AbstractEngine):
               self.enemyCollision(b)
               if self.player.doesCollide(b):
                 if b == self.trigger1:
-                   self.transport(Grand_Chapel_L, 0)
+                   self.transport(Flame_entrance, 3)
                 elif b == self.trigger2:
                     self.transport(Flame_2, 0, keepBGM=True)
                 else:

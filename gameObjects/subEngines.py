@@ -25,6 +25,9 @@ class TextEngine(object):
 
     class _TE(object):
         def __init__(self):
+            self.backgroundBool = False
+            self.blackBool = False
+            self.black = SpriteManager.getInstance().getSprite("TextBox2.png", (0,6))
             self.text = ""
             self.line = ""
             self.starting = True
@@ -62,6 +65,12 @@ class TextEngine(object):
             else:
                 self.textBox = SpriteManager.getInstance().getSprite("TextBox.png", (self.frame,0))
         
+        """
+
+        """
+        def setBackgroundBool(self):
+            self.backgroundBool = not self.backgroundBool
+
         def reset(self):
             self.text = ""
             self.line = ""
@@ -132,8 +141,17 @@ class TextEngine(object):
                 #1 line
                 self.line = self.text
         
+        def setAlpha(self):
+            self.textBox.set_alpha(200)
 
         def draw(self, position, drawSurface):
+            ##unused
+            if self.blackBool:
+                if self.large:
+                    drawSurface.blit(self.black, position)
+                self.blackBool = False
+
+            self.setAlpha()
             #Still drawing previous frame
             if self.starting:
                 drawSurface.blit(self.textBox, position)
@@ -165,8 +183,6 @@ class TextEngine(object):
                 self.drawBox(position, drawSurface)
                 if self.displayIcon != None:
                     self.drawIcon((position[0] + 106, position[1] - 32), drawSurface)
-                
-
                 self.displayText(position, drawSurface)
         
             elif self.ready_to_continue:
@@ -270,6 +286,7 @@ class TextEngine(object):
                 
 
         def handleEvent(self, event):
+            ##Prompt selection
             if self.choosing:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and self.highlighted == 0:
                     self.highlighted = 1
@@ -288,7 +305,7 @@ class TextEngine(object):
                     elif self.highlighted == 1:
                         self.promptResult = True
                     
-
+            ##Progressing text
             elif (event.type == pygame.KEYDOWN and event.key == pygame.K_z) and self.ready_to_continue:
                 if self.end == True:
                     self.playSFX("WW_Textbox_Close.wav")
@@ -297,6 +314,9 @@ class TextEngine(object):
                     self.playSFX("OOT_Dialogue_Next.wav")
                     self.box_drawn = False
                     self.ready_to_continue = False
+                    self.backgroundBool = True
+                    #self.blackBool = True
+                    
 
 
         def handleEvent_C(self, event):
@@ -340,6 +360,7 @@ class TextEngine(object):
                     self.setImage()
                     if self.frame == 0:
                         self.starting = False
+                        self.setBackgroundBool()
                     return
                 else:
                     self.frame += 1
@@ -347,6 +368,7 @@ class TextEngine(object):
                     self.setImage()
                     if self.frame == 0:
                         self.starting = False
+                        self.setBackgroundBool()
                     return
             
             elif self.closing:
@@ -551,14 +573,14 @@ class PauseEngine(object):
             image = SpriteManager.getInstance().getSprite("item.png", (3,2))
             drawSurf.blit(image, (COORD[9][6]))
         
-        if self.timer >= .3:
+        """ if self.timer >= .3:
             pass
             
+        else: """
+        if self.highlighted[1] == 4:
+            self.highlightQuit.draw(drawSurf)
         else:
-            if self.highlighted[1] == 4:
-                self.highlightQuit.draw(drawSurf)
-            else:
-                self.highlight.draw(drawSurf)
+            self.highlight.draw(drawSurf)
 
 
     def equipElement(self):
@@ -589,7 +611,6 @@ class PauseEngine(object):
             else:
                 SoundManager.getInstance().playSFX("bump.mp3")
         else:
-            print("A")
             SoundManager.getInstance().playSFX("bump.mp3")
 
     def showInfo(self):
@@ -683,7 +704,7 @@ class PauseEngine(object):
             SoundManager.getInstance().playSFX("bump.mp3")
 
     def handleEvent_C(self, event):
-        if not self.inPosition:
+        if self.closing or not self.inPosition:
             return
         
         if self.mapOpen and INV["map"+str(Map.getInstance().mapNum)]:
@@ -772,7 +793,7 @@ class PauseEngine(object):
         min offset[1] = 0
         max offset[1] = 5
         """
-        if not self.inPosition:
+        if self.closing or not self.inPosition:
             return
         if self.mapOpen and INV["map"+str(Map.getInstance().mapNum)]:
             if event.type == KEYDOWN:
@@ -890,3 +911,4 @@ class PauseEngine(object):
                 self.joyTimer = 0.0
                 self.trackAnalog = True
         
+        self.highlight.update(seconds)

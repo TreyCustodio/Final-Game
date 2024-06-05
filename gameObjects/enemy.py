@@ -105,7 +105,6 @@ class Enemy(Animated):
         self.walking = False
         self.row = self.initialDir
         self.hp = self.maxHp
-        #self.position = self.initialPos
         self.flashTimer = 0
         self.walkTimer = 0
         self.freezeTimer = 4.5
@@ -121,6 +120,10 @@ class Enemy(Animated):
         else:
             self.hp = self.maxHp
 
+    """
+    Sets the row to the hurtRow.
+    Used for enemies that move in 1 direction
+    """
     def hurt(self, damage, setHit = True):
         if self.row < self.hurtRow:
             self.row = self.hurtRow
@@ -132,6 +135,25 @@ class Enemy(Animated):
             SoundManager.getInstance().playSFX("enemyhit.wav")
         else:
             self.dead = True
+            SoundManager.getInstance().playSFX("enemydies.wav")
+
+    """
+    Adds the value of hurtRow to the row.
+    Used for enemies that move in multiple directions
+    and have multiple hurtRows.
+    """
+    def hurtMult(self, damage, setHit = True):
+        if self.row < self.hurtRow:
+            self.row += self.hurtRow
+            self.flashTimer = 0
+        self.frameTimer = 0.0
+        self.hit = setHit
+        self.hp -= damage
+        if self.hp > 0: 
+            SoundManager.getInstance().playSFX("enemyhit.wav")
+        else:
+            self.dead = True
+            SoundManager.getInstance().playSFX("enemydies.wav")
 
     def handlePlayerCollision(self, player):
         """
@@ -163,6 +185,8 @@ class Enemy(Animated):
                     self.heal(other.damage)
                 elif self.type.weakTo(other.type):
                     self.hurt(other.damage)
+                else:
+                    SoundManager.getInstance().playSFX("dink.wav")
 
         ##Bullets damage enemies even through i frames
         elif self.type.getValue() == 0 and other.type == 0:
@@ -266,12 +290,13 @@ class Enemy(Animated):
                 self.freezeTimer = 0
                 self.nFrames = self.totalFrames
                 self.setSpeed(self.row)
-
+    
     def updateFlash(self, seconds):
         if self.row >= self.hurtRow:
             self.flashTimer += seconds
             if self.flashTimer >= 0.2:
                 self.row -= self.hurtRow
+
 
     def update(self, seconds, position = None):
         if self.dead:
@@ -285,7 +310,11 @@ class Enemy(Animated):
 
         ##Move
         self.move(seconds)
-        
+
+
+"""
+Bosses
+"""
 
 class LavaKnight(Enemy):
     def __init__(self, position=vec(0,0), fall = False, boss = True):
@@ -788,8 +817,14 @@ class LavaKnight(Enemy):
         
         
         
-        
+"""
+Regular Enemies
+"""        
 
+"""
+Change name to Skeller or Boner.
+Sticks to its square-shaped walking route.
+"""
 class Mofos(Enemy):
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, "mofos.png", direction)
@@ -803,6 +838,9 @@ class Mofos(Enemy):
     
     def bounce(self, other):
         return
+
+    def hurt(self, damage, setHit = True):
+        super().hurtMult(damage, setHit)
 
     #override
     def move(self, seconds):
@@ -823,8 +861,25 @@ class Mofos(Enemy):
 
     def update(self, seconds, position = None):
         super().update(seconds)
-        
 
+
+"""
+A fire version of the skeller/boner.
+Needs to be frozen in order to damage it.
+Similar to how you have to freeze the LavaKnight
+before you can damage it.
+"""
+class FireMofos(Mofos):
+    def __init__(self, position = vec(0,0), direction = 0):
+        super().__init__(position, direction)
+
+    def getDrop(self):
+        return FireShard((self.position[0]+3, self.position[1]+5))        
+
+"""
+Cute little walking fireball.
+Requires Ice to damage it.
+"""
 class Baller(Enemy):
     def __init__(self, position=vec(0,0), direction = 3):
         super().__init__(position, "baller.png", direction)
@@ -865,138 +920,32 @@ class Baller(Enemy):
                 self.vel[0] = self.speed
                 self.row = 1
                 #self.vel[1] = 0
-            
-    def draw(self, drawSurface):
-        super().draw(drawSurface)
-        
-
+    
+    def hurt(self, damage, setHit=True):
+        return super().hurtMult(damage, setHit)
+    
     def setSpeed(self, row=0):
-        
         if self.direction == 3:
             self.vel[0] = -self.speed
         elif self.direction == 1:
             self.vel[0] = self.speed
 
-    """ def handleCollision(self, other=None):
-        if other.type == 2:
-            if not self.frozen:
-                self.freeze()
-            if self.row < self.hurtRow:
-                self.row += self.hurtRow
-                self.flashTimer = 0
-                self.hp -= other.damage
-                if self.hp > 0:
-                    SoundManager.getInstance().playSFX("enemyhit.wav")
-                else:
-                    self.dead = True
-        elif other.type == 1:
-            self.heal(other.damage) """
-
-
     def update(self, seconds, position = None):
         super().update(seconds)
 
-class Heater(Enemy):
-    def __init__(self, position):
-        super().__init__(position, "heater.png")
-        self.indicatorRow = 0
-        self.speed = 100
-        self.nFrames = 1
-        self.totalFrames = 1
-        self.maxHp = 20
-        self.hp = 20
-        self.damage = 1
-        self.type = Element(1)
-        self.minHeight = self.position[1] + 40
-        self.maxHeight = self.position[1]
-        self.minWidth = self.position[0] - 40
-        self.maxWidth = self.position[0]
-        self.direction = 3
-        self.hurtRow = 0
-        self.vel = vec(-self.speed, self.speed)
-        self.freezeShield = True
-    
-    def bounce(self, other):
-        pass
-    
-    def setSpeed(self, row):
-        self.vel = vec(-self.speed, self.speed/2)
-
-    def updateSpeed(self):
-        if self.direction == 3:
-            #print(3)
-            if self.position[1] >= self.minHeight:
-                #print("A")
-                self.vel[1] = -self.speed/2
-
-            if self.position[0] <= self.minWidth: 
-                #print("B")               
-                self.vel[0] = self.speed
-                self.direction = 1
-                self.vel[1] = self.speed/2
-        
-        elif self.direction == 1:
-            print(1)
-            if self.position[1] >= self.minHeight:
-                self.vel[1] = -self.speed/2
-
-            if self.position[0] >= self.maxWidth:                
-                self.vel[0] = -self.speed
-                self.direction = 3
-                self.vel[1] = self.speed/2
+"""
+Cute little walking rock.
+Requires Bombofauns to damage it.
+"""
+class Rocker(Enemy):
+    pass
 
 
-    def move(self, seconds):
-        if not self.frozen:
-            self.updateSpeed()
-            self.position += self.vel*seconds
-            
-
-
-
-
-
-class Stunner(Enemy):
-    def __init__(self, position=vec(0,0), direction = 0):
-        super().__init__(position, "stunner.png", direction)
-        self.indicatorRow = 9
-        self.row = direction
-        self.hurtRow = 1
-        self.speed = 50
-        self.nFrames = 15
-        self.totalFrames = 13
-        self.maxHp = 10
-        self.hp = 10
-        self.direction = direction
-        self.damage = 2
-        self.framesPerSecond = 4
-        self.type = Element(2)
-        self.setSpeed()
-
-    def bounce(self, other):
-        pass
-    
-    def handleCollision(self, other):
-        return
-    
-    def updateFlash(self, seconds):
-        return
-
-    def setSpeed(self, row=0):
-        return
-    
-    def move(self, seconds):
-        self.position += self.vel*seconds
-
-class FireMofos(Mofos):
-    def __init__(self, position = vec(0,0), direction = 0):
-        super().__init__(position, direction)
-
-    def getDrop(self):
-        return FireShard((self.position[0]+3, self.position[1]+5))
-    """ def getDrop(self):
-        return FireShard((self.position[0]+3, self.position[1]+5)) """
-    
+"""
+Sharp, spinning enemy that can't be damaged.
+Spinners should be drawn before any other enemy
+so that other enemies walk above it.
+"""    
 class Spinner(Enemy):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, "spinner.png", 0)
@@ -1013,12 +962,12 @@ class Spinner(Enemy):
         self.freezeShield = True
         self.framesPerSecond = 32
 
+    def handleCollision(self, other=None):
+        SoundManager.getInstance().playSFX("dink.wav")
    
     def bounce(self, other):
         pass
     
-    def handleCollision(self, other):
-        return
     
     def updateFlash(self, seconds):
         return
@@ -1031,7 +980,10 @@ class Spinner(Enemy):
 
 
 
-
+"""
+Small creatures that fly diagonally and bounce off walls.
+Come in different elemental flavors.
+"""
 class Flapper(Enemy):
     """
     The direction refers to the direction it moves in,
@@ -1120,27 +1072,25 @@ class WindFlapper(Flapper):
         super().__init__(position, 4, direction)
         self.type = Element(4)
 
-class AlphaFlapper(Enemy):
-    pass
-
-
+"""
+Puffs up and damages the player if they
+get too close. Must be damaged with
+ranged attacks.
+"""
 class Puffer(Enemy):
-    """
-    Must be damaged via ranged attacks.
-    Will puff up and damage you if you get to close.
-    Play a sound when it puffs
-    """
+    
     def __init__(self, position):
         pass
     
     def puff(self):
         pass
 
+"""
+Runs across the screen when you enter his
+line of sight. Immune to elemental attacks.
+"""
 class David(Enemy):
-    """
-    Runs across the screen if you enter its line of sight.
-    Plays a funny sound when it runs.
-    """
+    
     def __init__(self, position, direction = 1, boss = False):
         super().__init__(position, "david.png", direction)
         self.indicatorRow = 2
@@ -1287,7 +1237,11 @@ class David(Enemy):
 
 
 
-
+"""
+Grimers walk across the screen and change direction
+upon colliding with a wall.
+Come in a few different flavors.
+"""
 class Gremlin(Enemy):
     def __init__(self, position = vec(0,0), direction = 1, fileName = "gremlin.png"):
         super().__init__(position, fileName, direction)
@@ -1330,12 +1284,8 @@ class Gremlin(Enemy):
                 else:
                     self.row = 2
     
-    
-    def updateFlash(self, seconds):
-        if self.row >= 4:
-            self.flashTimer += seconds
-            if self.flashTimer >= 0.2:
-                self.row -= 4
+    def hurt(self, damage, setHit=True):
+        return super().hurtMult(damage, setHit)
 
         
 class GremlinB(Gremlin):
@@ -1348,7 +1298,11 @@ class GremlinB(Gremlin):
 
     def getDrop(self):
         return BigHeart((self.position[0]+3, self.position[1]+5))
-    
+
+
+"""
+Dipshots require ranged attacks to be damaged.
+"""
 class Dummy(Enemy):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, "dummy.png", 0)
@@ -1380,35 +1334,10 @@ class Dummy(Enemy):
                 self.row = 0
 
 
-class FireEnemy(Enemy):
-    pass
-
-class IceEnemy(Enemy):
-    pass
-
-class ThunderEnemy(Enemy):
-    pass
-
-class WindEnemy(Enemy):
-    pass
-
-
-
-
-
-
-class FireMofos(Mofos):
-    pass
-class IceMofos(Mofos):
-    pass
-class ThunderMofos(Mofos):
-    pass
-class WindMofos(Mofos):
-    pass
-
-
-
-
+"""
+Code for different movement patterns
+lies below.
+"""
 class MovementPatterns(object):
     def changeDirectionSquare(enemy):
         if enemy.row == 0:

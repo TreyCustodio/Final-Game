@@ -66,11 +66,17 @@ class ScreenManager(object):
     def setController(self, text):
         self.controller = text
 
+    """
+    Draw routine for textboxes.
+    drawSurf -> specific surface for textboxes passed in by main.py
+    """
     def drawText(self, drawSurf):
+        ##TextEngine finished
         if self.textEngine.done:
+            ##Paused
             if self.pauseEngine.paused:
+                ##Evaluating prompts
                 if "Y/N" in self.pauseEngine.text:
-                    
                     self.pauseEngine.promptResult = self.textEngine.promptResult
                     if self.pauseEngine.promptResult:
                         if self.pauseEngine.promptFlag == "potion":
@@ -106,7 +112,7 @@ class ScreenManager(object):
                 self.pauseEngine.textBox = False
                 self.pauseEngine.text = ""
                 self.state.speakP()
-
+            ##Intro
             elif self.inIntro:
                 self.intro.textBox = False
                 self.intro.text = ""
@@ -114,6 +120,7 @@ class ScreenManager(object):
                 if self.intro.textInt == 9:
                     self.intro.fading = True
                 self.state.speakI()
+            ##Game, evaluate prompt
             else:
                 if "Y/N" in self.game.text:
                     self.game.promptResult = self.textEngine.promptResult
@@ -121,29 +128,48 @@ class ScreenManager(object):
                 self.game.text = ""
                 self.game.icon = None
                 self.state.speak()
-            #self.textEngine = TextEngine.tearDown()
+            #Reset
             self.textEngine.reset()
             return
 
-        
+        ##Paused
         if self.pauseEngine.paused:
             if self.textEngine.closing:
                 self.drawGame(drawSurf)
                 self.drawPause(drawSurf)
+            elif self.textEngine.backgroundBool:
+                self.drawGame(drawSurf)
+                self.drawPause(drawSurf)
+                self.textEngine.setBackgroundBool()
             self.textEngine.draw(self.pauseEngine.boxPos, drawSurf)
 
+        ##Intro
         elif self.inIntro:
             if self.textEngine.closing:
                 self.intro.draw(drawSurf)
+            elif self.textEngine.backgroundBool:
+                self.drawGame(drawSurf)
+                self.textEngine.setBackgroundBool()
             self.textEngine.draw(self.intro.boxPos, drawSurf)
 
+        ##Draw the game ONCE after the textbox finishes the upscale
+        ##Game
         else:
             if self.textEngine.closing:
                 self.drawGame(drawSurf)
+            elif self.textEngine.backgroundBool:
+                self.drawGame(drawSurf, True)
+                self.textEngine.setBackgroundBool()
             self.textEngine.draw(self.game.boxPos, drawSurf)
 
-    def drawGame(self, drawSurf):
-        self.game.draw(drawSurf)
+    def drawGame(self, drawSurf, drawBox = False):
+        if self.inIntro:
+            self.intro.draw(drawSurf)
+        else:
+            if drawBox:
+                self.game.drawText(drawSurf)
+            else:
+                self.game.draw(drawSurf)
     
     def drawPause(self, drawSurf):
         self.pauseEngine.draw(drawSurf)
@@ -234,14 +260,14 @@ class ScreenManager(object):
         self.fade.setFrame(0)
         if choice == 0:
             SoundManager.getInstance().fadeoutBGM()
-            SoundManager.getInstance().playSFX("WW_PressStart.wav")
+            #SoundManager.getInstance().playSFX("WW_PressStart.wav")
             self.startingGame = True
             self.fade.setRow(1)
 
 
         elif choice == 1:
             SoundManager.getInstance().fadeoutBGM()
-            SoundManager.getInstance().playSFX("WW_PressStart.wav")
+            #SoundManager.getInstance().playSFX("WW_PressStart.wav")
             self.continuingGame = True
             self.fade.setRow(1)
             
@@ -488,7 +514,7 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Intro_2.getInstance()
+                        self.game = Flame_entrance.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()

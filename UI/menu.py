@@ -49,7 +49,9 @@ class EventMenu(AbstractMenu):
         self.readyToDisplay = displayBool
         self.initialized = displayBool
 
-        self.pointer = Pointer(vec(16*6-8, 98))
+        self.pointer = Pointer(vec(16*6-8, 98), displayFlag=1)
+        self.pointer2 = Pointer(vec(16*12+2, 98), displayFlag=2)
+        
         self.titleTimer = 0.0
         self.eventMap = {}
         self.pointerTick = 0
@@ -117,6 +119,7 @@ class EventMenu(AbstractMenu):
         if self.readyToDisplay:
             super().draw(drawSurf)
             self.pointer.draw(drawSurf)
+            self.pointer2.draw(drawSurf)
 
     def addEvent(self, key, eventLambda):
         """
@@ -138,40 +141,50 @@ class EventMenu(AbstractMenu):
         self.eventHandle = False
         self.pointer.increaseChoice()
         self.pointer.position[1] = self.options["continue"].position[1]
+        self.pointer2.position[1] = self.options["continue"].position[1]
         SoundManager.getInstance().playSFX("FF_cursor.wav")
 
     def newGame_up(self):
         self.eventHandle = False
         self.pointer.setChoice(2)
         self.pointer.position[0] += 16
+        self.pointer2.position[0] -= 16
         self.pointer.position[1] = self.options["quit"].position[1]
+        self.pointer2.position[1] = self.options["quit"].position[1]
         SoundManager.getInstance().playSFX("FF_cursor.wav")
     
     def continueGame_down(self):
         self.eventHandle = False
         self.pointer.position[0] += 16
+        self.pointer2.position[0] -= 16
         self.pointer.increaseChoice()
         self.pointer.position[1] = self.options["quit"].position[1]
+        self.pointer2.position[1] = self.options["quit"].position[1]
         SoundManager.getInstance().playSFX("FF_cursor.wav")
 
     def continueGame_up(self):
         self.eventHandle = False
         self.pointer.decreaseChoice()
         self.pointer.position[1] = self.options["start"].position[1]
+        self.pointer2.position[1] = self.options["start"].position[1]
         SoundManager.getInstance().playSFX("FF_cursor.wav")
         
     def quitGame_down(self):
         self.eventHandle = False
         self.pointer.setChoice(0)
         self.pointer.position[0] -= 16
+        self.pointer2.position[0] += 16
         self.pointer.position[1] = self.options["start"].position[1]
+        self.pointer2.position[1] = self.options["start"].position[1]
         SoundManager.getInstance().playSFX("FF_cursor.wav")
 
     def quitGame_up(self):
         self.eventHandle = False
         self.pointer.decreaseChoice()
         self.pointer.position[0] -= 16
+        self.pointer2.position[0] += 16
         self.pointer.position[1] = self.options["continue"].position[1]
+        self.pointer2.position[1] = self.options["continue"].position[1]
         SoundManager.getInstance().playSFX("FF_cursor.wav")
 
 
@@ -266,6 +279,8 @@ class EventMenu(AbstractMenu):
                 self.titleTimer = 0.0
             
         super().update(seconds)
+        self.pointer.update(seconds)
+        self.pointer2.update(seconds)
         if not self.eventHandle:
             self.eventBufferTimer += seconds
             if self.eventBufferTimer >= 0.2:
@@ -274,9 +289,11 @@ class EventMenu(AbstractMenu):
 
         if self.pointerTick < 10:
             self.pointer.position[0] += 1
+            self.pointer2.position[0] -= 1
             self.pointerTick += 1
         else:
             self.pointer.position[0] -= 1
+            self.pointer2.position[0] += 1
             self.pointerTick += 1
             if self.pointerTick >= 20:
                 self.pointerTick = 0
