@@ -374,6 +374,15 @@ class AE(object):
                 enemyLst[6].position = COORD[14][7]
                 enemyLst[7].position = COORD[3][7]
                 refresh()
+
+            elif self.enemyPlacement == 3:
+                enemyLst[0].position = COORD[6][3]
+                enemyLst[1].position = COORD[11][3]
+                enemyLst[2].position = COORD[6][7]
+                enemyLst[3].position = COORD[11][7]
+                enemyLst[4].position = COORD[6][9]
+                enemyLst[5].position = COORD[11][9]
+                refresh()
         else:
             for i in range(self.max_enemies):
                 enemyLst[i].position = enemyLst[i].initialPos
@@ -665,6 +674,7 @@ class AE(object):
                 if not n.frozen:
                     if not self.player.invincible:
                         if n.handlePlayerCollision(self.player):
+                            #print("A")
                             self.player.handleCollision(n)
                             #player should be invincible now
                             if self.player.invincible and not self.healthBar.drawingHurt:

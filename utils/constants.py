@@ -64,7 +64,7 @@ Indicates what C attack and what type of arrow is equipped
 """
 EQUIPPED = {
 
-    "C": 0,
+    "C": 1,
     "Arrow": 0,
     #0 -> regular, 1 -> bombo, 
     "room":0,

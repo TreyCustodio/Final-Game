@@ -1301,9 +1301,16 @@ class Flame_1(AbstractEngine):
             self.enemies = [FireFlapper() for i in range(6)]
             self.enemies.append(Flapper())
             self.enemies.append(Flapper())
-            self.doors = [1,2]
+            self.doors = [1,2,3]
             self.trigger1 = Trigger(door = 1)
             self.trigger2 = Trigger(door = 2)
+            self.trigger3 = Trigger(door=3)
+
+            self.obstacles = [
+                Boulder((16*2 -10, 16*4 - 8)),
+                Boulder((16*4 -10, 16*6 - 8)),
+                Boulder((16*2 -10, 16*7 + 8))
+                ]
 
             self.lockedSwitch = LockedSwitch(COORD[9][6])
             
@@ -1329,6 +1336,7 @@ class Flame_1(AbstractEngine):
         def createBlocks(self):
            self.blocks.append(self.trigger1)
            self.blocks.append(self.trigger2)
+           self.blocks.append(self.trigger3)
            
            
         #override
@@ -1341,6 +1349,8 @@ class Flame_1(AbstractEngine):
                    self.transport(Flame_entrance, 3, keepBGM=False)
                 elif b == self.trigger2:
                     self.transport(Flame_2, 0, keepBGM=True)
+                elif b == self.trigger3:
+                    self.transport(Flame_4, 1, keepBGM=True)
                 else:
                     self.player.handleCollision(b)        
 
@@ -1378,7 +1388,10 @@ class Flame_2(AbstractEngine):
             self.portal = Portal(COORD[9][6], 0)
             self.chest = Chest(COORD[9][9], SPEECH["first_bombo"], ICON["bombo"])
             
-            self.obstacles = [Boulder((16*2 -10, 16*6 - 8))]
+            self.obstacles = [Boulder((16*2 -10, 16*4 - 8)),
+                Boulder((16*4 -10, 16*6 - 8)),
+                Boulder((16*2 -10, 16*7 + 8))
+                ]
             
 
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
@@ -1408,7 +1421,7 @@ class Flame_2(AbstractEngine):
                 elif b == self.trigger2:
                     self.transport(Flame_5, 0, keepBGM=True)
                 elif b == self.trigger3:
-                    pass
+                    self.transport(Flame_3, 1, keepBGM=True)
                 elif b == self.portal:
                     self.transport(Grand_Chapel, 0)
                 else:
@@ -1475,6 +1488,140 @@ class Flame_5(AbstractEngine):
         def update(self, seconds):
             super().update(seconds)
 
+class Flame_3(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame_3()
+      
+        return cls._INSTANCE
+    
+    class _Flame_3(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "pun.mp3"
+            self.ignoreClear = True
+            self.background = Level("flame_3.png")
+            self.enemyPlacement = 3
+            self.max_enemies = 4
+            self.enemies = [Mofos(direction=0), Mofos(direction=2), Baller(direction=1), Baller(direction=3),
+                            Mofos(direction = 0), Mofos(direction = 2)]
+            self.npcs = [
+                         #Bopper(COORD[9][3]),
+                         #Bopper(COORD[5][5]),
+                         #Bopper(COORD[13][5])
+                         ]
+
+            self.doors = [0, 1]
+            
+            #self.chest = Chest(COORD[13][9], SPEECH["bombo_expansion"], ICON["bombo"])
+            self.spawning = [
+                #Sign(COORD[7][9], SPEECH["boppers"]),
+                #self.chest
+            ]
+            self.obstacles = [
+                #Boulder((16*12 + 8, 16*9 - 8))
+            ]
+
+            self.trigger1 = Trigger(door = 1)
+            self.trigger2 = Trigger(door = 0)
+            
+
+        def initializeRoom(self, player=None, pos=None, keepBGM=False):
+            super().initializeRoom(player, pos, keepBGM)
+
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           
+           
+        #override
+        def blockCollision(self):
+           for b in self.blocks:
+              self.projectilesOnBlocks(b)
+              self.enemyCollision(b)
+              if self.player.doesCollide(b):
+                if b == self.trigger1:
+                   self.transport(Flame_2, 3, keepBGM=True)
+                elif b == self.trigger2:
+                    self.transport(Flame_4, 2, keepBGM=True)
+                else:
+                    self.player.handleCollision(b)        
+
+        def update(self, seconds):
+            super().update(seconds)
+
+
+class Flame_4(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame_4()
+      
+        return cls._INSTANCE
+    
+    class _Flame_4(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "pun.mp3"
+            self.ignoreClear = True
+            self.background = Level("flame_4.png")
+            self.enemyPlacement = 0
+            self.max_enemies = 0
+            #self.enemies = [FireFlapper(), Mofos(), FireFlapper(), GremlinB()]
+            self.npcs = [
+                        Stomper(COORD[9][6])
+                         #Bopper(COORD[9][3]),
+                         #Bopper(COORD[5][5]),
+                         #Bopper(COORD[13][5])
+                         ]
+
+            self.doors = [0, 1, 2]
+            
+            #self.chest = Chest(COORD[13][9], SPEECH["bombo_expansion"], ICON["bombo"])
+            self.spawning = [
+                #Sign(COORD[7][9], SPEECH["boppers"]),
+                #self.chest
+            ]
+            self.obstacles = [
+                #Boulder((16*12 + 8, 16*9 - 8))
+            ]
+            
+            self.trigger1 = Trigger(door = 1)
+            self.trigger2 = Trigger(door = 0)
+            self.trigger3 = Trigger(door = 2)
+            
+
+        def initializeRoom(self, player=None, pos=None, keepBGM=False):
+            super().initializeRoom(player, pos, keepBGM)
+
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           self.blocks.append(self.trigger3)
+           
+           
+        #override
+        def blockCollision(self):
+           for b in self.blocks:
+              self.projectilesOnBlocks(b)
+              self.enemyCollision(b)
+              if self.player.doesCollide(b):
+                if b == self.trigger1:
+                   self.transport(Flame_1, 3, keepBGM=True)
+                elif b == self.trigger2:
+                    pass
+                elif b == self.trigger3:
+                    self.transport(Flame_3, 0, keepBGM=True)
+                else:
+                    self.player.handleCollision(b)        
+
+        def update(self, seconds):
+            super().update(seconds)
 
 """
 Thunder

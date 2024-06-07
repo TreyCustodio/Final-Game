@@ -951,6 +951,147 @@ class Bopper(Enemy):
                 self.regenTimer = 0.0
         else:
             super().update(seconds)
+
+class Stomper(Enemy):
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, "stomper.png")
+        self.hurtRow = 1
+        self.nFrames = 1
+        self.maxHp = 10
+        self.hp = 10
+        self.frozen = False
+        self.cold = False
+        self.damage = 2
+        self.speed = 0
+        self.freezeCounter = 5
+        self.maxCount = 5
+        self.vulnerable = True
+        self.iframeTimer = 0.0
+        self.shadow = Animated(vec(self.position[0], self.position[1]), "stomper.png", (0,3))
+        self.jumpTimer = 0.0
+        self.pause = True
+        self.falling = False
+
+    def drawTop(self, drawSurface):
+        self.shadow.draw(drawSurface)
+        super().draw(drawSurface)
+
+    def getDrop(self):
+        return FireShard((self.position[0]+9, self.position[1]+13))
+    
+    def setActualPos(self, axis, add = True, integer = 1):
+        if add:
+            self.position[axis] += integer
+            self.shadow.position[axis] += integer
+        else:
+            self.position[axis] -= integer
+            self.shadow.position[axis] -= integer
+
+
+    def hurt(self, damage, setHit = True):
+        self.hit = setHit
+        self.hp -= damage
+      
+        if self.hp <= 0:
+            self.dead = True
+            SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
+        else:
+            self.unsetCold()
+
+    def handlePlayerCollision(self, player):
+        if self.ignoreCollision:
+            return False
+        else:
+            return True
+    
+    def setCold(self):
+        self.vulnerable = True
+        self.cold = True
+        SoundManager.getInstance().playSFX("freeze.wav")
+        self.row = 2
+        self.setImage()
+    
+    def unsetCold(self):
+        SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+        self.cold = False
+        self.row = 0
+        self.setImage()
+        self.freezeCounter = self.maxCount
+
+    def handleCollision(self, other=None):
+        if self.cold:
+            if other.id == "bombo":
+                self.hurt(other.damage)
+        elif not self.ignoreCollision:
+            if self.vulnerable and other.id == "blizz":
+                self.vulnerable = False
+                self.row = 1
+                self.setImage()
+                self.freezeCounter -= 1
+                if self.freezeCounter <= 0:
+                    self.setCold()
+                else:
+                    SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+
+    def setImage(self):
+        self.image = SpriteManager.getInstance().getSprite(self.fileName, (self.frame, self.row))
+
+    def update(self, seconds, position = None):
+        ##I-frame update
+        if not self.vulnerable:
+            self.iframeTimer += seconds
+            if self.iframeTimer >= 0.6:
+                self.row = 0
+                self.vulnerable = True
+                self.iframeTimer = 0.0
+                self.setImage()
+        
+        ##Fall and crush the player
+        if self.falling:
+            if self.position[1] >= self.shadow.position[1]:
+                self.position[1] = self.shadow.position[1]
+                SoundManager.getInstance().playSFX("crash.wav")
+                self.falling = False
+                self.top = False
+                self.ignoreCollision = False
+                self.pause = True
+            else:
+                self.position[1] += 2
+
+            return
+
+
+        if not self.pause:
+            ##Jump up until its above the shadow
+            if self.position[1] <= self.shadow.position[1] - 8:
+                self.jumpTimer += seconds
+                if self.jumpTimer >= 0.5:
+                    self.falling = True
+                    self.jumpTimer = 0.0
+
+                else:
+                    ##Mid-air movement
+                    if int(position[0]) > int(self.position[0]):
+                        self.setActualPos(0, True, 2)
+                    elif int(position[0]) < int(self.position[0]):
+                        self.setActualPos(0, False, 2)
+                    if int(position[1]) > int(self.position[1]):
+                        self.setActualPos(1, True, 2)
+                    elif int(position[1]) < int(self.position[1]):
+                        self.setActualPos(1, False, 2)
+                
+            else:
+                self.position[1] -= 2
+
+        else:
+            self.jumpTimer += seconds
+            if self.jumpTimer >= 1.0:
+                SoundManager.getInstance().playSFX("big_jump.wav")
+                self.top = True
+                self.ignoreCollision = True
+                self.pause = False
+                self.jumpTimer = 0.0
+
 """
 Cute little walking fireball.
 Requires Ice to damage it.

@@ -65,7 +65,7 @@ class SpriteManager(object):
                        "exclamation.png", "z.png", "fireIcon.png", "shotsfired.png", "drops.png",
                        "baller.png", "stunner.png", "mage.png", "barrier.png", "pixels.png",
                        "map.png", "mapRooms.png", "bar.png", "cursor.png",
-                       "bopper.png"
+                       "bopper.png", "stomper.png"
                        ]
       
       # A list of images that require to be loaded with a color key
