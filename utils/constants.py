@@ -81,11 +81,13 @@ INV = {
     "max_hp": 3,
     "plant": 1,
     "shoot": True,
-    "bombo": True,
+    "hasBombo": True,
     "fire": True,
     "clap": True,
     "slash": True,
     "cleats": True,
+    "maxBombo": 10,
+    "bombo": 10,
     "potion": 3,
     "smoothie": 3,
     "beer": 8,
@@ -277,6 +279,7 @@ Icons from icon.png to be used in text display
 ICON = {
     "blank": (0,0),
     "plant":(1,0),
+    "bombo":(4,0),
     "geemer0":(2,0),
     "geemer1":(3,0)
 }
@@ -298,9 +301,15 @@ Use it in the Grand Chapel\n\
 to upgrade your flame attack!\n\
 Check how many you have\n\
 on the pause menu.\n",
+"first_bombo":
+"You've discovered Bombofauns!&&\n\
+Fire these explosive plants\n\
+to destroy rocks and enemies.\n\
+Equip them on the pause menu\n\
+and watch your ammo count!\n",
 
     "key":
-"   Picked up a key.",
+"   Picked up a key.&&",
     "switch_unlocked" : "A switch was unlocked.",
     "door_unlocked" : "A door was unlocked.",
     "room_clear":
@@ -524,9 +533,17 @@ Geemers around these parts.\n\
 Not anymore that is.&&\n\
 Everyone used to grow their\n\
 bud and farm together...\n\
-But those lava knights\n\
-have ruined the land.\n\
+But the lava knights\n\
+keep ruining the land.\n\
 What a shame...&&\n",
+
+"flame_entrance_geemer2":
+"Oh shit!&&\n\
+You're a human!&&\n\
+You guys don't eat your\n\
+cheeba like we do, right?\n\
+Humans have to smoke it!\n\
+Ha ha ha ha ha!&&\n",
 
 "flame_dispo":
 "If you're lookin to buy,\n\
@@ -542,6 +559,22 @@ really nice, man!\n",
 "Y/NLooks like you've got\n\
 summa that good good!\n\
 Want me to roll for ya?\n",
+
+"bombo_expansion":
+"You found some fertilizer\n\
+for those pockets of yours!\n\
+Maximum Bombofaun carrying\n\
+capcity increased by 2!\n",
+
+"boppers":
+"Newly discovered invasive\n\
+floral species: the Bopper.\n\
+These dancing plants always\n\
+regrow after being cut down.\n\
+Additionally, they produce\n\
+Bombofauns in great quantity.\n\
+   [Scorching Fields\n\
+     Restoration committee]\n",
 
 "null":
 "Nothing to see here."

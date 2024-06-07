@@ -51,7 +51,6 @@ class EventMenu(AbstractMenu):
 
         self.pointer = Pointer(vec(16*6-8, 98), displayFlag=1)
         self.pointer2 = Pointer(vec(16*12+2, 98), displayFlag=2)
-        
         self.titleTimer = 0.0
         self.eventMap = {}
         self.pointerTick = 0

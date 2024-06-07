@@ -7,6 +7,7 @@ from .specialSwitch import *
 from .block import *
 from.specialBlocks import *
 from .weapons import *
+from .obstacles import *
 from .enemy import *
 from .player import *
 from .map import *

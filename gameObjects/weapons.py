@@ -116,14 +116,14 @@ class Bombo(AbstractWeapon):
     def __init__(self, position = vec(0,0), direction = 0, hp = 5):
         if hp == INV["max_hp"]:
             self.speed = 300
-            damage = 4
+            damage = 5
             column = 4
         elif hp <= INV["max_hp"]/4 or hp == 1:
             self.speed = 175
             damage = 10
             column = 5
         else:
-            damage = 4
+            damage = 5
             self.speed = 175
             column = 3
     
@@ -235,7 +235,7 @@ class Bullet(AbstractWeapon):
         engine.playSound("dink.wav")
         engine.player.arrowCount += 1
         engine.player.shooting = False
-
+    
 
     def handleOtherCollision(self, engine):
         if not self.hit:

@@ -333,8 +333,9 @@ class ScreenManager(object):
                     
             
             else:
-                
-                if event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_LSHIFT):
+                if event.type == pygame.KEYDOWN and event.key == K_ESCAPE:
+                    pygame.display.toggle_fullscreen()
+                elif event.type == KEYDOWN and (event.key == K_RETURN or event.key == K_LSHIFT):
                     self.pauseEngine.paused = False
                     self.pauseEngine.closing = True
                     SoundManager.getInstance().playSFX("OOT_PauseMenu_Close.wav")
@@ -362,6 +363,8 @@ class ScreenManager(object):
                         if event.type == pygame.KEYDOWN and event.key == K_z:
                             choice = self.mainMenu.getChoice()
                             self.handleChoice(choice)
+                        elif event.type == pygame.KEYDOWN and event.key == K_ESCAPE:
+                            pygame.display.toggle_fullscreen()
                     
             
 
@@ -390,7 +393,6 @@ class ScreenManager(object):
                         self.game.text = ""
                         self.game.icon = None
                         self.state.speak()
-                    #self.textEngine = TextEngine.tearDown()
                     self.textEngine.reset()
                     return
                     ##Close the textBox
@@ -417,7 +419,6 @@ class ScreenManager(object):
                         self.game.text = ""
                         self.game.icon = None
                         self.state.speak()
-                    #self.textEngine = TextEngine.tearDown()
                     self.textEngine.reset()
                     return
                     ##Close the textBox
@@ -451,7 +452,6 @@ class ScreenManager(object):
             if self.game.dead:
                 self.state.die()
                 self.game.deathReset()
-                #self.game = AbstractEngine.tearDown()
                 self.game = None
             
             ##Room transition
@@ -514,7 +514,7 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Flame_entrance.getInstance()
+                        self.game = Knight.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()

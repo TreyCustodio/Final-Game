@@ -5,7 +5,7 @@ from utils import SpriteManager
 from . import (Drawable, HudImageManager, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
                WeightedSwitch, DamageIndicator, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
                PushableBlock, LockBlock, Bullet, Sword, Clap, Slash, Flapper, Number,
-               Tile, Portal, Buck, Map)
+               Tile, Portal, Buck, Boulder, Map)
 
 
 
@@ -88,9 +88,11 @@ class AE(object):
         self.clearFlag = 0
         ##Object Lists
         self.enemies = [] #list of enemies to be used for placeEnemies()
+        self.obstacles = []
         self.pushableBlocks = [] #pushable blocks
         self.npcs = [] #enemies that have been positioned properly
         self.spawning = [] #interactable objects and drops
+        self.drops = []
         self.projectiles = [] #weapons
         self.switches = []
         self.blocks = []
@@ -102,6 +104,7 @@ class AE(object):
         self.indicator = DamageIndicator()
         self.moneyImage = None
         self.keyImage = None
+        self.transLock = True
         
         
 
@@ -146,11 +149,13 @@ class AE(object):
     Auxilary Methods
     """
     def stopFadeIn(self):
+        self.transLock = False
         self.fading = False
         self.player.keyUnlock()
         self.player.keyDownUnlock()
 
     def reset(self):
+        self.transLock = True
         self.promptResult = False
         self.indicator.setImage(0)
         self.readyToTransition = False
@@ -241,6 +246,7 @@ class AE(object):
         """
         self.moneyImage = HudImageManager.getMoney()
         self.keyImage = HudImageManager.getKeys()
+        self.bomboImage = HudImageManager.getBombos()
         EventManager.getInstance().toggleFetching()
         #SoundManager.getInstance().stopAllSFX()
         EQUIPPED["room"] = self.roomId
@@ -400,7 +406,7 @@ class AE(object):
         keepBgm -> keeps the bgm
         intro -> special properties for transport because no player yet
         """
-        if not self.transporting:
+        if not self.transporting and not self.transLock:
             EventManager.getInstance().startTransition()
             if intro:
                 self.transporting = True
@@ -490,7 +496,9 @@ class AE(object):
             seconds += (clock.get_time() / 1000)
     
     def disappear(self, obj):
-        if obj in self.spawning:
+        if obj in self.drops:
+            self.drops.pop(self.drops.index(obj))
+        elif obj in self.spawning:
             self.spawning.pop(self.spawning.index(obj))
         elif obj in self.npcs:
             self.npcs.pop(self.npcs.index(obj))
@@ -498,6 +506,8 @@ class AE(object):
             self.projectiles.pop(self.projectiles.index(obj))
         elif obj in self.blocks:
             self.blocks.pop(self.blocks.index(obj))
+        elif obj in self.obstacles:
+            self.obstacles.pop(self.obstacles.index(obj))
         elif obj in self.switches:
             self.switches.pop(self.switches.index(obj))
         
@@ -701,30 +711,30 @@ class AE(object):
     def enemyCollision(self, other):
         for e in self.npcs:
             if e.doesCollideBlock(other):
+                e.inWall = True
                 e.bounce(other)
+            elif e.inWall:
+                e.inWall = False
 
     def interactableCollision(self):
         if self.spawning:
-            for n in self.spawning: 
-                if n.drop:
-                    for p in self.projectiles:
-                        self.projectilesOnSpawning(p, n)
-                    self.enemyCollision(n)
-
+            for n in self.spawning:
                 if self.player.doesCollide(n):
                     if type(n) == Key:
                         self.disappear(n)
                         n.interact(self.player, self)
-                    elif n.drop:
-                        self.disappear(n)
-                        self.dropCount -= 1
-                        n.interact(self.player)
                     else:
                         self.player.handleCollision(n)
     
-    
-    #Add self.enemyCollision(block)
-    #Add self.projectilesOnBlocks(block)
+        if self.drops:
+            for n in self.drops:
+                """ for p in self.projectiles:
+                    self.projectilesOnSpawning(p, n) """
+                if self.player.doesCollide(n):
+                    self.disappear(n)
+                    self.dropCount -= 1
+                    n.interact(self.player)
+                
     #abstract
     def blockCollision(self):
         """
@@ -781,9 +791,21 @@ class AE(object):
             if p.type == 1 and p.doesCollide(torch):
                 torch.light()
 
+    def obstacleCollision(self):
+        if self.obstacles:
+            for o in self.obstacles:
+
+                if self.player.doesCollide(o):
+                    self.player.handleCollision(o)
+                self.enemyCollision(o)
+                for p in self.projectiles:
+                    if not p.hit and p.doesCollide(o):
+                        p.handleCollision(self)
+                        o.handleCollision(p, self)
 
     def handleCollision(self):
         self.npcCollision()
+        self.obstacleCollision()
         if not self.dying:
             self.blockCollision()
         self.interactableCollision()
@@ -800,17 +822,24 @@ class AE(object):
         if n.dead:
             self.disappear((n))
             if self.dropCount < 5:
-                if self.player.hp == INV["max_hp"]:
-                    drop = n.getMoney()
-                    if drop != None:
+                drop = n.getDrop()
+                if drop != None:
+                    if drop.id == "greenHeart":
                         self.spawning.append(drop)
-                else:
-                    drop = n.getDrop()
-                    
-                    if drop != None:
-                        self.spawning.append(drop)
-                self.dropCount += 1
+                    elif drop.id == "heart" and self.player.hp == INV["max_hp"]:
+                        drop = n.getMoney()
+                        if drop != None:
+                            self.drops.append(drop)
+                    else:
+                        self.drops.append(drop)
+                    self.dropCount += 1
             self.enemyCounter += 1
+        elif n.fakeDead:
+            if self.dropCount < 5:
+                drop = n.getDrop()
+                if drop != None:
+                    self.drops.append(drop)
+                    self.dropCount += 1
         
         
         if not self.ignoreClear and not self.room_clear and self.enemyCounter == self.max_enemies:
@@ -829,11 +858,19 @@ class AE(object):
     #Most likely to be modified for cutscenes
     def updateSpawning(self, seconds):
         ##  NPCs
-        for n in self.spawning:
-            n.update(seconds)
-            if n.disappear:
-                self.disappear(n)
-                self.dropCount -= 1
+        if self.spawning:
+            for n in self.spawning:
+                n.update(seconds)
+                if n.disappear:
+                    self.disappear(n)
+    
+    def updateDrops(self, seconds):
+        if self.drops:
+            for n in self.drops:
+                n.update(seconds)
+                if n.disappear:
+                    self.disappear(n)
+                    self.dropCount -= 1
           
 
     def updatePlayer(self, seconds):
@@ -891,8 +928,7 @@ class AE(object):
         self.healthBar.update(seconds)
 
     def updateHUD(self, seconds):
-        self.moneyImage.update(seconds)
-        self.keyImage.update(seconds)
+        HudImageManager.update(seconds)
         self.indicator.update(seconds)
         self.damageNums.updateNumbers(self, seconds)
         if not self.healthBarLock:
@@ -911,6 +947,9 @@ class AE(object):
         self.readyToTransition = True
 
     def update(self, seconds):
+        if self.transporting:
+            return
+        
         if not self.mapCondition:
             if self.itemsToCollect == 0:
                 self.mapCondition = True
@@ -934,9 +973,14 @@ class AE(object):
         if self.torches:
             for t in self.torches:
                 t.update(seconds)
+        if self.obstacles:
+            for o in self.obstacles:
+                o.update(seconds)
+
         self.updatePlayer(seconds)
-        self.updateNpcs(seconds)
+        self.updateDrops(seconds)
         self.updateSpawning(seconds)
+        self.updateNpcs(seconds)
         self.updatePushableBlocks(seconds)
         self.updateSwitches(seconds)
         self.updateProjectiles(seconds)
@@ -955,14 +999,31 @@ class AE(object):
     """
     Draw Methods
     """
+    """
+    Nonetype gets getting passed in
+    """
     def drawNpcs(self, drawSurface):
+        
         if self.spawning:
             for n in self.spawning:
-                if self.player.interactable(n):
-                    n.setInteractable()
-                else:
-                    if n.interactable:
-                        n.interactable = False
+                if n != None:
+                    if self.player.interactable(n):
+                        n.setInteractable()
+                    else:
+                        if n.interactable:
+                            n.interactable = False
+                    n.draw(drawSurface)
+        
+        if self.obstacles:
+            for o in self.obstacles:
+                o.draw(drawSurface)
+
+        for n in self.npcs:
+            if n.belowDrops:
+                n.draw(drawSurface)
+
+        if self.drops:
+            for n in self.drops:
                 n.draw(drawSurface)
 
         if self.torches:
@@ -975,7 +1036,7 @@ class AE(object):
         if self.npcs:
             for n in self.npcs:
             #Consider making enemies appear right before the player
-                if not n.top:
+                if not n.top and not n.belowDrops:
                     n.draw(drawSurface)
         
     def drawProjectiles(self, drawSurface):
@@ -994,6 +1055,7 @@ class AE(object):
         if self.torches:
             for torch in self.torches:
                 torch.draw(drawSurface)
+        
 
     def drawPushable(self, drawSurface):
         if self.pushableBlocks:
@@ -1021,11 +1083,11 @@ class AE(object):
         Money
         """
         self.moneyImage.draw(drawSurface)        
-        Number((14, 16*10+6), row = 1).draw(drawSurface)
+        Number((14, self.moneyImage.position[1]), row = 1).draw(drawSurface)
         if INV["money"] == INV["wallet"]:
-            self.drawNumber(vec(34, 16*10+6), INV["money"], drawSurface, row = 2)
+            self.drawNumber(vec(34, self.moneyImage.position[1]), INV["money"], drawSurface, row = 2)
         else:
-            self.drawNumber(vec(34, 16*10+6), INV["money"], drawSurface)
+            self.drawNumber(vec(34, self.moneyImage.position[1]), INV["money"], drawSurface)
 
         """
         Keys
@@ -1034,6 +1096,14 @@ class AE(object):
         Number((14, self.keyImage.position[1]), row = 1).draw(drawSurface)
         self.drawNumber(vec(34, self.keyImage.position[1]), INV["keys"], drawSurface)
         
+        """
+        Ammo
+        """
+        if EQUIPPED["Arrow"] == 1:
+            self.bomboImage.draw(drawSurface)
+            Number((14, self.bomboImage.position[1]), row = 1).draw(drawSurface)
+            self.drawNumber(vec(34, self.bomboImage.position[1]), INV["bombo"], drawSurface)
+
         """
         Healthbar
         """

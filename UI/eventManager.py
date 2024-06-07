@@ -40,9 +40,9 @@ class EventManager(object):
                 if event.type == pygame.QUIT:
                     # change the value to False, to exit the main loop
                     RUNNING = False
-                
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    pygame.display.toggle_fullscreen()
+
+                    """ elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    pygame.display.toggle_fullscreen() """
 
                 else:
                     #gameEngine.handleEvent(event)

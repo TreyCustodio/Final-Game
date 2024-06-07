@@ -23,11 +23,8 @@ class Template(AbstractEngine):
         #override
         def blockCollision(self):
             for b in self.blocks:
-                for n in self.npcs:
-                    if n.doesCollide(b):
-                        n.bounce(b)
-
                 self.projectilesOnBlocks(b)
+                self.enemyCollision(b)
                 if self.player.doesCollide(b):
                     if b == self.trigger1:
                         self.transport(Room, 0, keepBGM=True)

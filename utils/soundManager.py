@@ -49,7 +49,15 @@ class SoundManager(object):
             if name not in self.dict:
                 self._loadSFX(name)
             return self.dict[name].play(loops)
-            
+        
+        def playLowSFX(self, name, volume = 0.5, loops=0):
+            if name not in self.dict:
+                fullname = os.path.join(SoundManager._SM._SFX_FOLDER, name)
+                sound = pygame.mixer.Sound(fullname)
+                #print(sound.get_volume())
+                sound.set_volume(volume)
+                self.dict[name] = sound
+            return self.dict[name].play(loops)
         
         def _loadSFX(self, name):
             """Loads a sound from a file."""
@@ -61,6 +69,12 @@ class SoundManager(object):
         def stopSFX(self, name):
             if name in self.dict:
                 self.dict[name].stop()
+
+        def playOnce(self, name):
+            if name in self.dict:
+                return
+            else:
+                self.playSFX(name)
 
         def stopAllSFX(self):
             for song, player in self.dict.items():

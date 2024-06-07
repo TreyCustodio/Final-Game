@@ -15,6 +15,7 @@ class NonPlayer(Animated):
         self.interactIcon = ZIcon((self.position[0],self.position[1]-16))
         self.drop = False
         self.disappear = False
+        self.id = ""
 
     def updateIconPos(self):
         self.interactIcon.position = (self.position[0], self.position[1] - 16)
@@ -72,8 +73,17 @@ class Chest(NonPlayer):
             SoundManager.getInstance().playSFX("click2.wav")
             if self.icon != None:
                 engine.displayText(self.text, self.icon)
+                ##Plant
                 if self.icon == ICON["plant"]:
                     INV["plant"] += 1
+                ##Bombofauns
+                elif self.icon == ICON["bombo"]:
+                    if INV["hasBombo"] == False:
+                        INV["hasBombo"] = True
+                        return
+                    else:
+                        INV["maxBombo"] += 2
+                        INV["bombo"] = INV["maxBombo"]
             else:
                 engine.displayText(self.text)
 
@@ -324,6 +334,7 @@ class Drop(NonPlayer):
     """
     def __init__(self, position=vec(0,0), row=0, lifeTime=5):
         super().__init__(position, "drops.png", (0,row))
+        self.id = ""
         self.timer = 0
         self.row = row
         self.drop = True
@@ -361,11 +372,26 @@ class Frost(Drop):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, (0))
 
-
+class Bombodrop(Drop):
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, 8)
+        self.id = "bombo"
+    
+    def getCollisionRect(self):
+        return pygame.Rect(self.position[0]+1, self.position[1]+1, 14,15)
+    
+    def interact(self, player):
+        if INV["hasBombo"]:
+            if not self.interacted:
+                SoundManager.getInstance().playLowSFX("solve.wav", volume = 0.3)
+                self.interacted = True
+                if INV["bombo"] < INV["maxBombo"]:
+                    INV["bombo"] += 1
 
 class Heart(Drop):
     def __init__(self, position=vec(0,0)):
         super().__init__(position, 0)
+        self.id = "heart"
         self.disappear = False
         
     
@@ -375,7 +401,7 @@ class Heart(Drop):
     
     def interact(self, player):
         if not self.interacted:
-            SoundManager.getInstance().playSFX("solve.wav")
+            SoundManager.getInstance().playLowSFX("solve.wav", volume = 0.3)
             self.interacted = True
             if player.hp < INV["max_hp"]:
                 player.hp += 1
@@ -387,6 +413,7 @@ class Heart(Drop):
 class BigHeart(Drop):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, 4, lifeTime=8)
+        self.id = "bigHeart"
     
     def getCollisionRect(self):
         return pygame.Rect((self.position[0], self.position[1]+1), (16,14))
@@ -408,6 +435,7 @@ class GreenHeart(NonPlayer):
         self.row = 5
         self.nFrames = 4
         self.framesPerSecond = 8
+        self.id = "greenHeart"
 
     def getCollisionRect(self):
         return pygame.Rect((self.position[0], self.position[1]+1), (16,14))
@@ -434,7 +462,7 @@ class Buck(Drop):
     
     def interact(self, player):
         if not self.interacted:
-            SoundManager.getInstance().playSFX("buck.wav")
+            SoundManager.getInstance().playLowSFX("buck.wav")
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 1

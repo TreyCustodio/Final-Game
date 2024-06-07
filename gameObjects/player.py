@@ -370,10 +370,12 @@ class Player(Animated):
             self.setWeaponDamage(self.bullet)
 
         elif equipped == 1:
-            self.bullet = Bombo(self.position, self.getDirection(self.row), self.hp)
-            self.arrowCount -= 1
-            self.arrowReady = False
-            self.setWeaponDamage(self.bullet)
+            if INV["bombo"] > 0:
+                self.bullet = Bombo(self.position, self.getDirection(self.row), self.hp)
+                self.arrowCount -= 1
+                self.arrowReady = False
+                self.setWeaponDamage(self.bullet)
+                INV["bombo"] -= 1
 
     def buttonsDown(self, event):
         if event.button == 2 and INV["shoot"] and self.arrowCount > 0 and self.arrowReady and not self.invincible: #and self.ammo > 0:
@@ -661,7 +663,8 @@ class Player(Animated):
     Collision detection
     """
     def interactable(self, object):
-        return self.getCollisionRect().colliderect(object.getInteractionRect())
+        if object.id == "greenHeart" or not object.drop:
+            return self.getCollisionRect().colliderect(object.getInteractionRect())
         
     def handleCollision(self, object):
         if self.dying:
@@ -948,8 +951,6 @@ class Player(Animated):
         
         super().updatePlayer(seconds)
         self.position += self.vel * seconds
-        #print(self.position)
 
     def updateMovement(self):
         pass
-

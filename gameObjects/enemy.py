@@ -1,4 +1,4 @@
-from . import Drawable, Animated, Bullet, Element, Blizzard, Heart, BigHeart, Buck, FireShard, GreenHeart, Buck_B, Buck_R
+from . import Drawable, Animated, Bullet, Element, Blizzard, Heart, BigHeart, Buck, FireShard, GreenHeart, Buck_B, Buck_R, Bombodrop
 from utils import SoundManager, SpriteManager, SCALE, RESOLUTION, vec
 from random import randint
 import pygame
@@ -35,15 +35,21 @@ class Enemy(Animated):
         self.position = vec(*position)
         self.vel = vec(0,0)
         self.dead = False
+        self.fakeDead = False
         self.flashTimer = 0
         self.initialPos = position
         self.initialDir = direction
         self.walkTimer = 0
         self.walking = False
-        self.freezeTimer = 4.5
-        self.frozen = False
-        self.freeze(playSound=False)
+        self.freezeTimer = 4.2
+        self.frozen = True
+        self.belowDrops = False #Draw below drops
+        #self.freeze(playSound=False)
         self.maxHp = 0
+        self.readyToDrop = False
+        self.bouncing = False
+        self.bounceTimer = 0.0
+        self.inWall = False
         ##Strengths and Weaknesses
         #0 -> Neutral
         #1 -> Fire
@@ -91,6 +97,8 @@ class Enemy(Animated):
         integer = randint(0,1)
         if integer == 1:
             return Buck((self.position[0]+3, self.position[1]+5))
+        else:
+            return None
     
     def getCollisionRect(self):
         newRect = pygame.Rect(0,0,14,23)
@@ -101,14 +109,14 @@ class Enemy(Animated):
     def respawn(self):
         self.vel = vec(0,0)
         self.dead = False
-        self.frozen = False
+        self.frozen = True
         self.walking = False
         self.row = self.initialDir
         self.hp = self.maxHp
         self.flashTimer = 0
         self.walkTimer = 0
-        self.freezeTimer = 4.5
-        self.freeze(playSound=False)
+        self.freezeTimer = 4.2
+        #self.freeze(playSound=False)
         
     def handleEvent(self, event):
         pass
@@ -121,6 +129,16 @@ class Enemy(Animated):
             self.hp = self.maxHp
 
     """
+    Play the hurt sfx and set state to dead if hp < 0
+    """
+    def playHurtSound(self):
+        if self.hp > 0: 
+            SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+        else:
+            self.dead = True
+            SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
+
+    """
     Sets the row to the hurtRow.
     Used for enemies that move in 1 direction
     """
@@ -131,11 +149,7 @@ class Enemy(Animated):
         self.frameTimer = 0.0
         self.hit = setHit
         self.hp -= damage
-        if self.hp > 0: 
-            SoundManager.getInstance().playSFX("enemyhit.wav")
-        else:
-            self.dead = True
-            SoundManager.getInstance().playSFX("enemydies.wav")
+        self.playHurtSound()
 
     """
     Adds the value of hurtRow to the row.
@@ -149,11 +163,7 @@ class Enemy(Animated):
         self.frameTimer = 0.0
         self.hit = setHit
         self.hp -= damage
-        if self.hp > 0: 
-            SoundManager.getInstance().playSFX("enemyhit.wav")
-        else:
-            self.dead = True
-            SoundManager.getInstance().playSFX("enemydies.wav")
+        self.playHurtSound()
 
     def handlePlayerCollision(self, player):
         """
@@ -173,7 +183,7 @@ class Enemy(Animated):
         Damage = other.damage
         """
         ##Freeze
-        if other.type == 2 and not self.freezeShield and self.type.getValue() != 2 and not self.frozen:
+        if other.type == 2 and not self.freezeShield and self.type.getValue() != 2:
             self.freeze()
 
         ##Damage after I-frame
@@ -194,10 +204,13 @@ class Enemy(Animated):
     
 
     def freeze(self, playSound = True):
-        self.frozen = True
-        self.nFrames = 1
-        if playSound:
-            SoundManager.getInstance().playSFX("freeze.wav")
+        if self.frozen:
+            self.freezeTimer = 0.0
+        else:
+            self.frozen = True
+            self.nFrames = 1
+            if playSound:
+                SoundManager.getInstance().playSFX("freeze.wav")
         
     
     #intended to be modified but could be used as is
@@ -206,7 +219,8 @@ class Enemy(Animated):
             self.position += self.vel * seconds
             
     def bounce(self, other):
-        if not self.frozen:
+        if not self.frozen and not self.bouncing:
+            self.bouncing = True
             side = self.calculateSide(other)
             if side == "right":
                 self.vel[0] = -self.speed
@@ -287,14 +301,14 @@ class Enemy(Animated):
             self.freezeTimer += seconds
             if self.freezeTimer >= 5.0:
                 self.frozen = False
-                self.freezeTimer = 0
+                self.freezeTimer = 0.0
                 self.nFrames = self.totalFrames
                 self.setSpeed(self.row)
     
     def updateFlash(self, seconds):
         if self.row >= self.hurtRow:
             self.flashTimer += seconds
-            if self.flashTimer >= 0.2:
+            if self.flashTimer >= 0.4:
                 self.row -= self.hurtRow
 
 
@@ -302,6 +316,10 @@ class Enemy(Animated):
         if self.dead:
         #Add death animation here if self.hp = 0
             pass
+
+        if self.bouncing:
+            if not self.inWall:
+                self.bouncing = False
         
         self.unfreeze(seconds)
 
@@ -385,13 +403,13 @@ class LavaKnight(Enemy):
             if self.hp <= 0:
                 self.dying = True
             else:
-                SoundManager.getInstance().playSFX("enemyhit.wav")
+                SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
 
         elif self.hp <= 0:
             self.desperate = True
             self.hp = 2
         else:
-            SoundManager.getInstance().playSFX("enemyhit.wav")
+            SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
 
     def bounce(self, other):
         if not self.cold and not self.falling and not self.respawning:
@@ -513,17 +531,19 @@ class LavaKnight(Enemy):
                 if self.freezeCounter <= 0:
                     self.setCold()
                     SoundManager.getInstance().playSFX("freeze.wav")
-                elif self.freezeCounter == 3:
-                    self.currentRow = 3
-                    self.setImage()
-                elif self.freezeCounter == 5:
-                    self.currenRow = 2
-                    self.setImage()
-                elif self.freezeCounter == 8:
-                    self.currentRow = 1
-                    self.setImage()
                 else:
-                    SoundManager.getInstance().playSFX("enemyhit.wav")
+                    SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+                    if self.freezeCounter == 3:
+                        self.currentRow = 3
+                        self.setImage()
+                    elif self.freezeCounter == 5:
+                        self.currenRow = 2
+                        self.setImage()
+                    elif self.freezeCounter == 8:
+                        self.currentRow = 1
+                        self.setImage()
+                    else:
+                        pass
     
     def setTargetPos(self, position):
         if self.respawning:
@@ -602,6 +622,7 @@ class LavaKnight(Enemy):
                         self.startupTimer += seconds
                         if self.startupTimer >= 3.1:
                             self.dead = True
+                            SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
                     else:
                         self.frameTimer += seconds
                         if self.frameTimer >= 0.1:
@@ -874,8 +895,62 @@ class FireMofos(Mofos):
         super().__init__(position, direction)
 
     def getDrop(self):
-        return FireShard((self.position[0]+3, self.position[1]+5))        
+        return FireShard((self.position[0]+3, self.position[1]+5))     
+       
+"""
+Dancing plants that always drop bombofauns.
+"""
+class Bopper(Enemy):
+    def __init__(self, position):
+        super().__init__(position, "bopper.png")
+        self.hurtRow = 1
+        self.nFrames = 8
+        self.totalFrames = 8
+        self.maxHp = 5
+        self.hp = 5
+        self.damage = 1
+        self.speed = 0
+        self.regenTimer = 0.0
+        self.belowDrops = True
+        self.freezeShield = True
 
+    def handleCollision(self, other=None):
+        if not self.fakeDead:
+            super().handleCollision(other)
+
+    def handlePlayerCollision(self, player):
+        if not self.fakeDead:
+            super().handlePlayerCollision(player)
+    
+
+    def getDrop(self):
+        if self.readyToDrop:
+            self.readyToDrop = False
+            return Bombodrop(self.position)
+    
+    def playHurtSound(self):
+        if self.hp > 0: 
+            SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+        else:
+            self.fakeDead = True
+            self.readyToDrop = True
+            self.row = 2
+            self.frame = 0
+            self.image = SpriteManager.getInstance().getSprite(self.fileName, (0,2))
+            SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
+
+    def update(self, seconds, position = None):
+        if self.fakeDead:
+            self.regenTimer += seconds
+            if self.regenTimer >= 4.0:
+                self.row = 0
+                self.frame = 0
+                self.image = SpriteManager.getInstance().getSprite(self.fileName, (0,0))
+                self.hp = self.maxHp
+                self.fakeDead = False
+                self.regenTimer = 0.0
+        else:
+            super().update(seconds)
 """
 Cute little walking fireball.
 Requires Ice to damage it.
@@ -905,7 +980,9 @@ class Baller(Enemy):
         return self.getDrop()
     
     def getDrop(self):
-        return FireShard((self.position[0]+3, self.position[1]+5))
+        integer = randint(0,3)
+        if integer == 3:
+            return FireShard((self.position[0]+3, self.position[1]+5))
     
     def bounce(self, other):
         if not self.frozen:
@@ -1057,6 +1134,16 @@ class FireFlapper(Flapper):
         super().__init__(position, 1, direction)
         self.type = Element(1)
     
+    def getDrop(self):
+        integer = randint(0,5)
+        if integer == 0 or integer == 1:
+            return Heart((self.position[0]+3, self.position[1]+5))
+        elif integer == 2 or integer == 3:
+            return Buck((self.position[0]+3, self.position[1]+5))
+        elif integer == 4:
+            return FireShard((self.position[0]+3, self.position[1]+5))
+        else:
+            return None
 class IceFlapper(Flapper):
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, 2, direction)
@@ -1253,9 +1340,26 @@ class Gremlin(Enemy):
         
 
     def bounce(self, other):
-        if not self.frozen:
-            side = self.calculateSide(other)
-            #print(other.position)
+        if not self.frozen and not self.bouncing:
+            self.bouncing = True
+            if self.row == 1:
+                self.vel[0] = -self.speed
+                self.row = 3
+            elif self.row == 5:
+                self.vel[0] = -self.speed
+                self.row = 7
+            elif self.row == 3:
+                self.vel[0] = self.speed
+                self.row = 1
+            elif self.row == 7:
+                self.vel[0] = self.speed
+                self.row = 5
+
+       
+                     
+            """ side = self.calculateSide(other)
+            print(other.position)
+            print(self.position)
             if side == "right":
                 self.vel[0] = -self.speed
                 if self.row >= 4:
@@ -1282,7 +1386,7 @@ class Gremlin(Enemy):
                 if self.row >= 4:
                     self.row = 6
                 else:
-                    self.row = 2
+                    self.row = 2 """
     
     def hurt(self, damage, setHit=True):
         return super().hurtMult(damage, setHit)
@@ -1294,7 +1398,7 @@ class GremlinB(Gremlin):
         self.maxHp = 30
         self.hp = 30
         self.damage = 3
-        self.speed = 60
+        self.speed = 75
 
     def getDrop(self):
         return BigHeart((self.position[0]+3, self.position[1]+5))
@@ -1380,9 +1484,3 @@ class MovementPatterns(object):
             enemy.frame = 0
         if not enemy.frozen:
             enemy.position += enemy.vel * seconds
-           
-    
-
-    
-    
-    

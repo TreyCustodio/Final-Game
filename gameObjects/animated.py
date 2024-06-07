@@ -1,6 +1,6 @@
 from . import Drawable
 import pygame
-from utils import SpriteManager, EQUIPPED, vec, RESOLUTION
+from utils import SpriteManager, EQUIPPED, vec, RESOLUTION, INV, EQUIPPED
 
 class Animated(Drawable):
     
@@ -222,6 +222,7 @@ class HudImage(Animated):
         self.row = offset[1]
         self.nFrames = nFrames
         self.framesPerSecond = fps
+        self.image = SpriteManager.getInstance().getSprite("drops.png", offset)
 
     
 """
@@ -231,17 +232,29 @@ class HudImageManager(object):
 
     MONEY = None
     KEYS = None
+    BOMBOS = None
 
     def initialize():
-        HudImageManager.MONEY = HudImage((0, 16*10+6), offset= (0,1))
+        HudImageManager.MONEY = HudImage((0, RESOLUTION[1]-50), offset= (0,1))
         HudImageManager.KEYS = HudImage((0, RESOLUTION[1]-16), offset=(0,3))
-
+        HudImageManager.BOMBOS = HudImage((0, RESOLUTION[1]-34), offset=(0,8))
 
     def getMoney():
         return HudImageManager.MONEY
     
     def getKeys():
         return HudImageManager.KEYS
+
+    def getBombos():
+        return HudImageManager.BOMBOS
+
+    def update(seconds):
+        if HudImageManager.MONEY != None:
+            HudImageManager.MONEY.update(seconds)
+        if HudImageManager.KEYS != None:
+            HudImageManager.KEYS.update(seconds)
+        if HudImageManager.BOMBOS != None:
+            HudImageManager.BOMBOS.update(seconds)
 
 class Fade():
     """

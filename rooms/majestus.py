@@ -115,8 +115,13 @@ class Knight(AbstractEngine):
             self.max_enemies = 0
             self.enemyPlacement = 0
             self.background = Level("test.png")
+            self.boss = LavaKnight(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
             self.npcs = [
-                LavaKnight(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
+                self.boss,
+                Bopper(COORD[2][2]),
+                Bopper(COORD[16][2]),
+                Bopper(COORD[2][9]),
+                Bopper(COORD[16][9]),
             ]
             self.spawning = [ 
                 #GreenHeart(vec(16*2, 16*10))
@@ -145,11 +150,10 @@ class Knight(AbstractEngine):
         def update(self, seconds):
             super().update(seconds)
             if not self.playingMusic:
-                for n in self.npcs:
-                    if n.jumpingUp:
-                        self.playBgm("megalomania.mp3")
-                        self.playingMusic = True
-            elif not self.npcs:
+                if self.boss.jumpingUp:
+                    self.playBgm("megalomania.mp3")
+                    self.playingMusic = True
+            elif self.boss.dead:
                 self.fadeBgm()
 """
 Entrance Hall
@@ -425,7 +429,7 @@ class Intro_2(AbstractEngine):
            
             #Music
             self.bgm = None
-            #self.bgm = "Furious_Anger.mp3"
+            self.bgm = "Furious_Anger.mp3"
             #Puzzle conditions
             self.resetting = True
             self.enemyPlacement = 2
@@ -1156,7 +1160,9 @@ class Flame_entrance(AbstractEngine):
             self.motionTick = 0
             self.motionTimer = 0.0
             self.geemer = Geemer(COORD[4][3], text = SPEECH["flame_entrance_geemer"])
-            self.spawning = [self.geemer]
+            self.spawning = [self.geemer,
+                             Geemer((COORD[15][6]), text = SPEECH["flame_entrance_geemer2"])
+            ]
             self.enemies = [Baller(COORD[8][10]),
                          Baller(COORD[10][10], 1)]
         #override
@@ -1188,7 +1194,7 @@ class Flame_entrance(AbstractEngine):
                 self.projectilesOnBlocks(b)
                 if self.player.doesCollide(b):
                     if b == self.trigger1:
-                        self.transport(Flame_1, 1)
+                        self.transport(Flame_1, 1, keepBGM=False)
                     elif b == self.trigger2:
                         self.transport(Grand_Chapel_L, 0)
                     elif b == self.trigger3:
@@ -1287,7 +1293,7 @@ class Flame_1(AbstractEngine):
     class _Flame_1(AE):
         def __init__(self):
             super().__init__()
-            self.bgm = "bowserCastle.mp3"
+            self.bgm = "pun.mp3"
             self.ignoreClear = False
             self.max_enemies = 8
             self.enemyPlacement = 2
@@ -1332,7 +1338,7 @@ class Flame_1(AbstractEngine):
               self.enemyCollision(b)
               if self.player.doesCollide(b):
                 if b == self.trigger1:
-                   self.transport(Flame_entrance, 3)
+                   self.transport(Flame_entrance, 3, keepBGM=False)
                 elif b == self.trigger2:
                     self.transport(Flame_2, 0, keepBGM=True)
                 else:
@@ -1356,18 +1362,23 @@ class Flame_2(AbstractEngine):
     class _Flame_2(AE):
         def __init__(self):
             super().__init__()
-            self.bgm = "bowserCastle.mp3"
+            self.bgm = "pun.mp3"
             self.ignoreClear = False
             self.max_enemies = 4
             self.enemyPlacement = 1
             self.background = Level("flame_2.png")
-            self.enemies = [FireFlapper(), Mofos(), FireFlapper(), GremlinB(direction =1)]
+            self.enemies = [FireFlapper(), Mofos(), FireFlapper(), GremlinB()]
             
 
-            self.doors = [0]
+            self.doors = [0,2,3]
             self.trigger1 = Trigger(door = 0)
+            self.trigger2 = Trigger(door = 2)
+            self.trigger3 = Trigger(door = 3)
+
             self.portal = Portal(COORD[9][6], 0)
+            self.chest = Chest(COORD[9][9], SPEECH["first_bombo"], ICON["bombo"])
             
+            self.obstacles = [Boulder((16*2 -10, 16*6 - 8))]
             
 
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
@@ -1376,8 +1387,74 @@ class Flame_2(AbstractEngine):
 
         def handleClear(self):
             
-            self.displayText("The raging flames have\nbeen graciously doused!\n")
-            self.blocks.append(self.portal)
+            #self.displayText("The raging flames have\nbeen graciously doused!\n")
+            self.spawning.append(self.chest)
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           self.blocks.append(self.trigger3)
+           
+           
+        #override
+        def blockCollision(self):
+           for b in self.blocks:
+              self.projectilesOnBlocks(b)
+              self.enemyCollision(b)
+              if self.player.doesCollide(b):
+                if b == self.trigger1:
+                   self.transport(Flame_1, 2, keepBGM=True)
+                elif b == self.trigger2:
+                    self.transport(Flame_5, 0, keepBGM=True)
+                elif b == self.trigger3:
+                    pass
+                elif b == self.portal:
+                    self.transport(Grand_Chapel, 0)
+                else:
+                    self.player.handleCollision(b)        
+
+        def update(self, seconds):
+            super().update(seconds)
+            self.portal.update(seconds)
+
+class Flame_5(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame_5()
+      
+        return cls._INSTANCE
+    
+    class _Flame_5(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "pun.mp3"
+            self.ignoreClear = True
+            self.background = Level("flame_5.png")
+            self.enemyPlacement = 0
+            self.max_enemies = 0
+            #self.enemies = [FireFlapper(), Mofos(), FireFlapper(), GremlinB()]
+            self.npcs = [Bopper(COORD[9][3]),
+                         Bopper(COORD[5][5]),
+                         Bopper(COORD[13][5])]
+
+            self.doors = [0]
+            
+            self.chest = Chest(COORD[13][9], SPEECH["bombo_expansion"], ICON["bombo"])
+            self.spawning = [
+                Sign(COORD[7][9], SPEECH["boppers"]),
+                self.chest
+            ]
+            self.obstacles = [
+                Boulder((16*12 + 8, 16*9 - 8))
+            ]
+            self.trigger1 = Trigger(door = 0)
+            
+
+        def initializeRoom(self, player=None, pos=None, keepBGM=False):
+            super().initializeRoom(player, pos, keepBGM)
+
 
         #override
         def createBlocks(self):
@@ -1391,18 +1468,13 @@ class Flame_2(AbstractEngine):
               self.enemyCollision(b)
               if self.player.doesCollide(b):
                 if b == self.trigger1:
-                   self.transport(Flame_1, 2, keepBGM=True)
-                elif b == self.portal:
-                    self.transport(Grand_Chapel, 0)
+                   self.transport(Flame_2, 2, keepBGM=True)
                 else:
                     self.player.handleCollision(b)        
 
-        def handleCollision(self):
-            super().handleCollision()
-
         def update(self, seconds):
             super().update(seconds)
-            self.portal.update(seconds)
+
 
 """
 Thunder

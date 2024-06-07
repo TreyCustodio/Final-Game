@@ -455,12 +455,27 @@ class PauseEngine(object):
         self.closed = False
         self.paused = False
 
+    def drawNumber(self, position, number, drawSurface, row = 0):
+        if number >= 10:
+            currentPos = vec(position[0]-3, position[1])
+            number = str(number)
+            for char in number:
+                num = Number(currentPos, int(char), row)
+                num.position[0] -= num.getSize()[0] // 2
+                num.draw(drawSurface)
+                currentPos[0] += 6
+        else:
+            num = Number(position, number, row)
+            num.position[0] -= num.getSize()[0] // 2
+            num.draw(drawSurface)
 
     def drawEquipped(self, drawSurf):
         #Arrow
         arrow = EQUIPPED["Arrow"]
         imageA = SpriteManager.getInstance().getSprite("item.png", (arrow, 3))
         drawSurf.blit(imageA, (COORD[14][4]))
+        if arrow == 1:
+            self.drawNumber((16*15 + 2, 16*4 -2), INV["bombo"], drawSurf, row = 4)
         #Element
         element = EQUIPPED["C"]
         if element != None:
@@ -518,8 +533,6 @@ class PauseEngine(object):
             image = SpriteManager.getInstance().getSprite("item.png", (3,0))
             drawSurf.blit(image, (COORD[3][7]))
 
-        
-
         if INV["potion"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (2,0))
             drawSurf.blit(image, (COORD[4][7]))
@@ -535,7 +548,6 @@ class PauseEngine(object):
             drawSurf.blit(image, (COORD[6][7]))
             #Text((16*4+12, 16*7+4), str(INV["beer"]), small = True).draw(drawSurf)
             Number(COORD[6][7], INV["beer"], row = 4).draw(drawSurf)
-        
         
         if INV["joint"] >= 1:
             image = SpriteManager.getInstance().getSprite("item.png", (7,0))
@@ -553,7 +565,7 @@ class PauseEngine(object):
             image = SpriteManager.getInstance().getSprite("item.png", (0,3))
             drawSurf.blit(image, (COORD[3][5]))
         
-        if INV["bombo"]:
+        if INV["hasBombo"]:
             image = SpriteManager.getInstance().getSprite("item.png", (1,3))
             drawSurf.blit(image, (COORD[4][5]))
 
@@ -573,10 +585,6 @@ class PauseEngine(object):
             image = SpriteManager.getInstance().getSprite("item.png", (3,2))
             drawSurf.blit(image, (COORD[9][6]))
         
-        """ if self.timer >= .3:
-            pass
-            
-        else: """
         if self.highlighted[1] == 4:
             self.highlightQuit.draw(drawSurf)
         else:
@@ -606,8 +614,11 @@ class PauseEngine(object):
                 SoundManager.getInstance().playSFX("TextBox_Open.wav")
                 EQUIPPED["Arrow"] = 0
             elif self.highlight.position[0] == 16*4:
-                SoundManager.getInstance().playSFX("TextBox_Open.wav")
-                EQUIPPED["Arrow"] = 1
+                if INV["hasBombo"]:
+                    SoundManager.getInstance().playSFX("TextBox_Open.wav")
+                    EQUIPPED["Arrow"] = 1
+                else:
+                    SoundManager.getInstance().playSFX("bump.mp3")
             else:
                 SoundManager.getInstance().playSFX("bump.mp3")
         else:
@@ -642,9 +653,11 @@ class PauseEngine(object):
                 return
         
         elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*5:
-            if INV["bombo"]:
+            if INV["hasBombo"]:
                 self.text = INFO["bombo"]
                 return
+            else:
+                SoundManager.getInstance().playSFX("bump.mp3")
             
         
         ##  Elements    ##
