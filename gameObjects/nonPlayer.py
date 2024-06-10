@@ -168,23 +168,6 @@ class Blessing(NonPlayer):
         return super().getCollisionRect()
     
     def interact(self, engine):
-
-        """ if self.element == 0:
-            INV["cleats"] = True
-            FLAGS[90] = True
-            FLAGS[89] = True
-        elif self.element == 1:
-            INV["fire"] = True
-            FLAGS[91] = True
-            FLAGS[89] = True
-        elif self.element == 2:
-            INV["clap"] = True
-            FLAGS[92] = True
-            FLAGS[89] = True
-        elif self.element == 3:
-            INV["slash"] = True
-            FLAGS[93] = True
-            FLAGS[89] = True """
         engine.selectedItem = self.element
         engine.displayText(self.text)
 

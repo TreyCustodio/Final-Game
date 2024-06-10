@@ -404,15 +404,25 @@ class ForceField(Animated):
     """
     def __init__(self, position, color = 0):
         super().__init__(position, "barrier.png", (0, color))
-        self.top = True
+        self.top = False
+        self.belowDrops = False
         self.nFrames = 4
         self.framesPerSecond = 8
         self.dead = False
         self.row = color
         self.frame += color
+        self.render = True
+    
+    def vanish(self):
+        self.render = False
+    
+    def draw(self, drawSurface):
+        if self.render:
+            super().draw(drawSurface)
     
     def update(self, seconds, position = None):
-        super().update(seconds)
+        if self.render:
+            super().update(seconds)
 
 
 class Portal(Animated):

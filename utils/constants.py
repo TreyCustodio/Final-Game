@@ -18,6 +18,7 @@ Used for a variety of special events.
 FLAGS = [False for i in range(100)]
 for i in range (1, 10):
     FLAGS[i] = True
+#FLAGS[62] = True
 #1-10 -> Messages that only display once
 #1 -> Grand Chapel
 #2 ->
@@ -27,6 +28,8 @@ for i in range (1, 10):
 ##50-59 -> Respawn/Checkpoints
 #50 -> skip intro (post-death)
 #51 -> respawn in Grand Chapel
+
+##60 - > flame fields flags
 
 
 ##88-93 -> Blessings
@@ -65,7 +68,8 @@ Indicates what C attack and what type of arrow is equipped
 EQUIPPED = {
 
     "C": 1,
-    "Arrow": 0,
+    #0 -> fire sword, 1 -> blizzard, 2 -> clap, 3 -> slash
+    "Arrow": 1,
     #0 -> regular, 1 -> bombo, 
     "room":0,
     #0 -> regular, 1 -> fire, 2 -> ice, 3- -> thunder, 4-> wind, 5-> super, 6-> hyper
@@ -78,8 +82,9 @@ EQUIPPED = {
 The Player's inventory
 """
 INV = {
+
+    ##Health, elements, arrows, currency
     "max_hp": 3,
-    "plant": 1,
     "shoot": True,
     "hasBombo": True,
     "fire": True,
@@ -88,32 +93,37 @@ INV = {
     "cleats": True,
     "maxBombo": 10,
     "bombo": 10,
-    "potion": 3,
-    "smoothie": 3,
-    "beer": 8,
-    "joint":1,
-    "speed":1,
-    "wallet": 20,
-    "money": 20,
-    "keys": 100,
+    "flameShard": 0,
+    "frostShard": 0,
+    "boltShard": 0,
+    "galeShard": 0,
     
+    
+    ##Maps
     "map0":True,
     "map1":False,
     "map2":False,
     "map3":False,
     "map4":False,
 
+    ##Consumables and key items
+    "plant": 1,
     "chanceEmblem": True,
     "syringe":True,
-    "flameShard": 0,
-    "frostShard": 0,
-    "boltShard": 0,
-    "galeShard": 0,
+    "potion": 3,
+    "smoothie": 3,
+    "beer": 8,
+    "joint":1,
+    "speed":1,
+    "wallet": 20,
+    "money": 0,
+    "keys": 1,
 
-    "flameCost": 5,
-    "frostCost": 1,
-    "boltCost": 1,
-    "galeCost": 1,
+    ##Upgrades
+    "flameCost": 50,
+    "frostCost": 20,
+    "boltCost": 20,
+    "galeCost": 20,
 
 }
 
@@ -575,6 +585,12 @@ Additionally, they produce\n\
 Bombofauns in great quantity.\n\
    [Scorching Fields\n\
      Restoration committee]\n",
+
+"post_stomper":
+"My brother's remains are\n\
+splattered on the grass...\n\
+Please help us slay\n\
+the rest of those knights!\n",
 
 "null":
 "Nothing to see here."

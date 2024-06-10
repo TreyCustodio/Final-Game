@@ -32,6 +32,7 @@ class Enemy(Animated):
 
         self.hurtRow = 4
         self.freezeShield = False
+        self.arrowShield = False
         self.position = vec(*position)
         self.vel = vec(0,0)
         self.dead = False
@@ -194,6 +195,8 @@ class Enemy(Animated):
                 if other.type == self.type.getValue():
                     self.heal(other.damage)
                 elif self.type.weakTo(other.type):
+                    self.hurt(other.damage + int(other.damage * 1.5))
+                elif other.type == 0 and not self.arrowShield:
                     self.hurt(other.damage)
                 else:
                     SoundManager.getInstance().playSFX("dink.wav")
@@ -516,7 +519,7 @@ class LavaKnight(Enemy):
     def handleCollision(self, other=None):
         if self.cold:
             if other.id == "bombo":
-                self.knockBack(other)
+                #self.knockBack(other)
                 self.hurt(other.damage)
                 if not self.dying:
                     self.unsetCold()
@@ -836,7 +839,8 @@ class LavaKnight(Enemy):
                         self.top = True
                         self.jumpingUp = True
         
-        
+
+
         
 """
 Regular Enemies
@@ -953,7 +957,7 @@ class Bopper(Enemy):
             super().update(seconds)
 
 class Stomper(Enemy):
-    def __init__(self, position=vec(0,0)):
+    def __init__(self, position=vec(0,0), boss = False):
         super().__init__(position, "stomper.png")
         self.hurtRow = 1
         self.nFrames = 1
@@ -967,11 +971,16 @@ class Stomper(Enemy):
         self.maxCount = 5
         self.vulnerable = True
         self.iframeTimer = 0.0
+        self.frameTimer = 0.0
         self.shadow = Animated(vec(self.position[0], self.position[1]), "stomper.png", (0,3))
         self.jumpTimer = 0.0
         self.pause = True
         self.falling = False
+        self.secondsPerFrame = 0.3
+        self.targetPos = vec(0,0)
+        self.boss = boss
 
+    
     def drawTop(self, drawSurface):
         self.shadow.draw(drawSurface)
         super().draw(drawSurface)
@@ -979,6 +988,23 @@ class Stomper(Enemy):
     def getDrop(self):
         return FireShard((self.position[0]+9, self.position[1]+13))
     
+    """
+    Great example of why you need attention to detail
+    for objects in memory.
+    If you assign both positions to the same vector,
+    whenever you change 1 position, it changes both.
+    """
+    def setPosition(self, vector):
+
+        """ 
+        Incorrect code
+        self.position = vector
+        self.shadow.position = vector
+        """
+        self.position = vector
+        vec2 = vec(vector[0], vector[1])
+        self.shadow.position = vec2
+
     def setActualPos(self, axis, add = True, integer = 1):
         if add:
             self.position[axis] += integer
@@ -991,10 +1017,10 @@ class Stomper(Enemy):
     def hurt(self, damage, setHit = True):
         self.hit = setHit
         self.hp -= damage
-      
         if self.hp <= 0:
             self.dead = True
-            SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
+            if not self.boss:
+                SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
         else:
             self.unsetCold()
 
@@ -1026,6 +1052,7 @@ class Stomper(Enemy):
             if self.vulnerable and other.id == "blizz":
                 self.vulnerable = False
                 self.row = 1
+                self.secondsPerFrame = 0.01
                 self.setImage()
                 self.freezeCounter -= 1
                 if self.freezeCounter <= 0:
@@ -1036,7 +1063,34 @@ class Stomper(Enemy):
     def setImage(self):
         self.image = SpriteManager.getInstance().getSprite(self.fileName, (self.frame, self.row))
 
+
+    def setTargetPos(self, position):
+        self.targetPos = vec(int(position[0]), int(position[1])-8)
+
+
+    def move(self):
+        if int(self.targetPos[0]) > int(self.position[0]):
+            self.setActualPos(0, True, 1)
+        elif int(self.targetPos[0]) < int(self.position[0]):
+            self.setActualPos(0, False, 1)
+        
+        if int(self.targetPos[1]) > int(self.position[1]):
+            self.setActualPos(1, True, 1)
+        elif int(self.targetPos[1]) < int(self.position[1]):
+            self.setActualPos(1, False, 1)
+        
+        ##If its above the player, fall = True, jumpTimer = 0.0
+    def setFrame(self):
+        self.frame += 1
+        self.frame %= 3
+
     def update(self, seconds, position = None):
+        if not self.vulnerable:
+            self.frameTimer += seconds
+            if self.frameTimer >= 0.01:
+                self.frameTimer = 0.0
+                self.setFrame()
+                self.setImage()
         ##I-frame update
         if not self.vulnerable:
             self.iframeTimer += seconds
@@ -1044,6 +1098,11 @@ class Stomper(Enemy):
                 self.row = 0
                 self.vulnerable = True
                 self.iframeTimer = 0.0
+                self.secondsPerFrame = 0.3
+                if self.falling or self.pause:
+                    self.frame = 0
+                else:
+                    self.frame = 1
                 self.setImage()
         
         ##Fall and crush the player
@@ -1065,33 +1124,56 @@ class Stomper(Enemy):
             ##Jump up until its above the shadow
             if self.position[1] <= self.shadow.position[1] - 8:
                 self.jumpTimer += seconds
-                if self.jumpTimer >= 0.5:
-                    self.falling = True
-                    self.jumpTimer = 0.0
-
+                if self.cold:
+                    if self.jumpTimer >= 0.2:
+                        self.frame = 0
+                        self.setImage()
+                        self.falling = True
+                        self.jumpTimer = 0.0
+                    else:
+                        self.move()
                 else:
-                    ##Mid-air movement
-                    if int(position[0]) > int(self.position[0]):
-                        self.setActualPos(0, True, 2)
-                    elif int(position[0]) < int(self.position[0]):
-                        self.setActualPos(0, False, 2)
-                    if int(position[1]) > int(self.position[1]):
-                        self.setActualPos(1, True, 2)
-                    elif int(position[1]) < int(self.position[1]):
-                        self.setActualPos(1, False, 2)
-                
+                    if self.jumpTimer >= 0.5:
+                        self.frame = 0
+                        self.setImage()
+                        self.falling = True
+                        self.jumpTimer = 0.0
+                    else:
+                        ##Mid-air movement
+                        self.move()
             else:
                 self.position[1] -= 2
-
         else:
             self.jumpTimer += seconds
-            if self.jumpTimer >= 1.0:
+            if self.jumpTimer >= 0.5:
                 SoundManager.getInstance().playSFX("big_jump.wav")
-                self.top = True
-                self.ignoreCollision = True
-                self.pause = False
-                self.jumpTimer = 0.0
+                self.unPause(position)
+    
+    def unPause(self, position):
+        self.setTargetPos(position)
+        self.frame = 1
+        self.setImage()
+        self.top = True
+        self.ignoreCollision = True
+        self.pause = False
+        self.jumpTimer = 0.0
 
+class FireBall(Enemy):
+    pass
+
+class Heater(Enemy):
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, "heater.png")
+        self.hurtRow = 0
+        self.damage = 1
+        self.nFrames = 3
+        self.totalFrames = 3
+        self.maxHp = 10
+        self.hp = self.maxHp
+        self.type = Element(1)
+
+    def setSpeed(self, row):
+        return
 """
 Cute little walking fireball.
 Requires Ice to damage it.
@@ -1209,8 +1291,8 @@ class Flapper(Enemy):
     which is how direction is used for Mofos.
     Flappers always face down.
     """
-    def __init__(self, position = vec(0,0), typeRow = 0, direction = 0):
-        super().__init__(position, "flapper.png", typeRow)
+    def __init__(self, position = vec(0,0), typeRow = 0, direction = 0, fileName = "flapper.png"):
+        super().__init__(position, fileName, typeRow)
         self.indicatorRow = 1
         self.typeRow = typeRow
         self.row = self.typeRow
@@ -1299,6 +1381,35 @@ class WindFlapper(Flapper):
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, 4, direction)
         self.type = Element(4)
+
+class AlphaFlapper(Enemy):
+    def __init__(self, position=vec(0,0), typeRow = 0, direction = 0, boss = False):
+        super().__init__(position, "alphaflapper.png", typeRow)
+        self.typeRow = typeRow
+        self.speed = 50
+        self.hurtRow = 1
+        self.maxHp = 20
+        self.hp = self.maxHp
+        self.boss = boss
+
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0] + 4, self.position[1] + 8), (24,20))
+    def draw(self, drawSurface):
+        super().draw(drawSurface, True)
+    def getDrop(self):
+        return GreenHeart((self.position[0]+16, self.position[1]+16))
+    
+    def move(self, seconds):
+        Flapper.move(self, seconds)
+    
+    def setSpeed(self, direction):
+        Flapper.setSpeed(self, direction)
+    
+    def bounce(self, other):
+        Flapper.bounce(self, other)
+
+    def updateFlash(self, seconds):
+        Flapper.updateFlash(self, seconds)
 
 """
 Puffs up and damages the player if they

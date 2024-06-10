@@ -177,7 +177,7 @@ class AE(object):
 
 
     def deathReset(self):
-        self.enemyCounter
+        self.enemyCounter = 0
         self.promptResult = False
         self.boxPos = vec(30,64)
         self.player = None
@@ -265,6 +265,35 @@ class AE(object):
             if self.bgm != None:
                 SoundManager.getInstance().playBGM(self.bgm)
 
+    def initializeRoom(self, player= None, pos = None, keepBGM = False, placeEnemies = True):
+        """
+        Called every time you enter the room
+        1. create wall boundaries
+        2. adjust wall collision for doors in self.doors
+        3. call createBlocks
+        4. place the enemies in self.enemies
+        """
+        self.moneyImage = HudImageManager.getMoney()
+        self.keyImage = HudImageManager.getKeys()
+        self.bomboImage = HudImageManager.getBombos()
+        EventManager.getInstance().toggleFetching()
+        #SoundManager.getInstance().stopAllSFX()
+        EQUIPPED["room"] = self.roomId
+        if player != None:
+            self.player = player
+            self.player.position = pos 
+        else:
+            self.player = Player(vec(16*9, (16*11) - 8))
+
+        self.createBounds()
+        self.setDoors()
+        self.createBlocks()
+        if placeEnemies:
+            self.placeEnemies(self.enemies)
+        if not keepBGM:
+            #SoundManager.getInstance().fadeoutBGM()
+            if self.bgm != None:
+                SoundManager.getInstance().playBGM(self.bgm)
 
     def createBounds(self):
         """
@@ -382,6 +411,11 @@ class AE(object):
                 enemyLst[3].position = COORD[11][7]
                 enemyLst[4].position = COORD[6][9]
                 enemyLst[5].position = COORD[11][9]
+                refresh()
+            
+            ##1 enemy in the center
+            elif self.enemyPlacement == 4:
+                enemyLst[0].setPosition(vec(16*9, 16*5))
                 refresh()
         else:
             for i in range(self.max_enemies):
@@ -674,7 +708,6 @@ class AE(object):
                 if not n.frozen:
                     if not self.player.invincible:
                         if n.handlePlayerCollision(self.player):
-                            #print("A")
                             self.player.handleCollision(n)
                             #player should be invincible now
                             if self.player.invincible and not self.healthBar.drawingHurt:
@@ -804,14 +837,14 @@ class AE(object):
     def obstacleCollision(self):
         if self.obstacles:
             for o in self.obstacles:
-
-                if self.player.doesCollide(o):
-                    self.player.handleCollision(o)
-                self.enemyCollision(o)
-                for p in self.projectiles:
-                    if not p.hit and p.doesCollide(o):
-                        p.handleCollision(self)
-                        o.handleCollision(p, self)
+                if o.render:
+                    if self.player.doesCollide(o):
+                        self.player.handleCollision(o)
+                    self.enemyCollision(o)
+                    for p in self.projectiles:
+                        if not p.hit and p.doesCollide(o):
+                            p.handleCollision(self)
+                            o.handleCollision(p, self)
 
     def handleCollision(self):
         self.npcCollision()
@@ -956,7 +989,7 @@ class AE(object):
         """
         self.readyToTransition = True
 
-    def update(self, seconds):
+    def update(self, seconds, updateEnemies = True):
         if self.transporting:
             return
         
@@ -990,7 +1023,8 @@ class AE(object):
         self.updatePlayer(seconds)
         self.updateDrops(seconds)
         self.updateSpawning(seconds)
-        self.updateNpcs(seconds)
+        if updateEnemies:
+            self.updateNpcs(seconds)
         self.updatePushableBlocks(seconds)
         self.updateSwitches(seconds)
         self.updateProjectiles(seconds)

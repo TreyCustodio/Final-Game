@@ -360,7 +360,7 @@ class Sword(AbstractWeapon):
             self.position[1] += 5
 
         ##Set damage based on upgrades
-        if INV["flameCost"] == 5:
+        if INV["flameCost"] == 50:
             self.damage = 10
             self.row = 4+direction
         else:

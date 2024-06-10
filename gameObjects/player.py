@@ -5,9 +5,9 @@ import pygame
 
 
 class Player(Animated):
-    
     def __init__(self, position=vec(0,0), direction=2):
-        super().__init__(position, "Link.png", (0, direction))  
+        super().__init__(position, "Link.png", (0, direction))
+        self.ignoreCollision = False
         self.hp = INV["max_hp"]
         #Frames, vel, speed, and row
         #Must reach this far to move player
@@ -74,7 +74,7 @@ class Player(Animated):
         self.blizzard = None
 
         
-        self.ignoreCollision = False
+        
         self.event = None
         self.invincible = False
         self.iframeTimer = 0

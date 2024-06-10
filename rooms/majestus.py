@@ -528,7 +528,7 @@ class Intro_2(AbstractEngine):
                         if b == self.trigger1:
                             self.transport(Intro_1, 2, keepBGM=True)
                         elif b == self.trigger2:
-                            self.transport(Intro_3, 0)
+                            self.transport(Alpha_Flapper, 0)
                         elif b == self.trigger3:
                             self.transport(Geemer_1, 1)
                     else:
@@ -663,6 +663,64 @@ class Shop(AbstractEngine):
                     else:
                         self.player.handleCollision(b)
 
+class Alpha_Flapper(AbstractEngine):
+
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._AF()
+      
+        return cls._INSTANCE
+    
+    class _AF(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "tension.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("alpha_flapper.png")
+            self.trigger1 = Trigger(door = 0)
+            self.trigger2 = Trigger(door = 2)
+            self.doors = [0,2]
+            self.flapper = AlphaFlapper(vec(16*8 + 8, 16*3))
+            self.npcs = [self.flapper]
+            self.fightingBoss = False
+            self.textInt = 0
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                self.projectilesOnBlocks(b)
+                self.enemyCollision(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Intro_2, 2)
+                    elif b == self.trigger2:
+                        self.transport(Intro_3, 0)
+                    else:
+                        self.player.handleCollision(b)
+
+        def update(self, seconds):
+            if self.fightingBoss:
+                super().update(seconds)
+            elif self.player.position[1] <= 16*6:
+                if self.textInt == 1:
+                    self.fightingBoss = True
+                    SoundManager.getInstance().playBGM("ing.mp3")
+                elif self.textInt == 0:
+                    self.player.stop()
+                    self.player.keyUnlock()
+                    SoundManager.getInstance().fadeoutBGM()
+                    self.displayText("Skreeeeeeee!\nOutsider!\n")
+                    self.textInt += 1
+            else:
+                super().update(seconds, updateEnemies=False)
 
 class Intro_3(AbstractEngine):
 
@@ -1572,7 +1630,7 @@ class Flame_4(AbstractEngine):
             self.max_enemies = 0
             #self.enemies = [FireFlapper(), Mofos(), FireFlapper(), GremlinB()]
             self.npcs = [
-                        Stomper(COORD[9][6])
+                        Heater(COORD[9][6])
                          #Bopper(COORD[9][3]),
                          #Bopper(COORD[5][5]),
                          #Bopper(COORD[13][5])
@@ -1614,7 +1672,7 @@ class Flame_4(AbstractEngine):
                 if b == self.trigger1:
                    self.transport(Flame_1, 3, keepBGM=True)
                 elif b == self.trigger2:
-                    pass
+                    self.transport(Flame_6, 2, keepBGM=True)
                 elif b == self.trigger3:
                     self.transport(Flame_3, 0, keepBGM=True)
                 else:
@@ -1623,6 +1681,182 @@ class Flame_4(AbstractEngine):
         def update(self, seconds):
             super().update(seconds)
 
+class Flame_6(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame_6()
+      
+        return cls._INSTANCE
+    
+    class _Flame_6(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "pun.mp3"
+            self.ignoreClear = True
+            self.background = Level("flame_4.png")
+            self.enemyPlacement = 4
+            self.max_enemies = 1
+            self.stomper = Stomper(boss=True)
+            self.stomper.unPause(position = vec(16*8 - 6, 16*5))
+            self.enemies = [
+                        self.stomper
+                        ]
+            
+            self.npcs = [
+                Bopper(COORD[3][10]),
+                Bopper(COORD[15][10])
+            ]
+            self.stomperTimer = 0.0
+
+            self.doors = [0,2,3]
+            
+            if not FLAGS[61]:
+                self.spawning = [
+                    Geemer(vec(16*8 - 8, 16*5 + 8))
+
+                ]
+            
+            if FLAGS[62]:
+                self.spawning = [
+                    Geemer(vec(16*10, 16*5 + 8), text = SPEECH["post_stomper"])
+                ]
+
+            self.obstacles = [
+                #Boulder((16*12 + 8, 16*9 - 8))
+            ]
+            
+            self.trigger1 = Trigger(door = 1)
+            self.trigger2 = Trigger(door = 0)
+            self.trigger3 = Trigger(door = 2)
+
+            self.inCutscene = False
+            self.textInt = 0
+            self.miniBoss = False
+        
+        def deathReset(self):
+            super().deathReset()
+            self.removeObstacles()
+            self.miniBoss = False
+
+        def removeObstacles(self):
+            for o in self.obstacles:
+                o.vanish()
+
+        def initializeRoom(self, player=None, pos=None, keepBGM=False):
+            if not FLAGS[62]:
+                super().initializeRoom(player, pos, keepBGM)
+            else:
+                if len(self.spawning) == 0:
+                    self.spawning = [
+                    Geemer(vec(16*10, 16*5 + 8), text = SPEECH["post_stomper"])
+                ]
+                super().initializeRoom(player, pos, keepBGM, placeEnemies=False)
+
+ 
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           self.blocks.append(self.trigger3)
+           
+           
+        #override
+        def blockCollision(self):
+           for b in self.blocks:
+              self.projectilesOnBlocks(b)
+              self.enemyCollision(b)
+              if self.player.doesCollide(b):
+                if b == self.trigger1:
+                   self.transport(Flame_1, 3, keepBGM=True)
+                elif b == self.trigger2:
+                    pass
+                elif b == self.trigger3:
+                    self.transport(Flame_3, 0, keepBGM=True)
+                else:
+                    self.player.handleCollision(b)        
+
+        def beginMiniBoss(self):
+            self.miniBoss = True
+            SoundManager.getInstance().playBGM("LA_FinalBoss.mp3")
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[8+i][1]))
+            self.stomper.ignoreCollision = False
+            self.stomper.frozen = False
+
+        def update(self, seconds):
+            if FLAGS[62]:
+                if self.miniBoss:
+                    SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
+                    SoundManager.getInstance().playBGM(self.bgm)
+                    self.removeObstacles()
+                    self.miniBoss = False
+
+                else:
+                    super().update(seconds)
+
+            elif FLAGS[61]:
+                if self.stomper.dead:
+                    if self.stomperTimer == 0.0:
+                        SoundManager.getInstance().fadeoutBGM()
+                        self.displayText("The boss will have a\ngreat time avenging me!!\n")
+                        self.stomperTimer += seconds
+                    elif self.stomperTimer >= 0.3:
+                        FLAGS[62] = True
+                        super().update(seconds)
+                    else:
+                        self.stomperTimer += seconds
+                    return
+                elif self.miniBoss:
+                    super().update(seconds)
+                elif self.player.position[1] >= 20:
+                    self.beginMiniBoss()
+                else:
+                    super().update(seconds, updateEnemies=False)
+            else:
+                super().update(seconds, updateEnemies=False)
+                if self.inCutscene:
+                    if self.textInt == 2:
+                        self.stomper.update(seconds, position = vec(16*8 - 6, 16*5))
+                        if self.stomper.pause:
+                            self.spawning.pop(0)
+                            self.inCutscene = False
+                            return
+                        
+
+                    if self.stomperTimer >= 1.0:
+                        if self.textInt == 0:
+                            self.displayText("Whoa, man! Chill out!&&\nPlease, my Goddess Estelle,\nsave me from this fiend!\n")
+                        elif self.textInt == 1:
+                            self.displayText("Shutup, ant.&&\nYour Goddess can't save you.&&\nWithout the power of ice,\nyou're a feeble creature!\n")
+                        self.textInt += 1
+                        self.stomperTimer = 0.0
+                    else:
+                        self.stomperTimer += seconds
+
+                elif len(self.spawning) == 0:
+                    if self.miniBoss:
+                        if self.stomperTimer >= 1.0:
+                            self.beginMiniBoss()                            
+                            self.stomperTimer = 0.0
+                            FLAGS[61] = True
+                            self.player.keyUnlock()
+                            self.inCutscene = False
+                        else:
+                            self.stomperTimer += seconds
+
+                    elif self.stomperTimer >= 2.0:
+                        self.stomperTimer = 0.0
+                        self.displayText("Ah! Yet another human!&&\nCrushing you is way more\nfun than crushing Geemers!\nThe boss won't even have\nto waste his time with you!\nGood riddance, outsider!&&\n")
+                        self.miniBoss = True
+                    else:
+                        self.stomperTimer += seconds
+                
+                elif self.player.position[1] >= 20:
+                    self.inCutscene = True
+                    self.player.stop()
+                    self.player.keyLock()
+                    SoundManager.getInstance().fadeoutBGM()
 """
 Thunder
 """
