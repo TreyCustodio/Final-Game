@@ -16,6 +16,7 @@ class NonPlayer(Animated):
         self.drop = False
         self.disappear = False
         self.id = ""
+        self.ignoreCollision = False
 
     def updateIconPos(self):
         self.interactIcon.position = (self.position[0], self.position[1] - 16)
@@ -419,6 +420,7 @@ class GreenHeart(NonPlayer):
         self.nFrames = 4
         self.framesPerSecond = 8
         self.id = "greenHeart"
+        self.ignoreCollision = True
 
     def getCollisionRect(self):
         return pygame.Rect((self.position[0], self.position[1]+1), (16,14))
@@ -426,6 +428,10 @@ class GreenHeart(NonPlayer):
     def draw(self, drawSurface, drawHitbox = False):
         NonPlayer.draw(self, drawSurface, drawHitbox)
 
+    def getInteractionRect(self):
+        oldRect = self.getCollisionRect()
+        newRect = pygame.Rect((oldRect.bottomleft),(oldRect.width,5))
+        return pygame.Rect((self.position[0]-2, self.position[1]-2), (20,20))
     def interact(self, engine):
         if not self.interacted:
             SoundManager.getInstance().playSFX("solve.wav")

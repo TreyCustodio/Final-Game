@@ -14,3 +14,4 @@ Optional:
 Other issues:
 - [ ] out of bounds safety
 - [ ] Gremlin got stuck in a boulder
+- [ ] Certain enemies get stuck in walls when damaged

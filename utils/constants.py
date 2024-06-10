@@ -15,7 +15,7 @@ EPSILON = 0.01
 Global boolean values that represent flags.
 Used for a variety of special events.
 """
-FLAGS = [False for i in range(100)]
+FLAGS = [False for i in range(150)]
 for i in range (1, 10):
     FLAGS[i] = True
 #FLAGS[62] = True
@@ -47,6 +47,7 @@ for i in range (1, 10):
 #96 -> Thunder complete
 #97 -> Wind complete
 
+##110 -> ALPHA FLAPPER DEFEATED
 
 
 
@@ -69,7 +70,7 @@ EQUIPPED = {
 
     "C": 1,
     #0 -> fire sword, 1 -> blizzard, 2 -> clap, 3 -> slash
-    "Arrow": 1,
+    "Arrow": 0,
     #0 -> regular, 1 -> bombo, 
     "room":0,
     #0 -> regular, 1 -> fire, 2 -> ice, 3- -> thunder, 4-> wind, 5-> super, 6-> hyper
@@ -97,7 +98,6 @@ INV = {
     "frostShard": 0,
     "boltShard": 0,
     "galeShard": 0,
-    
     
     ##Maps
     "map0":True,
@@ -315,8 +315,10 @@ on the pause menu.\n",
 "You've discovered Bombofauns!&&\n\
 Fire these explosive plants\n\
 to destroy rocks and enemies.\n\
-Equip them on the pause menu\n\
-and watch your ammo count!\n",
+On the pause menu, equip\n\
+them in the [ARR] row.\n\
+Keep a watchful eye on\n\
+your ammo count!\n",
 
     "key":
 "   Picked up a key.&&",

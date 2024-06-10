@@ -658,8 +658,6 @@ class HealthBar(object):
 
 
             elif self.drawingHeal:
-                print(self.healthPixels)
-                print(self.fillerPixels)
                 ##Healing
                 for i in range((pixelsToDraw-2) + self.healthPixels):
                     if low:

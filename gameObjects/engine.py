@@ -5,7 +5,7 @@ from utils import SpriteManager
 from . import (Drawable, HudImageManager, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
                WeightedSwitch, DamageIndicator, LightSwitch, TimedSwitch, LockedSwitch, Block, IBlock, Trigger, HBlock,
                PushableBlock, LockBlock, Bullet, Sword, Clap, Slash, Flapper, Number,
-               Tile, Portal, Buck, Boulder, Map)
+               Tile, Portal, Buck, Boulder, Map, BossHealth)
 
 
 
@@ -105,6 +105,12 @@ class AE(object):
         self.moneyImage = None
         self.keyImage = None
         self.transLock = True
+        ##Boss
+        self.bossTheme = None
+        self.boss = None
+        self.bossHealthbar = None
+        self.fightingBoss = False
+        self.drawBossHealth = False
         
         
 
@@ -148,6 +154,24 @@ class AE(object):
     """
     Auxilary Methods
     """
+
+    """
+    Boss script load
+    """
+    def bsl(self, enemy, bossTheme):
+        self.bossTheme = bossTheme
+        self.player.keyLock()
+        self.boss = enemy
+        self.bossHealthbar = BossHealth(enemyHealth= enemy.maxHp)
+        self.fightingBoss = True
+        self.drawBossHealth = True
+
+    """
+    Boss script end
+    """
+    def bse(self):
+        self.fightingBoss = False
+
     def stopFadeIn(self):
         self.transLock = False
         self.fading = False
@@ -762,21 +786,21 @@ class AE(object):
     def interactableCollision(self):
         if self.spawning:
             for n in self.spawning:
-                if self.player.doesCollide(n):
-                    if type(n) == Key:
-                        self.disappear(n)
-                        n.interact(self.player, self)
-                    else:
-                        self.player.handleCollision(n)
+                if not n.ignoreCollision:
+                    if self.player.doesCollide(n):
+                        if type(n) == Key:
+                            self.disappear(n)
+                            n.interact(self.player, self)
+                        else:
+                            self.player.handleCollision(n)
     
         if self.drops:
             for n in self.drops:
-                """ for p in self.projectiles:
-                    self.projectilesOnSpawning(p, n) """
-                if self.player.doesCollide(n):
-                    self.disappear(n)
-                    self.dropCount -= 1
-                    n.interact(self.player)
+                if not n.ignoreCollision:
+                    if self.player.doesCollide(n):
+                        self.disappear(n)
+                        self.dropCount -= 1
+                        n.interact(self.player)
                 
     #abstract
     def blockCollision(self):
@@ -977,6 +1001,20 @@ class AE(object):
         if not self.healthBarLock:
             self.updateHealthBar(seconds)
         
+        if self.drawBossHealth:
+            if self.bossHealthbar.initializing:
+                self.bossHealthbar.update(seconds)
+                if not self.bossHealthbar.initializing:
+                    self.player.keyUnlock()
+                    self.playBgm(self.bossTheme)
+                    self.boss.moving = True
+                    self.boss.ignoreCollision = False
+            elif self.bossHealthbar.defeated and self.fightingBoss:
+                self.bse()
+                self.bossHealthbar.update(seconds)
+            else:
+                self.bossHealthbar.update(seconds)
+        
 
     def handlePrompt(self):
         pass
@@ -1163,8 +1201,11 @@ class AE(object):
                 if not self.player.key_lock:
                     self.player.keyLock()
                 self.healthBar.drawFirst(drawSurface, self.player)
-            
         
+        if self.drawBossHealth:
+            self.bossHealthbar.draw(drawSurface, self.boss.hp)
+            if self.bossHealthbar.doneDrawing:
+                self.drawBossHealth = False
         
         self.ammoBar.draw(drawSurface, self.player)
         self.elementIcon.draw(drawSurface)

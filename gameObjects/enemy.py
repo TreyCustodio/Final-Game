@@ -910,8 +910,8 @@ class Bopper(Enemy):
         self.hurtRow = 1
         self.nFrames = 8
         self.totalFrames = 8
-        self.maxHp = 5
-        self.hp = 5
+        self.maxHp = 3
+        self.hp = self.maxHp
         self.damage = 1
         self.speed = 0
         self.regenTimer = 0.0
@@ -1388,19 +1388,24 @@ class AlphaFlapper(Enemy):
         self.typeRow = typeRow
         self.speed = 50
         self.hurtRow = 1
-        self.maxHp = 20
+        self.maxHp = 2
         self.hp = self.maxHp
         self.boss = boss
+        self.damage = 1
+        self.moving = False
+        self.ignoreCollision = True
 
     def getCollisionRect(self):
         return pygame.Rect((self.position[0] + 4, self.position[1] + 8), (24,20))
     def draw(self, drawSurface):
-        super().draw(drawSurface, True)
+        super().draw(drawSurface)
+
     def getDrop(self):
         return GreenHeart((self.position[0]+16, self.position[1]+16))
     
     def move(self, seconds):
-        Flapper.move(self, seconds)
+        if self.moving:
+            Flapper.move(self, seconds)
     
     def setSpeed(self, direction):
         Flapper.setSpeed(self, direction)

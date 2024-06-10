@@ -685,8 +685,26 @@ class Alpha_Flapper(AbstractEngine):
             self.doors = [0,2]
             self.flapper = AlphaFlapper(vec(16*8 + 8, 16*3))
             self.npcs = [self.flapper]
-            self.fightingBoss = False
             self.textInt = 0
+            self.obstacles = [
+            ]
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[8+i][1], render=False))
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[8+i][11], render = False))
+            
+
+        def bsl(self, enemy, bossTheme):
+            super().bsl(enemy, bossTheme)
+            for o in self.obstacles:
+                o.setRender()
+
+
+        def bse(self):
+            super().bse()
+            for o in self.obstacles:
+                o.vanish()
+            FLAGS[110] = True
 
         #override
         def createBlocks(self):
@@ -707,20 +725,22 @@ class Alpha_Flapper(AbstractEngine):
                         self.player.handleCollision(b)
 
         def update(self, seconds):
+            if FLAGS[110]:
+                super().update(seconds)
+                return
             if self.fightingBoss:
                 super().update(seconds)
             elif self.player.position[1] <= 16*6:
                 if self.textInt == 1:
-                    self.fightingBoss = True
-                    SoundManager.getInstance().playBGM("ing.mp3")
+                    self.bsl(self.flapper, "ing.mp3")
                 elif self.textInt == 0:
                     self.player.stop()
                     self.player.keyUnlock()
                     SoundManager.getInstance().fadeoutBGM()
-                    self.displayText("Skreeeeeeee!\nOutsider!\n")
+                    self.displayText("Skreeeeeeee!&&\nOutsider!&&\n")
                     self.textInt += 1
             else:
-                super().update(seconds, updateEnemies=False)
+                super().update(seconds)
 
 class Intro_3(AbstractEngine):
 
@@ -746,7 +766,7 @@ class Intro_3(AbstractEngine):
             self.torches = []
             self.npcs = [Dummy((COORD[8][5])), 
                          Dummy((COORD[9][5])), 
-                         #Dummy((COORD[10][5]))
+                         Dummy((COORD[10][5]))
                          ]
             self.doors = [0,2]
 
@@ -788,7 +808,7 @@ class Intro_3(AbstractEngine):
                 if self.player.doesCollide(b):
                     if type(b) == Trigger:
                         if b == self.trigger1:
-                            self.transport(Intro_2, 2)
+                            self.transport(Alpha_Flapper, 2)
                         elif b == self.trigger2:
                             self.transport(Grand_Chapel, 0)
                             
@@ -813,7 +833,7 @@ class Grand_Chapel_L(AbstractEngine):
         def __init__(self):
             super().__init__()
             self.roomId = 7
-            self.bgm = "Got-my-mind-made-up.mp3"
+            self.bgm = "hymn.mp3"
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0
@@ -860,7 +880,7 @@ class Grand_Chapel_R(AbstractEngine):
         def __init__(self):
             super().__init__()
             self.roomId = 8
-            self.bgm = "Got-my-mind-made-up.mp3"
+            self.bgm = "hymn.mp3"
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0

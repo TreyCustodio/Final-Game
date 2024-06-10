@@ -1,6 +1,6 @@
 from . import Drawable
 import pygame
-from utils import SpriteManager, EQUIPPED, vec, RESOLUTION, INV, EQUIPPED
+from utils import SpriteManager, SoundManager, EQUIPPED, vec, RESOLUTION, INV, EQUIPPED
 
 class Animated(Drawable):
     
@@ -390,6 +390,169 @@ class Pointer(Animated):
                 self.image = pygame.transform.flip(self.image, flip_x=True, flip_y=False)
             self.timer = 0.0
 
+"""
+Boss healthbar
+actual bar,
+boss name
+"""
+class BossHealth(object):
+    
+    def __init__(self, position = vec(48,RESOLUTION[1]-20), enemyHealth=0):
+        self.position = vec(position[0], position[1])
+        self.enemyHealth = enemyHealth
+        self.currentHealth = enemyHealth
+        ##Skull image
+        self.skullImage = SpriteManager.getInstance().getSprite("bar.png", (0,4))
+        self.skullFrame = 0
+        self.skullTick = 0 #0 -> increment, 1-> decrement
+        self.frameTimer = 0.0
+        self.secondsPerFrame = 0.05
+        ##Pixels for bar
+        self.red1 = SpriteManager.getInstance().getSprite("bar.png", (1,5))
+        self.red2 = SpriteManager.getInstance().getSprite("bar.png", (2,5))
+        self.red3 = SpriteManager.getInstance().getSprite("bar.png", (3,5))
+        self.fill = SpriteManager.getInstance().getSprite("bar.png", (4,5))
+        self.edge = SpriteManager.getInstance().getSprite("bar.png", (5,5))
+        self.back = SpriteManager.getInstance().getSprite("bar.png", (6,5))
+        self.tip = SpriteManager.getInstance().getSprite("bar.png", (7,5))
+        self.tip2 = SpriteManager.getInstance().getSprite("bar.png", (8,5))
+        self.back2 = SpriteManager.getInstance().getSprite("bar.png", (9,5))
+        self.tip3 = SpriteManager.getInstance().getSprite("bar.png", (10,5))
+        self.drawPos = vec(self.position[0] + 16, self.position[1])
+        self.initializing = True
+        self.initializingBar = False
+        self.initializingSkull = True
+        self.pause = False
+        self.waitTimer = 0.0
+        self.pixelsToDraw = 0
+        self.skullAlpha = 50
+        self.skullImage.set_alpha(self.skullAlpha)
+        self.defeated = False
+        self.totalAlpha = 255
+        self.doneDrawing = False
+        
+    def setSkullImage(self):
+        self.skullImage = SpriteManager.getInstance().getSprite("bar.png", (0, self.skullFrame+4))
+        self.skullImage.set_alpha(self.skullAlpha)
+    def resetDrawPos(self):
+        self.drawPos = vec(self.position[0] + 16, self.position[1])
+
+    def blit(self, image, drawSurf):
+        drawSurf.blit(image, self.drawPos)
+        self.drawPos[0] += 1
+
+
+    def drawBar(self, drawSurf):
+        if not self.defeated and self.currentHealth == 0:
+            self.blit(self.back2, drawSurf)
+        else:
+            for i in range(self.currentHealth):
+                if self.initializing and i == self.pixelsToDraw:
+                    break
+                if i == self.currentHealth-1:
+                    if self.currentHealth == self.enemyHealth:
+                        self.blit(self.tip2, drawSurf)
+                    else:
+                        if self.currentHealth == 1:
+                            self.blit(self.tip3, drawSurf)
+                        else:
+                            self.blit(self.tip, drawSurf)
+                elif i == 0:
+                    self.blit(self.tip2, drawSurf)
+                else:
+                    if self.initializing and i == self.pixelsToDraw -1:
+                        self.blit(self.tip2, drawSurf)
+                    else:
+                        self.blit(self.fill, drawSurf)
+
+        if self.defeated:
+            drawSurf.blit(self.edge, (self.drawPos[0]-1, self.drawPos[1]))
+            
+            for i in range(self.enemyHealth - 1):
+                if i == self.pixelsToDraw:
+                    break
+                if i == 0:
+                    self.blit(self.back2, drawSurf)
+                elif i == (self.pixelsToDraw) - 1:
+                    self.blit(self.back2, drawSurf)
+                else:
+                    self.blit(self.back, drawSurf)
+        else:
+            for i in range(self.enemyHealth - self.currentHealth):
+                if i == (self.enemyHealth - self.currentHealth) - 1:
+                    self.blit(self.back2, drawSurf)
+                else:
+                    self.blit(self.back, drawSurf)
+
+        self.blit(self.edge, drawSurf)
+        self.resetDrawPos()
+
+
+
+    def draw(self, drawSurf, health):
+        if health <= 0 and not self.defeated:
+            self.defeated = True
+        self.currentHealth = health
+        drawSurf.blit(self.skullImage, self.position)
+        if not self.initializingSkull and not self.doneDrawing:
+            self.drawBar(drawSurf)
+
+    def update(self, seconds):
+        if self.frameTimer >= self.secondsPerFrame:
+            self.frameTimer = 0.0
+            if self.skullTick == 0:
+                self.skullFrame += 1
+                if self.skullFrame == 7:
+                    self.skullTick = 1
+                    self.skullFrame = 6
+            elif self.skullTick == 1:
+                self.skullFrame -= 1
+                if self.skullFrame == -1:
+                    self.skullTick = 0
+                    self.skullFrame = 0
+            
+            if self.initializingSkull:
+                self.skullAlpha += 15
+                if self.skullAlpha >= 255:
+                    self.skullAlpha = 255
+                    self.initializingSkull = False
+                    self.initializingBar = True
+                    self.secondsPerFrame = 0.01
+                    SoundManager.getInstance().playSFX("bar_fill.wav", -1)
+            self.setSkullImage()
+            if self.initializingBar:
+                self.pixelsToDraw += 1
+                if self.pixelsToDraw == self.enemyHealth:
+                    self.initializingBar = False
+                    self.pause = True
+                    self.secondsPerFrame = 0.05
+                    SoundManager.getInstance().stopAllSFX()
+            
+            if self.defeated:
+                if self.pixelsToDraw == 0:
+                    self.doneDrawing = True
+                    SoundManager.getInstance().fadeoutBGM()
+                else:
+                    self.pixelsToDraw -= 1
+                if self.skullAlpha != 0:
+                    self.skullAlpha -= 15
+                    if self.skullAlpha <= 0:
+                        self.skullAlpha = 0
+                        self.skullImage.set_alpha(self.skullAlpha)
+                    self.skullImage.set_alpha(self.skullAlpha)
+                
+        else:
+            self.frameTimer += seconds
+        
+        if self.pause:
+            if self.waitTimer >= 1.0:
+                self.waitTimer = 0.0
+                self.pause = False
+                self.initializing = False
+            else:
+                self.waitTimer += seconds
+        
+        
 
 class Tile(Animated):
     def __init__(self, position):
@@ -397,32 +560,7 @@ class Tile(Animated):
         self.nFrames = 5
 
 
-class ForceField(Animated):
-    """
-    Should be converted into an enemy type
-    or simply add a damaging effect.
-    """
-    def __init__(self, position, color = 0):
-        super().__init__(position, "barrier.png", (0, color))
-        self.top = False
-        self.belowDrops = False
-        self.nFrames = 4
-        self.framesPerSecond = 8
-        self.dead = False
-        self.row = color
-        self.frame += color
-        self.render = True
-    
-    def vanish(self):
-        self.render = False
-    
-    def draw(self, drawSurface):
-        if self.render:
-            super().draw(drawSurface)
-    
-    def update(self, seconds, position = None):
-        if self.render:
-            super().update(seconds)
+
 
 
 class Portal(Animated):
