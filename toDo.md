@@ -2,8 +2,11 @@ For itch.io milestone: 6/12/2024
 - [ ] finish scorching fields up to lavaKnight
 - [ ] Heater
 - [ ] Alpha Flapper
+  - [ ] Increase speed as health gets lower
+  - [ ] Another alternative could be it accelerates and decelerates via update every frame
 - [ ] Death reset
-- [ ] reset the state of the game after quitting
+  - [ ] clear drops
+- [ ] reset the state of the game after quitting to title (death reset)
 - [ ] map
 - [ ] Healthbar heal
 

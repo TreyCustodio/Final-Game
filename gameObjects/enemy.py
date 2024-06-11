@@ -1,4 +1,5 @@
-from . import Drawable, Animated, Bullet, Element, Blizzard, Heart, BigHeart, Buck, FireShard, GreenHeart, Buck_B, Buck_R, Bombodrop
+from . import (Drawable, Animated, Bullet, Element, Blizzard, Heart, BigHeart, 
+                Buck, FireShard, GreenHeart, Buck_B, Buck_R, Bombodrop, LargeBombo, GiantBombo)
 from utils import SoundManager, SpriteManager, SCALE, RESOLUTION, vec
 from random import randint
 import pygame
@@ -15,9 +16,12 @@ class Enemy(Animated):
         if fileName != "":
             self.image = SpriteManager.getInstance().getEnemy(fileName, direction)
         
+        self.id = ""
+        self.spawning = False
         self.ignoreCollision = False
         self.top = False #Boolean that controls what layer the enemy is drawn on
         self.hit = False
+        self.frameTimer = 0.0
         #Animation properties
         self.indicatorRow = 0
         self.fileName = fileName
@@ -33,6 +37,7 @@ class Enemy(Animated):
         self.hurtRow = 4
         self.freezeShield = False
         self.arrowShield = False
+        self.arrowWeak = False
         self.position = vec(*position)
         self.vel = vec(0,0)
         self.dead = False
@@ -51,6 +56,7 @@ class Enemy(Animated):
         self.bouncing = False
         self.bounceTimer = 0.0
         self.inWall = False
+        self.injury = 0
         ##Strengths and Weaknesses
         #0 -> Neutral
         #1 -> Fire
@@ -87,6 +93,9 @@ class Enemy(Animated):
     def getDamage(self):
         return self.damage
 
+    def getObjectsToSpawn(self):
+        return self.objects
+    
     def getDrop(self):
         integer = randint(0,2)
         if integer == 0:
@@ -101,6 +110,12 @@ class Enemy(Animated):
         else:
             return None
     
+    def getInjury(self):
+        return self.injury
+    
+    def resetInjury(self):
+        self.injury = False
+
     def getCollisionRect(self):
         newRect = pygame.Rect(0,0,14,23)
         newRect.left = int(self.position[0]+2)
@@ -151,6 +166,7 @@ class Enemy(Animated):
         self.hit = setHit
         self.hp -= damage
         self.playHurtSound()
+        self.injury = damage
 
     """
     Adds the value of hurtRow to the row.
@@ -164,6 +180,7 @@ class Enemy(Animated):
         self.frameTimer = 0.0
         self.hit = setHit
         self.hp -= damage
+        self.injury = damage
         self.playHurtSound()
 
     def handlePlayerCollision(self, player):
@@ -190,20 +207,29 @@ class Enemy(Animated):
         ##Damage after I-frame
         if self.row < self.hurtRow:
             if self.type.getValue() == 0:
-                self.hurt(other.damage)
+                if other.type == 0 and self.arrowWeak:
+                    self.hurt(other.damage + int(other.damage * 1.5))
+                else:
+                    self.hurt(other.damage)
             else:
                 if other.type == self.type.getValue():
                     self.heal(other.damage)
                 elif self.type.weakTo(other.type):
                     self.hurt(other.damage + int(other.damage * 1.5))
                 elif other.type == 0 and not self.arrowShield:
-                    self.hurt(other.damage)
+                    if self.arrowWeak:
+                        self.hurt(other.damage + int(other.damage * 1.5))
+                    else:
+                        self.hurt(other.damage)
                 else:
                     SoundManager.getInstance().playSFX("dink.wav")
 
         ##Bullets damage enemies even through i frames
         elif self.type.getValue() == 0 and other.type == 0:
-            self.hurt(other.damage)
+            if self.arrowWeak:
+                self.hurt(other.damage + int(other.damage * 1.5))
+            else:
+                self.hurt(other.damage)
     
 
     def freeze(self, playSound = True):
@@ -346,6 +372,7 @@ class LavaKnight(Enemy):
         jumping up or down.
         """
         super().__init__(position, "knight.png", 0)
+        self.id = "spawn"
         self.boss = boss
         ##Startup animation
         self.starting = False
@@ -358,10 +385,10 @@ class LavaKnight(Enemy):
         self.falling = False
         self.targetPos = vec(0,0)
 
-        self.desperate = False #True if final phase is active
+        self.desperate = True #True if final phase is active
         self.damage = 3
         self.nFrames = 1
-        self.maxHp = 10
+        self.maxHp = 100
         self.hp = self.maxHp
         self.freezeShield = True
         self.jumpingUp = False
@@ -372,12 +399,14 @@ class LavaKnight(Enemy):
         self.movingDown = False
 
         self.frozen = False
-        self.jumpTimer = 0.0
+        self.jumpTimer = 0.5
         self.pause = True
         self.speed = 30
         self.freezeCounter = 10 #Once this gets to zero, it becomes vulnerable to Bombofauns
         self.maxCount = 10 #The maximum integer the freezeCount can be
         self.cold = False #Able to be blown up
+        self.coldTimer = 0.0
+        self.maxColdTime = 5.0
         self.vulnerable = False #Able to be frozen
         self.iframeTimer = 0.0
         self.shadow = Animated(vec(self.position[0], self.position[1]), "knight.png", (4,0))
@@ -388,6 +417,8 @@ class LavaKnight(Enemy):
         self.frameTime = 0.05
         self.frame = 3
         self.currentRow = 0
+        self.initializing = True
+        self.objects = []
 
         self.dying = False
         self.setImage()
@@ -398,21 +429,37 @@ class LavaKnight(Enemy):
     def getMoney(self):
         return self.getDrop()
     
+    def setObjects(self):
+        self.objects = [
+            FireBall(vec(self.position[0]-8, self.position[1]), 2),
+            FireBall(vec(self.position[0]+32, self.position[1]), 4),
+            FireBall(vec(self.position[0]+32, self.position[1]+32), 0),
+            FireBall(vec(self.position[0]-8, self.position[1]+32), 5)
+        ]
+
+    def resetObjects(self):
+        self.spawning = False
+        
     #override
     def hurt(self, damage, setHit = True):
         self.hit = setHit
         self.hp -= damage
+        self.injury = damage
         if self.desperate:
             if self.hp <= 0:
                 self.dying = True
+                self.ignoreCollision = True
             else:
                 SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
 
         elif self.hp <= 0:
             self.desperate = True
-            self.hp = 2
+            self.maxColdTime = 2.0
+            self.hp = 25
+            self.unsetCold()
         else:
             SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+        
 
     def bounce(self, other):
         if not self.cold and not self.falling and not self.respawning:
@@ -450,6 +497,7 @@ class LavaKnight(Enemy):
         self.setImage()
     
     def unsetCold(self):
+        self.coldTimer = 0.0
         self.cold = False
         self.vulnerable = False
         self.freezeCounter = self.maxCount
@@ -521,7 +569,8 @@ class LavaKnight(Enemy):
             if other.id == "bombo":
                 #self.knockBack(other)
                 self.hurt(other.damage)
-                if not self.dying:
+                if not self.dying and self.coldTimer >= self.maxColdTime:
+                    
                     self.unsetCold()
             return
         
@@ -607,6 +656,7 @@ class LavaKnight(Enemy):
             self.movingDown = True
             self.movingUp = False
     
+    
     """
     Begin to fall down and crush the player
     """
@@ -615,8 +665,11 @@ class LavaKnight(Enemy):
         self.jumpingUp = False
         self.jumpingDown = True
         self.jumpTimer = 0.0
+        
 
     def update(self, seconds, position = None):
+        if self.cold:
+            self.coldTimer += seconds
         ##Death Animation
         if self.dying:
             if self.startupTimer >= 1.0:
@@ -704,7 +757,8 @@ class LavaKnight(Enemy):
                         self.frameTimer = 0.0
                         self.incrementFrame()
                         self.setImage()
-
+            if self.initializing:
+                return
             ##I-frame update
             if self.moving and not self.vulnerable:
                 self.iframeTimer += seconds
@@ -734,6 +788,9 @@ class LavaKnight(Enemy):
                                     self.fallTimer = 0.0
                                     self.respawning = False
                                     self.pause = True
+                                    if self.desperate:
+                                        self.spawning = True
+                                        self.setObjects()
                         ##Decrement shadow frame
                         else:
                             self.shadow.frame -= 1
@@ -859,6 +916,7 @@ class Mofos(Enemy):
         self.hp = 20
         self.damage = 1
         self.hurtRow = 4
+        self.arrowWeak = True
 
     
     def bounce(self, other):
@@ -910,7 +968,7 @@ class Bopper(Enemy):
         self.hurtRow = 1
         self.nFrames = 8
         self.totalFrames = 8
-        self.maxHp = 3
+        self.maxHp = 2
         self.hp = self.maxHp
         self.damage = 1
         self.speed = 0
@@ -930,7 +988,14 @@ class Bopper(Enemy):
     def getDrop(self):
         if self.readyToDrop:
             self.readyToDrop = False
-            return Bombodrop(self.position)
+            rand = randint(0,8)
+            if rand == 0 or rand == 1 or rand == 2 or rand == 3:
+                return Bombodrop(self.position)
+            elif rand == 4 or rand == 5 or rand == 6:
+                return LargeBombo(self.position)
+            elif rand == 7 or rand == 8:
+                return GiantBombo(self.position)
+            
     
     def playHurtSound(self):
         if self.hp > 0: 
@@ -961,10 +1026,13 @@ class Stomper(Enemy):
         super().__init__(position, "stomper.png")
         self.hurtRow = 1
         self.nFrames = 1
-        self.maxHp = 10
-        self.hp = 10
+        self.maxHp = 50
+        self.hp = self.maxHp
+        self.freezeShield = True
         self.frozen = False
         self.cold = False
+        self.coldTimer = 0.0
+        self.coldTime = 5.0
         self.damage = 2
         self.speed = 0
         self.freezeCounter = 5
@@ -980,13 +1048,17 @@ class Stomper(Enemy):
         self.targetPos = vec(0,0)
         self.boss = boss
 
-    
+    def bounce(self, other):
+        return
     def drawTop(self, drawSurface):
         self.shadow.draw(drawSurface)
         super().draw(drawSurface)
 
     def getDrop(self):
-        return FireShard((self.position[0]+9, self.position[1]+13))
+        if self.boss:
+            return GreenHeart((self.position[0]+9, self.position[1]+13))
+        else:
+            return FireShard((self.position[0]+9, self.position[1]+13))
     
     """
     Great example of why you need attention to detail
@@ -1015,14 +1087,17 @@ class Stomper(Enemy):
 
 
     def hurt(self, damage, setHit = True):
+        if self.coldTimer >= self.coldTime:
+            self.unsetCold()
         self.hit = setHit
         self.hp -= damage
+        self.injury = damage
         if self.hp <= 0:
             self.dead = True
             if not self.boss:
                 SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
         else:
-            self.unsetCold()
+            SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
 
     def handlePlayerCollision(self, player):
         if self.ignoreCollision:
@@ -1038,7 +1113,7 @@ class Stomper(Enemy):
         self.setImage()
     
     def unsetCold(self):
-        SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+        self.coldTimer = 0.0
         self.cold = False
         self.row = 0
         self.setImage()
@@ -1085,6 +1160,9 @@ class Stomper(Enemy):
         self.frame %= 3
 
     def update(self, seconds, position = None):
+        if self.cold:
+            if self.coldTimer < self.coldTime:
+                self.coldTimer += seconds
         if not self.vulnerable:
             self.frameTimer += seconds
             if self.frameTimer >= 0.01:
@@ -1159,11 +1237,121 @@ class Stomper(Enemy):
         self.jumpTimer = 0.0
 
 class FireBall(Enemy):
-    pass
+    def __init__(self, position=vec(0,0), direction=0):
+        super().__init__(position, "fireball.png")
+        self.id = "noStop"
+        self.hurtRow = 0
+        self.damage = 1
+        self.nFrames = 4
+        self.maxHp = 1
+        self.hp = 1
+        self.type = Element(1)
+        self.arrowShield = True
+        self.lifeTimer = 0.0
+        self.lifeTime = 2.0
+        self.frozen = False
+        self.motionTick = 0
+        self.direction = direction
+        self.angle = 0
 
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0]+2, self.position[1] + 3), (12,11))
+    def bounce(self, other):
+        return
+    
+    def setSpeed(self, row):
+        return
+    
+    def getDrop(self):
+        return
+
+    def update(self, seconds, position=None):
+        if self.frozen:
+            self.dead = True
+        else:
+            if self.lifeTimer >= self.lifeTime:
+                self.dead = True
+            else:
+                self.lifeTimer += seconds
+        if self.direction == 0:
+            if self.motionTick == 0:
+                self.position[0] += 1
+                self.motionTick = 1
+            elif self.motionTick == 1:
+                self.position[0] += 1
+                self.position[1] += 1
+                self.motionTick = 2
+            elif self.motionTick == 2:
+                self.position[0] += 1
+                self.motionTick = 0
+        elif self.direction == 5:
+            if self.motionTick == 0:
+                self.position[0] -= 1
+                self.motionTick = 1
+            elif self.motionTick == 1:
+                self.position[0] -= 1
+                self.position[1] += 1
+                self.motionTick = 2
+            elif self.motionTick == 2:
+                self.position[0] -= 1
+                self.motionTick = 0
+        elif self.direction == 4:
+            if self.motionTick == 0:
+                self.position[0] += 1
+                self.motionTick = 1
+            elif self.motionTick == 1:
+                self.position[0] += 1
+                self.position[1] -= 1
+                self.motionTick = 2
+            elif self.motionTick == 2:
+                self.position[0] += 1
+                self.motionTick = 0
+        elif self.direction == 2:
+            if self.motionTick == 0:
+                self.position[0] -= 1
+                self.motionTick = 1
+            elif self.motionTick == 1:
+                self.position[0] -= 1
+                self.position[1] -= 1
+                self.motionTick = 2
+            elif self.motionTick == 2:
+                self.position[0] -= 1
+                self.motionTick = 0
+        elif self.direction == 1:
+            if self.motionTick == 0:
+                self.position[1] += 1
+                self.motionTick = 1
+            elif self.motionTick == 1:
+                self.position[1] += 1
+                self.position[0] -= 1
+                self.motionTick = 2
+            elif self.motionTick == 2:
+                self.position[1] += 1
+                self.motionTick = 0
+        elif self.direction == 3:
+            if self.motionTick == 0:
+                self.position[1] -= 1
+                self.motionTick = 1
+            elif self.motionTick == 1:
+                self.position[1] -= 1
+                self.position[0] += 1
+                self.motionTick = 2
+            elif self.motionTick == 2:
+                self.position[1] -= 1
+                self.motionTick = 0
+
+        if self.frameTimer >= 0.01:
+            self.frameTimer = 0.0
+            self.angle += 90
+            self.angle %= 360
+            self.image = pygame.transform.rotate(self.image, self.angle)
+        else:
+            self.frameTimer += seconds
 class Heater(Enemy):
     def __init__(self, position=vec(0,0)):
         super().__init__(position, "heater.png")
+        self.id = "spawn"
+        self.spawning = False
         self.hurtRow = 0
         self.damage = 1
         self.nFrames = 3
@@ -1171,9 +1359,30 @@ class Heater(Enemy):
         self.maxHp = 10
         self.hp = self.maxHp
         self.type = Element(1)
+        self.fireBallTimer = 0.0
+        self.fireBallTime = 0.5
+        self.objects = [FireBall(vec(self.position[0]-2, self.position[1]))]
+        self.ballDirection = 0
 
+    def resetObjects(self):
+        self.spawning = False
+        self.ballDirection += 1
+        self.ballDirection %= 5
+        self.objects = [FireBall(vec(self.position[0]-2, self.position[1]), self.ballDirection)]
+
+    def getObjectsToSpawn(self):
+        return self.objects
+    
     def setSpeed(self, row):
         return
+    
+    def update(self, seconds, position = None):
+        if self.fireBallTimer >= self.fireBallTime:
+            self.fireBallTimer = 0.0
+            self.spawning = True
+        else:
+            self.fireBallTimer += seconds
+        Animated.updateEnemy(self, seconds)
 """
 Cute little walking fireball.
 Requires Ice to damage it.
@@ -1316,23 +1525,25 @@ class Flapper(Enemy):
 
 
     def setSpeed(self, direction):
-        if direction == 0:
-            self.vel[0] = self.speed
-            self.vel[1] = self.speed
-        elif direction == 1:
-            self.vel[0] = self.speed
-            self.vel[1] = -self.speed
-        elif direction == 2:
-            self.vel[0] = -self.speed
-            self.vel[1] = -self.speed
-        elif direction == 3:
-            self.vel[0] = -self.speed
-            self.vel[1] = self.speed
-        else:
-            return
+        if not self.bouncing:
+            if direction == 0:
+                self.vel[0] = self.speed
+                self.vel[1] = self.speed
+            elif direction == 1:
+                self.vel[0] = self.speed
+                self.vel[1] = -self.speed
+            elif direction == 2:
+                self.vel[0] = -self.speed
+                self.vel[1] = -self.speed
+            elif direction == 3:
+                self.vel[0] = -self.speed
+                self.vel[1] = self.speed
+            else:
+                return
 
     def bounce(self, other):
-        if not self.frozen:
+        if not self.frozen and not self.bouncing:
+            self.bouncing = True
             side = self.calculateSide(other)
             if side == "right":
                 self.vel[0] = -self.speed
@@ -1356,6 +1567,7 @@ class FireFlapper(Flapper):
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, 1, direction)
         self.type = Element(1)
+        self.arrowShield = True
     
     def getDrop(self):
         integer = randint(0,5)
@@ -1386,9 +1598,9 @@ class AlphaFlapper(Enemy):
     def __init__(self, position=vec(0,0), typeRow = 0, direction = 0, boss = False):
         super().__init__(position, "alphaflapper.png", typeRow)
         self.typeRow = typeRow
-        self.speed = 50
+        self.speed = 80
         self.hurtRow = 1
-        self.maxHp = 2
+        self.maxHp = 60
         self.hp = self.maxHp
         self.boss = boss
         self.damage = 1

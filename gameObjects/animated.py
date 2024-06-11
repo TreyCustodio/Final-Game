@@ -491,6 +491,7 @@ class BossHealth(object):
 
     def draw(self, drawSurf, health):
         if health <= 0 and not self.defeated:
+            SoundManager.getInstance().fadeoutBGM()
             self.defeated = True
         self.currentHealth = health
         drawSurf.blit(self.skullImage, self.position)
@@ -531,7 +532,6 @@ class BossHealth(object):
             if self.defeated:
                 if self.pixelsToDraw == 0:
                     self.doneDrawing = True
-                    SoundManager.getInstance().fadeoutBGM()
                 else:
                     self.pixelsToDraw -= 1
                 if self.skullAlpha != 0:

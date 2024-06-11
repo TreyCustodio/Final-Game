@@ -32,6 +32,9 @@ class ForceField(Animated):
             self.alpha = 0
         self.set_alpha()
 
+    def handleCollision(self, projectile, engine):
+        return
+    
     def set_alpha(self):
         self.image.set_alpha(self.alpha)
 

@@ -72,7 +72,7 @@ class Player(Animated):
         #Blizzard
         self.freezing = False
         self.blizzard = None
-
+        self.slowing = False
         
         
         self.event = None
@@ -230,13 +230,14 @@ class Player(Animated):
         SoundManager.getInstance().playSFX("screwattack_loop.wav", -1)
 
     def stop(self):
+        self.slowing = False
         self.freezing = False
         self.running = False
         self.vel = vec(0,0)
         SoundManager.getInstance().stopSFX("screwattack_loop.wav")
 
     def slow(self):
-        self.running = False
+        self.slowing = True
         self.vel /= 3
         SoundManager.getInstance().stopSFX("screwattack_loop.wav")
 
@@ -354,7 +355,10 @@ class Player(Animated):
         elif self.running:
             if event.button == 0:
                 #Stop running
-                self.slow()
+                if self.slowing:
+                    self.stop()
+                else:
+                    self.slow()
 
         else:
             if self.charging:
@@ -482,7 +486,13 @@ class Player(Animated):
                     return
             
         elif event.type != pygame.JOYAXISMOTION and (self.vel[0] != 0 or self.vel[1] != 0):
-            self.stop()
+            if self.running:
+                if self.slowing:
+                    self.stop()
+                else:
+                    self.slow()
+            else:
+                self.stop()
 
     def handleEvent(self, event, interactableObject = None, engine = None):
         if not self.key_lock:
@@ -573,18 +583,30 @@ class Player(Animated):
                     else:
                         return
                 elif self.running:
-                    if event.key == pygame.K_z:
-                        #Stop running
-                        self.slow()
-                    elif event.key == pygame.K_RIGHT and self.runningDirection == 1:
-                        self.stop()
-                    elif event.key == pygame.K_UP and self.runningDirection == 2:
-                        self.stop()
-                    elif event.key == pygame.K_LEFT and self.runningDirection == 3:
-                        self.stop()
-                    elif event.key == pygame.K_DOWN and self.runningDirection == 0:
-                        self.stop()
-                    
+                    if self.slowing:
+                        if event.key == pygame.K_z:
+                            #Stop running
+                            self.stop()
+                        elif event.key == pygame.K_RIGHT and self.runningDirection == 1:
+                            self.stop()
+                        elif event.key == pygame.K_UP and self.runningDirection == 2:
+                            self.stop()
+                        elif event.key == pygame.K_LEFT and self.runningDirection == 3:
+                            self.stop()
+                        elif event.key == pygame.K_DOWN and self.runningDirection == 0:
+                            self.stop()
+                    else:
+                        if event.key == pygame.K_z:
+                            #Stop running
+                            self.slow()
+                        elif event.key == pygame.K_RIGHT and self.runningDirection == 1:
+                            self.slow()
+                        elif event.key == pygame.K_UP and self.runningDirection == 2:
+                            self.slow()
+                        elif event.key == pygame.K_LEFT and self.runningDirection == 3:
+                            self.slow()
+                        elif event.key == pygame.K_DOWN and self.runningDirection == 0:
+                            self.slow()
 
                 else:
                     if self.charging:
@@ -860,6 +882,12 @@ class Player(Animated):
         elif self.swordCounter == 3:
             self.swordSound = "DarkLink3.wav"
 
+    def set_Image(self):
+        self.image = SpriteManager.getInstance().getSprite(self.fileName, (self.frame, self.row))
+    
+    def face(self, direction=0):
+        self.image = SpriteManager.getInstance().getSprite(self.fileName, (0, direction))
+    
     def update(self, seconds):
         if self.dying:
             if not self.dead:

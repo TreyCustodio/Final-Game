@@ -83,7 +83,7 @@ class Chest(NonPlayer):
                         INV["hasBombo"] = True
                         return
                     else:
-                        INV["maxBombo"] += 2
+                        INV["maxBombo"] += 5
                         INV["bombo"] = INV["maxBombo"]
             else:
                 engine.displayText(self.text)
@@ -370,7 +370,45 @@ class Bombodrop(Drop):
                 SoundManager.getInstance().playLowSFX("solve.wav", volume = 0.3)
                 self.interacted = True
                 if INV["bombo"] < INV["maxBombo"]:
-                    INV["bombo"] += 1
+                    INV["bombo"] += 2
+                    if INV["bombo"] > INV["maxBombo"]:
+                        INV["bombo"] = INV["maxBombo"]
+
+class LargeBombo(Drop):
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, 9)
+        self.id = "bombo"
+    
+    def getCollisionRect(self):
+        return pygame.Rect(self.position[0]+1, self.position[1]+1, 14,15)
+    
+    def interact(self, player):
+        if INV["hasBombo"]:
+            if not self.interacted:
+                SoundManager.getInstance().playLowSFX("solve.wav", volume = 0.3)
+                self.interacted = True
+                if INV["bombo"] < INV["maxBombo"]:
+                    INV["bombo"] += 5
+                    if INV["bombo"] > INV["maxBombo"]:
+                        INV["bombo"] = INV["maxBombo"]
+
+class GiantBombo(Drop):
+    def __init__(self, position=vec(0,0)):
+        super().__init__(position, 10)
+        self.id = "bombo"
+    
+    def getCollisionRect(self):
+        return pygame.Rect(self.position[0]+1, self.position[1]+1, 14,15)
+    
+    def interact(self, player):
+        if INV["hasBombo"]:
+            if not self.interacted:
+                SoundManager.getInstance().playLowSFX("solve.wav", volume = 0.3)
+                self.interacted = True
+                if INV["bombo"] < INV["maxBombo"]:
+                    INV["bombo"] += 20
+                    if INV["bombo"] > INV["maxBombo"]:
+                        INV["bombo"] = INV["maxBombo"]
 
 class Heart(Drop):
     def __init__(self, position=vec(0,0)):

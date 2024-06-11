@@ -110,14 +110,15 @@ class Knight(AbstractEngine):
     class _Kn(AE):
         def __init__(self):
             super().__init__()
-            self.bgm = None
+            self.bgm = "tension.mp3"
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0
             self.background = Level("test.png")
-            self.boss = LavaKnight(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
+            self.knight = LavaKnight(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
+            self.knight.ignoreCollision = True
             self.npcs = [
-                self.boss,
+                self.knight,
                 Bopper(COORD[2][2]),
                 Bopper(COORD[16][2]),
                 Bopper(COORD[2][9]),
@@ -127,6 +128,7 @@ class Knight(AbstractEngine):
                 #GreenHeart(vec(16*2, 16*10))
                 ]
             self.playingMusic = False
+
 
         #override
         def createBlocks(self):
@@ -147,14 +149,42 @@ class Knight(AbstractEngine):
                     else:
                         self.player.handleCollision(b)
 
+        
+        def bse(self):
+            super().bse()
+            FLAGS[111] = True
+
         def update(self, seconds):
-            super().update(seconds)
-            if not self.playingMusic:
-                if self.boss.jumpingUp:
-                    self.playBgm("megalomania.mp3")
-                    self.playingMusic = True
-            elif self.boss.dead:
-                self.fadeBgm()
+            if FLAGS[111]:
+                super().update(seconds)
+                return
+            if self.fightingBoss:
+                if self.knight.initializing and not self.bossHealthbar.initializing:
+                    self.knight.initializing = False
+                if self.knight.desperate and self.textInt == 1:
+                    self.knight.initializing = True
+                    self.bsl(self.knight, "None")
+                    self.displayText(SPEECH["lava_knight2"])
+                    self.textInt += 1
+                elif self.knight.dying and self.textInt == 2:
+                    self.displayText(SPEECH["lava_knight3"])
+                    self.textInt += 1
+                super().update(seconds)
+            elif self.knight.starting:
+                if self.textInt == 1:
+                    if self.knight.moving:
+                        self.bsl(self.knight, "megalomania.mp3")
+                    else:
+                        super().update(seconds)
+                elif self.textInt == 0:
+                    self.player.stop()
+                    self.player.keyLock()
+                    SoundManager.getInstance().fadeoutBGM()
+                    self.knight.ignoreCollision = False
+                    self.displayText(SPEECH["lava_knight"])
+                    self.textInt += 1
+            else:
+                super().update(seconds)
 """
 Entrance Hall
 """
@@ -701,6 +731,7 @@ class Alpha_Flapper(AbstractEngine):
 
 
         def bse(self):
+            self.displayText(SPEECH["alpha_flapper"])
             super().bse()
             for o in self.obstacles:
                 o.vanish()
@@ -737,7 +768,7 @@ class Alpha_Flapper(AbstractEngine):
                     self.player.stop()
                     self.player.keyUnlock()
                     SoundManager.getInstance().fadeoutBGM()
-                    self.displayText("Skreeeeeeee!&&\nOutsider!&&\n")
+                    self.displayText("Skreeeeeeee!&&\nOutsider, begone!&&\n")
                     self.textInt += 1
             else:
                 super().update(seconds)
@@ -1729,7 +1760,7 @@ class Flame_6(AbstractEngine):
             ]
             self.stomperTimer = 0.0
 
-            self.doors = [0,2,3]
+            self.doors = [2]
             
             if not FLAGS[61]:
                 self.spawning = [
@@ -1788,17 +1819,17 @@ class Flame_6(AbstractEngine):
               self.enemyCollision(b)
               if self.player.doesCollide(b):
                 if b == self.trigger1:
-                   self.transport(Flame_1, 3, keepBGM=True)
+                   pass
                 elif b == self.trigger2:
                     pass
                 elif b == self.trigger3:
-                    self.transport(Flame_3, 0, keepBGM=True)
+                    self.transport(Flame_4, 0, keepBGM=True)
                 else:
                     self.player.handleCollision(b)        
 
         def beginMiniBoss(self):
             self.miniBoss = True
-            SoundManager.getInstance().playBGM("LA_FinalBoss.mp3")
+            self.bsl(self.stomper, "LA_FinalBoss.mp3")
             for i in range(3):
                 self.obstacles.append(ForceField(COORD[8+i][1]))
             self.stomper.ignoreCollision = False
@@ -1819,7 +1850,7 @@ class Flame_6(AbstractEngine):
                 if self.stomper.dead:
                     if self.stomperTimer == 0.0:
                         SoundManager.getInstance().fadeoutBGM()
-                        self.displayText("The boss will have a\ngreat time avenging me!!\n")
+                        self.displayText("The goddess's ice...&&\nWhy.........&&\nDid she.......&&\nChoose........&&\nYou.......?&&\n")
                         self.stomperTimer += seconds
                     elif self.stomperTimer >= 0.3:
                         FLAGS[62] = True
@@ -1828,7 +1859,13 @@ class Flame_6(AbstractEngine):
                         self.stomperTimer += seconds
                     return
                 elif self.miniBoss:
-                    super().update(seconds)
+                    if self.bossHealthbar.initializing:
+                        super().update(seconds, updateEnemies=False)
+                    else:
+                        if self.stomper.cold and self.textInt == 2:
+                            self.displayText("Blast! I'm C-c-cold\nas s-s-stone!\n")
+                            self.textInt += 1
+                        super().update(seconds)
                 elif self.player.position[1] >= 20:
                     self.beginMiniBoss()
                 else:

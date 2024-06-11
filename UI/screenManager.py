@@ -514,7 +514,7 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Intro_2.getInstance()
+                        self.game = Alpha_Flapper.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()

@@ -50,7 +50,7 @@ class SpriteManager(object):
                        "numbers.png":(16,16), "cursor.png":(16,16),
                        "mapRooms.png":(8,8), 
                        "knight.png":(32,32),
-                       "boulder.png":(32,32), "alphaflapper.png":(32,32)
+                       "boulder.png":(32,32), "alphaflapper.png":(32,32), "fireball.png":(16,16)
          
       }
       
@@ -65,7 +65,7 @@ class SpriteManager(object):
                        "exclamation.png", "z.png", "fireIcon.png", "shotsfired.png", "drops.png",
                        "baller.png", "stunner.png", "mage.png", "barrier.png", "pixels.png",
                        "map.png", "mapRooms.png", "bar.png", "cursor.png",
-                       "bopper.png", "stomper.png", "alphaflapper.png"
+                       "bopper.png", "stomper.png", "alphaflapper.png", "fireball.png"
                        ]
       
       # A list of images that require to be loaded with a color key

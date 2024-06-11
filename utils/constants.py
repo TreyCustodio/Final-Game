@@ -47,7 +47,9 @@ for i in range (1, 10):
 #96 -> Thunder complete
 #97 -> Wind complete
 
-##110 -> ALPHA FLAPPER DEFEATED
+##110-150 -> Boss Flags
+#110 -> ALPHA FLAPPER DEFEATED
+#111 -> LavaKnight
 
 
 
@@ -78,7 +80,7 @@ EQUIPPED = {
 }
 
 
-
+bombos = 10
 """
 The Player's inventory
 """
@@ -92,8 +94,8 @@ INV = {
     "clap": True,
     "slash": True,
     "cleats": True,
-    "maxBombo": 10,
-    "bombo": 10,
+    "maxBombo": bombos,
+    "bombo": bombos,
     "flameShard": 0,
     "frostShard": 0,
     "boltShard": 0,
@@ -251,11 +253,13 @@ INFO = {
 Geemers seem to love it.",
 
 "shoot":
-"Old reliable.\n\
+"Old reliables.\n\
+Deal 2 damage.\n\
 Press X to shoot.",
 
 "bombo":
 "Bombofauns.\n\
+Deal 5 damage.\n\
 Shoot explosive plants.",
 
 "fire":
@@ -306,6 +310,43 @@ Follows format:
 roomName_class#
 """
 SPEECH = {
+"alpha_flapper":
+"Skreeeeeeeeee!!&&\n\
+There is no treasure!&&\n\
+The Gods won't choose you!\n\
+This path leads to death!\n",
+
+"lava_knight":
+"O, brave human...&&\n\
+.....................&&\n\
+Much of my men have you\n\
+chillingly slain...\n\
+Thoughtlessly bleak, my view\n\
+lacks knowledge to feign...\n\
+This heart reacts so blue\n\
+to frivolous pain...\n\
+The tears pour for a few...\n\
+The rage boils their rain...\n\
+Take hold of my clue,\n\
+you pitiful stain!\n\
+This hatred you grew,\n\
+shall force you to wane!\n",
+
+"lava_knight2":
+"Watch, heavenly brothers!\n\
+I speak without shame!\n\
+The bane of our home shall\n\
+be scorched by our flame!\n",
+
+"lava_knight3":
+"In glittering glaciers,\n\
+furious bells ring no more.\n\
+In blazes and ashes,\n\
+I've no story to tell.\n\
+In wielding your blessings,\n\
+pray, honor them well.\n\
+",
+
 "flameShard":"You found a flame shard!&&\n\
 Use it in the Grand Chapel\n\
 to upgrade your flame attack!\n\
@@ -543,10 +584,12 @@ i'll sell it to ya.\n",
 "Ya don't see too many\n\
 Geemers around these parts.\n\
 Not anymore that is.&&\n\
-Everyone used to grow their\n\
-bud and farm together...\n\
-But the lava knights\n\
-keep ruining the land.\n\
+Everyone used to live in\n\
+harmony and farm together...\n\
+But those Stompers...&&\n\
+They smash the land,\n\
+they burn it all up,\n\
+and they slaughter at will!&&\n\
 What a shame...&&\n",
 
 "flame_entrance_geemer2":
@@ -575,8 +618,8 @@ Want me to roll for ya?\n",
 "bombo_expansion":
 "You found some fertilizer\n\
 for those pockets of yours!\n\
-Maximum Bombofaun carrying\n\
-capcity increased by 2!\n",
+Maximum [Bombofaun] carrying\n\
+capcity increased by 5!\n",
 
 "boppers":
 "Newly discovered invasive\n\

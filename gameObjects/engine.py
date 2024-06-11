@@ -41,6 +41,7 @@ class AE(object):
         """
         __init__ is only ever called once
         """
+        self.textInt = 0
         self.timer = 0.0 #A universal timer; can be used for anything
         self.healthBarDrawn = False
         self.healthBarLock = False #If True, don't draw healthbar
@@ -159,10 +160,11 @@ class AE(object):
     Boss script load
     """
     def bsl(self, enemy, bossTheme):
+        self.pause_lock = True
         self.bossTheme = bossTheme
         self.player.keyLock()
         self.boss = enemy
-        self.bossHealthbar = BossHealth(enemyHealth= enemy.maxHp)
+        self.bossHealthbar = BossHealth(enemyHealth= enemy.hp)
         self.fightingBoss = True
         self.drawBossHealth = True
 
@@ -179,6 +181,9 @@ class AE(object):
         self.player.keyDownUnlock()
 
     def reset(self):
+        self.textInt = 0
+        self.fightingBoss = False
+        self.drawBossHealth = False
         self.transLock = True
         self.promptResult = False
         self.indicator.setImage(0)
@@ -201,6 +206,8 @@ class AE(object):
 
 
     def deathReset(self):
+        self.fightingBoss = False
+        self.drawBossHealth = False
         self.enemyCounter = 0
         self.promptResult = False
         self.boxPos = vec(30,64)
@@ -726,8 +733,11 @@ class AE(object):
             if not self.player.ignoreCollision and self.player.doesCollide(n):
                 if self.player.running:
                     if not n.freezeShield and not n.frozen:
-                        self.player.stop()
-                        n.freeze()
+                        if n.id == "noStop":
+                            n.freeze()
+                        else:
+                            self.player.stop()
+                            n.freeze()
 
                 if not n.frozen:
                     if not self.player.invincible:
@@ -824,12 +834,13 @@ class AE(object):
                     hp_after = other.hp
                     hp_before = other.hp + projectile.damage
                     #self.indicator.setImage(other.indicatorRow, hp_before, hp_after, other.maxHp, projectile.damage)
-
+                    damage = other.getInjury()
+                    other.resetInjury()
                     ##Display damage numbers appropriately
                     if projectile.id == "slash" or projectile.id == "blizz":
-                        self.damageNums.addNumber(vec(other.getCenterX(), other.position[1]), projectile.damage)
+                        self.damageNums.addNumber(vec(other.getCenterX(), other.position[1]), damage)
                     else:
-                        self.damageNums.addNumber(vec(other.getCenterX(), other.position[1]), projectile.damage)
+                        self.damageNums.addNumber(vec(other.getCenterX(), other.position[1]), damage)
                     other.hit = False
                     if projectile.id == "arrow":
                         projectile.handleOtherCollision(self)
@@ -886,6 +897,11 @@ class AE(object):
     """
     def update_Enemy(self, seconds, n):
         n.update(seconds, self.player.position)
+        if n.id == "spawn":
+            if n.spawning:
+                for i in n.getObjectsToSpawn():
+                    self.npcs.append(i)
+                n.resetObjects()
         if n.dead:
             self.disappear((n))
             if self.dropCount < 5:
@@ -1006,7 +1022,9 @@ class AE(object):
                 self.bossHealthbar.update(seconds)
                 if not self.bossHealthbar.initializing:
                     self.player.keyUnlock()
-                    self.playBgm(self.bossTheme)
+                    self.pause_lock = False
+                    if self.bossTheme != "None":
+                        self.playBgm(self.bossTheme)
                     self.boss.moving = True
                     self.boss.ignoreCollision = False
             elif self.bossHealthbar.defeated and self.fightingBoss:
