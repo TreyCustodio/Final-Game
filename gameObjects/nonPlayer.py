@@ -97,6 +97,17 @@ class Sign(NonPlayer):
     def interact(self, engine):#drawSurface
         engine.displayText(self.text)
 
+class NpcBopper(NonPlayer):
+    def __init__(self, position = vec(0,0), text = ""):
+        super().__init__(position, "npcBopper.png", (0,0))
+        self.animate = True
+        self.nFrames = 8
+        self.framesPerSecond = 12
+        self.text = text
+    
+    def interact(self, engine):
+        engine.displayText(self.text)
+
 
 class Barrier(NonPlayer):
     def __init__(self, position = vec(0,0), element = 0):

@@ -18,6 +18,7 @@ class Enemy(Animated):
         
         self.id = ""
         self.spawning = False
+        self.vanish = False
         self.ignoreCollision = False
         self.top = False #Boolean that controls what layer the enemy is drawn on
         self.hit = False
@@ -65,8 +66,11 @@ class Enemy(Animated):
         #4 -> Wind
         self.shield = 0
         self.type = Element(0)
+        self.dying = False
     
-    
+    def setImage(self):
+        self.image = SpriteManager.getInstance().getSprite(self.fileName, (self.frame, self.row))
+
     def doesCollideBlock(self, block):
         return self.doesCollide(block)
 
@@ -385,8 +389,8 @@ class LavaKnight(Enemy):
         self.falling = False
         self.targetPos = vec(0,0)
 
-        self.desperate = True #True if final phase is active
-        self.damage = 3
+        self.desperate = False #True if final phase is active
+        self.damage = 2
         self.nFrames = 1
         self.maxHp = 100
         self.hp = self.maxHp
@@ -1001,6 +1005,7 @@ class Bopper(Enemy):
         if self.hp > 0: 
             SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
         else:
+            self.ignoreCollision = True
             self.fakeDead = True
             self.readyToDrop = True
             self.row = 2
@@ -1017,6 +1022,7 @@ class Bopper(Enemy):
                 self.image = SpriteManager.getInstance().getSprite(self.fileName, (0,0))
                 self.hp = self.maxHp
                 self.fakeDead = False
+                self.ignoreCollision = False
                 self.regenTimer = 0.0
         else:
             super().update(seconds)
@@ -1240,6 +1246,7 @@ class FireBall(Enemy):
     def __init__(self, position=vec(0,0), direction=0):
         super().__init__(position, "fireball.png")
         self.id = "noStop"
+        self.extinguishing = False
         self.hurtRow = 0
         self.damage = 1
         self.nFrames = 4
@@ -1248,11 +1255,15 @@ class FireBall(Enemy):
         self.type = Element(1)
         self.arrowShield = True
         self.lifeTimer = 0.0
-        self.lifeTime = 2.0
+        self.lifeTime = 1.25
         self.frozen = False
         self.motionTick = 0
         self.direction = direction
         self.angle = 0
+        self.secondsPerFrame = 0.0
+
+    def respawn(self):
+        self.vanish = True
 
     def getCollisionRect(self):
         return pygame.Rect((self.position[0]+2, self.position[1] + 3), (12,11))
@@ -1265,88 +1276,105 @@ class FireBall(Enemy):
     def getDrop(self):
         return
 
-    def update(self, seconds, position=None):
-        if self.frozen:
-            self.dead = True
-        else:
-            if self.lifeTimer >= self.lifeTime:
-                self.dead = True
-            else:
-                self.lifeTimer += seconds
-        if self.direction == 0:
-            if self.motionTick == 0:
-                self.position[0] += 1
-                self.motionTick = 1
-            elif self.motionTick == 1:
-                self.position[0] += 1
-                self.position[1] += 1
-                self.motionTick = 2
-            elif self.motionTick == 2:
-                self.position[0] += 1
-                self.motionTick = 0
-        elif self.direction == 5:
-            if self.motionTick == 0:
-                self.position[0] -= 1
-                self.motionTick = 1
-            elif self.motionTick == 1:
-                self.position[0] -= 1
-                self.position[1] += 1
-                self.motionTick = 2
-            elif self.motionTick == 2:
-                self.position[0] -= 1
-                self.motionTick = 0
-        elif self.direction == 4:
-            if self.motionTick == 0:
-                self.position[0] += 1
-                self.motionTick = 1
-            elif self.motionTick == 1:
-                self.position[0] += 1
-                self.position[1] -= 1
-                self.motionTick = 2
-            elif self.motionTick == 2:
-                self.position[0] += 1
-                self.motionTick = 0
-        elif self.direction == 2:
-            if self.motionTick == 0:
-                self.position[0] -= 1
-                self.motionTick = 1
-            elif self.motionTick == 1:
-                self.position[0] -= 1
-                self.position[1] -= 1
-                self.motionTick = 2
-            elif self.motionTick == 2:
-                self.position[0] -= 1
-                self.motionTick = 0
-        elif self.direction == 1:
-            if self.motionTick == 0:
-                self.position[1] += 1
-                self.motionTick = 1
-            elif self.motionTick == 1:
-                self.position[1] += 1
-                self.position[0] -= 1
-                self.motionTick = 2
-            elif self.motionTick == 2:
-                self.position[1] += 1
-                self.motionTick = 0
-        elif self.direction == 3:
-            if self.motionTick == 0:
-                self.position[1] -= 1
-                self.motionTick = 1
-            elif self.motionTick == 1:
-                self.position[1] -= 1
-                self.position[0] += 1
-                self.motionTick = 2
-            elif self.motionTick == 2:
-                self.position[1] -= 1
-                self.motionTick = 0
+    def extinguish(self):
+        self.extinguishing = True
+        self.ignoreCollision = True
+        self.row = 1
+        self.secondsPerFrame = 0.04
 
-        if self.frameTimer >= 0.01:
+    def update(self, seconds, position=None):
+        if not self.extinguishing:
+            if self.frozen:
+                self.extinguish()
+            else:
+                if self.lifeTimer >= self.lifeTime:
+                    self.extinguish()
+                else:
+                    self.lifeTimer += seconds
+        
+        
+        if not self.extinguishing:
+            if self.direction == 0:
+                if self.motionTick == 0:
+                    self.position[0] += 1
+                    self.motionTick = 1
+                elif self.motionTick == 1:
+                    self.position[0] += 1
+                    self.position[1] += 1
+                    self.motionTick = 2
+                elif self.motionTick == 2:
+                    self.position[0] += 1
+                    self.motionTick = 0
+            elif self.direction == 5:
+                if self.motionTick == 0:
+                    self.position[0] -= 1
+                    self.motionTick = 1
+                elif self.motionTick == 1:
+                    self.position[0] -= 1
+                    self.position[1] += 1
+                    self.motionTick = 2
+                elif self.motionTick == 2:
+                    self.position[0] -= 1
+                    self.motionTick = 0
+            elif self.direction == 4:
+                if self.motionTick == 0:
+                    self.position[0] += 1
+                    self.motionTick = 1
+                elif self.motionTick == 1:
+                    self.position[0] += 1
+                    self.position[1] -= 1
+                    self.motionTick = 2
+                elif self.motionTick == 2:
+                    self.position[0] += 1
+                    self.motionTick = 0
+            elif self.direction == 2:
+                if self.motionTick == 0:
+                    self.position[0] -= 1
+                    self.motionTick = 1
+                elif self.motionTick == 1:
+                    self.position[0] -= 1
+                    self.position[1] -= 1
+                    self.motionTick = 2
+                elif self.motionTick == 2:
+                    self.position[0] -= 1
+                    self.motionTick = 0
+            elif self.direction == 1:
+                if self.motionTick == 0:
+                    self.position[1] += 1
+                    self.motionTick = 1
+                elif self.motionTick == 1:
+                    self.position[1] += 1
+                    self.position[0] -= 1
+                    self.motionTick = 2
+                elif self.motionTick == 2:
+                    self.position[1] += 1
+                    self.motionTick = 0
+            elif self.direction == 3:
+                if self.motionTick == 0:
+                    self.position[1] -= 1
+                    self.motionTick = 1
+                elif self.motionTick == 1:
+                    self.position[1] -= 1
+                    self.position[0] += 1
+                    self.motionTick = 2
+                elif self.motionTick == 2:
+                    self.position[1] -= 1
+                    self.motionTick = 0
+
+        if self.frameTimer >= self.secondsPerFrame:
             self.frameTimer = 0.0
+            if self.extinguishing:
+                self.frame += 1
+                if self.frame == 5:
+                    self.dead = True
+                else:
+                    self.setImage()
             self.angle += 90
             self.angle %= 360
             self.image = pygame.transform.rotate(self.image, self.angle)
         else:
             self.frameTimer += seconds
+
 class Heater(Enemy):
     def __init__(self, position=vec(0,0)):
         super().__init__(position, "heater.png")
@@ -1363,6 +1391,17 @@ class Heater(Enemy):
         self.fireBallTime = 0.5
         self.objects = [FireBall(vec(self.position[0]-2, self.position[1]))]
         self.ballDirection = 0
+        self.frozen = False
+        self.extinguishing = False
+        self.igniting = False
+
+    def freeze(self, playSound = True):
+        if self.frozen:
+            self.freezeTimer = 0.0
+        else:
+            self.frozen = True
+            self.freezeTimer = 0.0
+            SoundManager.getInstance().playSFX("freeze.wav")
 
     def resetObjects(self):
         self.spawning = False
@@ -1370,19 +1409,91 @@ class Heater(Enemy):
         self.ballDirection %= 5
         self.objects = [FireBall(vec(self.position[0]-2, self.position[1]), self.ballDirection)]
 
+    def draw(self, drawSurface):
+        super().draw(drawSurface)
+    
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0]+2, self.position[1]+12), (18*2-4, 26*2 - 16))
+    
     def getObjectsToSpawn(self):
         return self.objects
     
     def setSpeed(self, row):
         return
     
+    def setImage(self):
+        self.image = SpriteManager.getInstance().getSprite(self.fileName, (self.frame, self.row))
+        self.image = pygame.transform.scale(self.image, (18*2,26*2))
+    
+    def extinguish(self):
+        self.extinguishing = True
+        self.row = 2
+        self.frame = 0
+        self.frameTimer = 0.0
+        self.setImage()
+
     def update(self, seconds, position = None):
-        if self.fireBallTimer >= self.fireBallTime:
-            self.fireBallTimer = 0.0
-            self.spawning = True
+        
+        if self.frozen:
+            if not self.extinguishing and self.freezeTimer == 0.0:
+                self.extinguish()
+            
+            if self.extinguishing:
+                if self.frameTimer >= 0.03:
+                    self.frameTimer = 0.0
+                    self.frame += 1
+                    if self.frame == 3:
+                        self.row = 1
+                        self.frame = 0
+                        self.extinguishing = False
+                        self.freezeTimer += seconds
+                        self.setImage()
+                    else:
+                        self.setImage()
+                else:
+                    self.frameTimer += seconds
+                return
+            
+            if self.igniting:
+                if self.frameTimer >= 0.03:
+                    self.frameTimer = 0.0
+                    self.frame -= 1
+                    if self.frame == -1:
+                        self.row = 0
+                        self.frame = 0
+                        self.igniting = False
+                        self.frozen = False
+                        self.freezeTimer = 0.0
+                        self.setImage()
+                    else:
+                        self.setImage()
+                else:
+                    self.frameTimer += seconds
+                return
+            
+            if self.freezeTimer >= 4.0:
+                self.row = 2
+                self.frame = 2
+                self.frameTimer = 0.0
+                self.igniting = True
+                self.setImage()
+            elif self.freezeTimer >= 2.0:
+                self.frame += 1
+                self.frame %= 3
+                self.setImage()
+                self.freezeTimer += seconds
+            else:
+                self.freezeTimer += seconds
+
+            
         else:
-            self.fireBallTimer += seconds
-        Animated.updateEnemy(self, seconds)
+            if self.fireBallTimer >= self.fireBallTime:
+                self.fireBallTimer = 0.0
+                self.spawning = True
+            else:
+                self.fireBallTimer += seconds
+            Animated.updateEnemy(self, seconds)
+            self.setImage()
 """
 Cute little walking fireball.
 Requires Ice to damage it.
@@ -1598,7 +1709,7 @@ class AlphaFlapper(Enemy):
     def __init__(self, position=vec(0,0), typeRow = 0, direction = 0, boss = False):
         super().__init__(position, "alphaflapper.png", typeRow)
         self.typeRow = typeRow
-        self.speed = 80
+        self.speed = 20
         self.hurtRow = 1
         self.maxHp = 60
         self.hp = self.maxHp
@@ -1606,6 +1717,8 @@ class AlphaFlapper(Enemy):
         self.damage = 1
         self.moving = False
         self.ignoreCollision = True
+        self.secondsPerFrame = 0.1
+        self.fading = False
 
     def getCollisionRect(self):
         return pygame.Rect((self.position[0] + 4, self.position[1] + 8), (24,20))
@@ -1619,11 +1732,71 @@ class AlphaFlapper(Enemy):
         if self.moving:
             Flapper.move(self, seconds)
     
+    def adjustVelocity(self):
+        if self.vel[0] > 0:
+            self.vel[0] = self.speed
+        elif self.vel[0] > 0:
+            self.vel[0] = -self.speed
+        if self.vel[1] > 0:
+            self.vel[1] = self.speed
+        elif self.vel[1] > 0:
+            self.vel[1] = -self.speed
+
+    def playHurtSound(self):
+        if self.hp > 0: 
+            SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+        else:
+            SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+            self.dying = True
+            self.frame = 0
+            self.row = 2
+            self.setImage()
+            
+
+    def hurt(self, damage, setHit=True):
+        super().hurt(damage, setHit)
+        self.speed += (self.injury * 2)
+        self.adjustVelocity()
+
     def setSpeed(self, direction):
         Flapper.setSpeed(self, direction)
     
     def bounce(self, other):
         Flapper.bounce(self, other)
+
+    def update(self, seconds, position=None):
+        if self.dying:
+            ##Fading away
+            if self.fading:
+                if self.frameTimer >= self.secondsPerFrame:
+                    self.frameTimer = 0.0
+                    self.frame += 1
+                    if self.frame == 4:
+                        SoundManager.getInstance().playLowSFX("enemydies.wav", volume = 0.2)
+                        self.fading = False
+                        self.dying = False
+                        self.dead = True
+                    else:
+                        self.setImage()
+                else:
+                    self.frameTimer += seconds
+
+            ##Turning gray
+            else:
+                if self.frameTimer >= self.secondsPerFrame:
+                    self.frameTimer = 0.0
+                    self.frame += 1
+                    if self.frame == 6:
+                        self.fading = True
+                        self.frame = 0
+                        self.row = 3
+                        self.setImage()
+                    else:
+                        self.setImage()
+                else:
+                    self.frameTimer += seconds
+            return
+        super().update(seconds)
 
     def updateFlash(self, seconds):
         Flapper.updateFlash(self, seconds)

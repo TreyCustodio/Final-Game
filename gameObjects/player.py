@@ -233,6 +233,7 @@ class Player(Animated):
         self.slowing = False
         self.freezing = False
         self.running = False
+        self.walking = False
         self.vel = vec(0,0)
         SoundManager.getInstance().stopSFX("screwattack_loop.wav")
 
@@ -355,10 +356,8 @@ class Player(Animated):
         elif self.running:
             if event.button == 0:
                 #Stop running
-                if self.slowing:
-                    self.stop()
-                else:
-                    self.slow()
+                self.stop()
+                
 
         else:
             if self.charging:
@@ -486,13 +485,7 @@ class Player(Animated):
                     return
             
         elif event.type != pygame.JOYAXISMOTION and (self.vel[0] != 0 or self.vel[1] != 0):
-            if self.running:
-                if self.slowing:
-                    self.stop()
-                else:
-                    self.slow()
-            else:
-                self.stop()
+            self.stop()
 
     def handleEvent(self, event, interactableObject = None, engine = None):
         if not self.key_lock:
@@ -595,18 +588,7 @@ class Player(Animated):
                             self.stop()
                         elif event.key == pygame.K_DOWN and self.runningDirection == 0:
                             self.stop()
-                    else:
-                        if event.key == pygame.K_z:
-                            #Stop running
-                            self.slow()
-                        elif event.key == pygame.K_RIGHT and self.runningDirection == 1:
-                            self.slow()
-                        elif event.key == pygame.K_UP and self.runningDirection == 2:
-                            self.slow()
-                        elif event.key == pygame.K_LEFT and self.runningDirection == 3:
-                            self.slow()
-                        elif event.key == pygame.K_DOWN and self.runningDirection == 0:
-                            self.slow()
+                    
 
                 else:
                     if self.charging:

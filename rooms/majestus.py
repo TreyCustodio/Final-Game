@@ -31,10 +31,25 @@ class Intro_Cut(AbstractEngine):
             self.boxPos = vec(32,64)
             self.textInt = 0
             self.background = Level("intro_cut.png")
-
             self.timer = 0
-            SoundManager.getInstance().playBGM("still-dreaming.mp3")
+            self.playingBgm = False
         
+        def reset(self):
+            self.playingBgm = False
+            self.fading = False
+            self.player = None
+            self.introDone = False
+            self.textBox = False
+            self.text = ""
+            self.icon = None
+            self.boxPos = vec(32,64)
+            self.textInt = 0
+            self.timer = 0
+
+        def playBgm(self):
+            SoundManager.getInstance().playBGM("still-dreaming.mp3")
+            self.playingBgm = True
+
         def displayText(self, text = "", icon = None, large = True):
             """
             Display text
@@ -124,6 +139,7 @@ class Knight(AbstractEngine):
                 Bopper(COORD[2][9]),
                 Bopper(COORD[16][9]),
             ]
+            self.doors = [0]
             self.spawning = [ 
                 #GreenHeart(vec(16*2, 16*10))
                 ]
@@ -726,16 +742,11 @@ class Alpha_Flapper(AbstractEngine):
 
         def bsl(self, enemy, bossTheme):
             super().bsl(enemy, bossTheme)
-            for o in self.obstacles:
-                o.setRender()
-
+            self.renderObstacles()
+            
 
         def bse(self):
-            self.displayText(SPEECH["alpha_flapper"])
             super().bse()
-            for o in self.obstacles:
-                o.vanish()
-            FLAGS[110] = True
 
         #override
         def createBlocks(self):
@@ -760,7 +771,15 @@ class Alpha_Flapper(AbstractEngine):
                 super().update(seconds)
                 return
             if self.fightingBoss:
+                if self.flapper.dying and self.textInt == 1:
+                    self.displayText(SPEECH["alpha_flapper"])
+                    self.textInt += 1
                 super().update(seconds)
+            elif self.textInt == 2:
+                super().update(seconds)
+                if self.flapper.dead:
+                    self.vanishObstacles()
+                    FLAGS[110] = True
             elif self.player.position[1] <= 16*6:
                 if self.textInt == 1:
                     self.bsl(self.flapper, "ing.mp3")
@@ -772,6 +791,7 @@ class Alpha_Flapper(AbstractEngine):
                     self.textInt += 1
             else:
                 super().update(seconds)
+                
 
 class Intro_3(AbstractEngine):
 
@@ -979,7 +999,7 @@ class Grand_Chapel(AbstractEngine):
 
 
             self.geemer = Geemer((16*9 - 4, 16*6), text = SPEECH["chapel_geemer"], color = 1)
-            self.prompt = Geemer((16*11-4, 16*9), text = "Y/NDo you want to die?")
+            self.prompt = Geemer((16*11-4, 16*9), text = "Praise be to Majestus&&")
             
 
             self.spawning = [self.ice,
@@ -1681,37 +1701,63 @@ class Flame_4(AbstractEngine):
             self.max_enemies = 0
             #self.enemies = [FireFlapper(), Mofos(), FireFlapper(), GremlinB()]
             self.npcs = [
-                        Heater(COORD[9][6])
-                         #Bopper(COORD[9][3]),
-                         #Bopper(COORD[5][5]),
-                         #Bopper(COORD[13][5])
+                        #Heater(COORD[8][5])
+                         Bopper(COORD[9][5]),
+                         Bopper(COORD[9][9]),
+                         Bopper(COORD[7][7]),
+                         Bopper(COORD[7][8]),
+                         Bopper(COORD[7][9]),
+                         Bopper(COORD[11][7])
                          ]
 
             self.doors = [0, 1, 2]
             
-            #self.chest = Chest(COORD[13][9], SPEECH["bombo_expansion"], ICON["bombo"])
             self.spawning = [
-                #Sign(COORD[7][9], SPEECH["boppers"]),
-                #self.chest
+                NpcBopper((COORD[9][7]), text="Come on! Keep killin' us!&&\nYa can't hate a playa\nfor reproducin' like crazy!\nAin't got no idea\nwhat goes on in this dirt!\n"),
+                Geemer(),
+                Geemer(),
+                Geemer(),
+                Geemer(),
+                Sign(COORD[12][6], text="Stomper threat sale!&&\nBuy your smoothies\nwhile their cheap!\n")
             ]
             self.obstacles = [
-                #Boulder((16*12 + 8, 16*9 - 8))
             ]
-            
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[8+i][1], render=False))
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[2][5+i], render = False))
+            #self.renderObstacles()
+           
             self.trigger1 = Trigger(door = 1)
             self.trigger2 = Trigger(door = 0)
             self.trigger3 = Trigger(door = 2)
+            self.barTrigger = Trigger(COORD[3][3], width=32)
+            self.shopTrigger = Trigger(COORD[13][5], width = 32, height = 16)
             
 
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
             super().initializeRoom(player, pos, keepBGM)
-
+            """ self.vanishObstacles()
+            self.vanishObstacles() """
 
         #override
         def createBlocks(self):
-           self.blocks.append(self.trigger1)
-           self.blocks.append(self.trigger2)
-           self.blocks.append(self.trigger3)
+            self.blocks.append(self.trigger1)
+            self.blocks.append(self.trigger2)
+            self.blocks.append(self.trigger3)
+            self.blocks.append(self.barTrigger)
+            self.blocks.append(self.shopTrigger)
+            for i in range(4):
+                self.blocks.append(IBlock(COORD[2][1+i]))
+                self.blocks.append(IBlock(COORD[5][1+i]))
+            for i in range(3):
+                self.blocks.append(IBlock(COORD[6][1+i]))
+                self.blocks.append(IBlock(COORD[7][1+i]))
+            for i in range(5):
+                self.blocks.append(IBlock(COORD[11][1+i]))
+                self.blocks.append(IBlock(COORD[12][1+i]))
+                self.blocks.append(IBlock(COORD[15][1+i]))
+                self.blocks.append(IBlock(COORD[16][1+i]))
            
            
         #override
@@ -1723,11 +1769,13 @@ class Flame_4(AbstractEngine):
                 if b == self.trigger1:
                    self.transport(Flame_1, 3, keepBGM=True)
                 elif b == self.trigger2:
-                    self.transport(Flame_6, 2, keepBGM=True)
+                    self.transport(Flame_6, 2)
                 elif b == self.trigger3:
                     self.transport(Flame_3, 0, keepBGM=True)
+                elif b == self.barTrigger:
+                    pass
                 else:
-                    self.player.handleCollision(b)        
+                    self.player.handleCollision(b)       
 
         def update(self, seconds):
             super().update(seconds)
@@ -1743,9 +1791,9 @@ class Flame_6(AbstractEngine):
     class _Flame_6(AE):
         def __init__(self):
             super().__init__()
-            self.bgm = "pun.mp3"
+            self.bgm = "lava_reef.mp3"
             self.ignoreClear = True
-            self.background = Level("flame_4.png")
+            self.background = Level("flame_6.png")
             self.enemyPlacement = 4
             self.max_enemies = 1
             self.stomper = Stomper(boss=True)
@@ -1760,7 +1808,7 @@ class Flame_6(AbstractEngine):
             ]
             self.stomperTimer = 0.0
 
-            self.doors = [2]
+            self.doors = [0,2,3]
             
             if not FLAGS[61]:
                 self.spawning = [
@@ -1774,10 +1822,15 @@ class Flame_6(AbstractEngine):
                 ]
 
             self.obstacles = [
-                #Boulder((16*12 + 8, 16*9 - 8))
             ]
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[8+i][1], render=False))
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[2][5+i], render = False))
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[8+i][11], render=False))
             
-            self.trigger1 = Trigger(door = 1)
+            self.trigger1 = Trigger(door = 3)
             self.trigger2 = Trigger(door = 0)
             self.trigger3 = Trigger(door = 2)
 
@@ -1787,12 +1840,10 @@ class Flame_6(AbstractEngine):
         
         def deathReset(self):
             super().deathReset()
-            self.removeObstacles()
+            self.vanishObstacles()
             self.miniBoss = False
 
-        def removeObstacles(self):
-            for o in self.obstacles:
-                o.vanish()
+        
 
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
             if not FLAGS[62]:
@@ -1819,19 +1870,18 @@ class Flame_6(AbstractEngine):
               self.enemyCollision(b)
               if self.player.doesCollide(b):
                 if b == self.trigger1:
-                   pass
+                   self.transport(Flame_10, 1)
                 elif b == self.trigger2:
-                    pass
+                    self.transport(Flame_7, 2)
                 elif b == self.trigger3:
-                    self.transport(Flame_4, 0, keepBGM=True)
+                    self.transport(Flame_4, 0)
                 else:
                     self.player.handleCollision(b)        
 
         def beginMiniBoss(self):
             self.miniBoss = True
             self.bsl(self.stomper, "LA_FinalBoss.mp3")
-            for i in range(3):
-                self.obstacles.append(ForceField(COORD[8+i][1]))
+            self.renderObstacles()
             self.stomper.ignoreCollision = False
             self.stomper.frozen = False
 
@@ -1840,7 +1890,7 @@ class Flame_6(AbstractEngine):
                 if self.miniBoss:
                     SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
                     SoundManager.getInstance().playBGM(self.bgm)
-                    self.removeObstacles()
+                    self.vanishObstacles()
                     self.miniBoss = False
 
                 else:

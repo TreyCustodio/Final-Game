@@ -168,10 +168,7 @@ class TextEngine(object):
                     if self.promptHighlight.initialized:
                         self.drawPrompt(position, drawSurface)
                         if self.prompt:
-                            if self.highlightTimer >= 0.3:
-                                pass
-                            else:
-                                self.promptHighlight.draw(drawSurface)
+                            self.promptHighlight.draw(drawSurface)
                     else:
                         self.setPromptHighlight(position)
                         self.promptHighlight.setInitialized()
@@ -388,8 +385,9 @@ class TextEngine(object):
                     else:
                         self.setImage()
                     return
-                
-            self.displayTimer += seconds
+            if self.prompt:
+                self.promptHighlight.update(seconds)
+            """ self.displayTimer += seconds
             self.highlightTimer += seconds
 
             if self.displayTimer >= 0.2:
@@ -397,7 +395,7 @@ class TextEngine(object):
                 self.displayTimer = 0
             
             if self.highlightTimer >= .5:
-                self.highlightTimer = 0
+                self.highlightTimer = 0 """
 
 
 
@@ -443,7 +441,6 @@ class PauseEngine(object):
         self.timer = 0
         self.highlight = Highlight(COORD[3][4])
         self.highlightQuit = Highlight(COORD[3][8], flag = 1)
-
         self.highlighted = vec(0,0)
         self.promptResult = False
         self.promptFlag = ""
@@ -925,3 +922,4 @@ class PauseEngine(object):
                 self.trackAnalog = True
         
         self.highlight.update(seconds)
+        self.highlightQuit.update(seconds)

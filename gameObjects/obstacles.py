@@ -8,7 +8,11 @@ class Boulder(Drawable):
     def handleCollision(self, projectile, engine):
         if projectile.id == "bombo":
             engine.disappear(self)
-
+    
+    def vanish(self):
+        return
+    def setRender(self):
+        return
 class ForceField(Animated):
     """
     Should be converted into an enemy type
@@ -56,14 +60,15 @@ class ForceField(Animated):
                 if self.alpha >= 255:
                     self.alpha = 255
                     self.rendering = False
-                self.set_alpha()
-
+        
             super().update(seconds)
+            self.set_alpha()
         else:
             if self.fading:
                 self.alpha -= 25
                 if self.alpha <= 0:
                     self.alpha = 0
                     self.rendering = False
+                    self.fading = False
                 super().update(seconds)
                 self.set_alpha()

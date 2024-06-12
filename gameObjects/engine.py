@@ -41,6 +41,7 @@ class AE(object):
         """
         __init__ is only ever called once
         """
+        self.updatingPlayer = True
         self.textInt = 0
         self.timer = 0.0 #A universal timer; can be used for anything
         self.healthBarDrawn = False
@@ -118,11 +119,6 @@ class AE(object):
         #Size of the room
         self.size = vec(*RESOLUTION)
         #HUD
-        
-
-        #self.transparentSurf = pygame.Surface(RESOLUTION)
-        #self.transparentSurf.set_alpha(200)
-        
         self.healthBar = HealthBar.getInstance()
         self.ammoBar = AmmoBar.getInstance()
         self.elementIcon = ElementIcon.getInstance()
@@ -181,8 +177,17 @@ class AE(object):
         self.player.keyDownUnlock()
 
     def reset(self):
+        for n in self.npcs:
+            n.respawn()
+            if n.vanish:
+                self.disappear(n)
+        for d in self.drops:
+            self.disappear(d)
+        self.dropCount = 0
+
         self.textInt = 0
         self.fightingBoss = False
+        self.boxPos = vec(30,64)
         self.drawBossHealth = False
         self.transLock = True
         self.promptResult = False
@@ -192,49 +197,37 @@ class AE(object):
         self.tra_room = None
         self.tra_pos = None
         self.tra_keepBGM = False
-        
-        
-
         if self.resetting:
             self.enemyCounter = 0
             self.room_clear = False
-        if self.spawning:
-            for i in range (len(self.spawning)-1, -1, -1):
-                if issubclass(type(self.spawning[i]), Drop):
-                    self.disappear(self.spawning[i])
-        self.dropCount = 0
+        
 
+    def titleReset(self):
+        self.reset()
+        self.healthBar.drawn = False
 
     def deathReset(self):
-        self.fightingBoss = False
-        self.drawBossHealth = False
-        self.enemyCounter = 0
-        self.promptResult = False
-        self.boxPos = vec(30,64)
+        self.reset()
+        self.healthBar.drawn = False
         self.player = None
         self.pause_lock = False
         self.dead = False
         self.dying = False
         self.deathTimer = 0
-        self.indicator.setImage(0)
-        self.readyToTransition = False
-        self.transporting = False
-        self.tra_room = None
-        self.tra_pos = None
-        self.tra_keepBGM = False
-
-
-        if self.spawning:
-            for i in range (len(self.spawning)-1, -1, -1):
-                if issubclass(type(self.spawning[i]), Drop):
-                    self.disappear(self.spawning[i])
-        self.dropCount = 0
 
     def lockHealth(self):
         self.healthBarLock = True
     
     def unlockHealth(self):
         self.healthBarLock = False
+
+    def renderObstacles(self):
+        for o in self.obstacles:
+            o.setRender()
+    
+    def vanishObstacles(self):
+        for o in self.obstacles:
+            o.vanish()
 
     def healPlayer(self, integer):
         if self.player.hp == INV["max_hp"]:
@@ -1045,7 +1038,9 @@ class AE(object):
         """
         self.readyToTransition = True
 
-    def update(self, seconds, updateEnemies = True):
+
+
+    def update(self, seconds, updateEnemies = True, updatePlayer = True):
         if self.transporting:
             return
         
@@ -1053,11 +1048,25 @@ class AE(object):
             if self.itemsToCollect == 0:
                 self.mapCondition = True
                 Map.getInstance().rooms[self.area][self.roomId].clearRoom()
-                
-        if not FLAGS[20] and INV["flameShard"] > 0:
-            FLAGS[20] = True
+        
+        ##Pop-up messages
+        if not FLAGS[17] and INV["flameShard"] > 0:
+            FLAGS[17] = True
             self.displayText(SPEECH["flameShard"])
-            
+
+        if not FLAGS[18] and INV["frostShard"] > 0:
+            FLAGS[18] = True
+            self.displayText(SPEECH["frostShard"])
+
+        if not FLAGS[19] and INV["boltShard"] > 0:
+            FLAGS[19] = True
+            self.displayText(SPEECH["boltShard"])
+
+        if not FLAGS[20] and INV["galeShard"] > 0:
+            FLAGS[20] = True
+            self.displayText(SPEECH["galeShard"])
+        
+        ##Prompt Results
         if self.promptResult:
             self.handlePrompt()
         if self.dying:
@@ -1076,7 +1085,8 @@ class AE(object):
             for o in self.obstacles:
                 o.update(seconds)
 
-        self.updatePlayer(seconds)
+        if self.updatingPlayer:
+            self.updatePlayer(seconds)
         self.updateDrops(seconds)
         self.updateSpawning(seconds)
         if updateEnemies:

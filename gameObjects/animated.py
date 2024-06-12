@@ -308,6 +308,10 @@ class Highlight(Animated):
         """
         if flag == 0:
             super().__init__(position, "cursor.png", (0,0))
+        elif flag == 1:
+            super().__init__(position, "bigcursor.png", (0,0))
+        elif flag == 2:
+            super().__init__(position, "promptcursor.png", (0,0))
         else:
             super().__init__(position, "Objects.png", (0,0))
         
@@ -325,18 +329,13 @@ class Highlight(Animated):
         self.row = integer
         
     def draw(self, drawSurface):
-        if self.displayFlag == 0:
-            super().draw(drawSurface)
-        else:
-            super().draw(drawSurface, True)
+        super().draw(drawSurface)
     
     def drawBlack(self, drawSurface):
         pass
 
     def getCollisionRect(self):
-        if self.displayFlag == 1:
-            return pygame.Rect((self.position), (16*8,32))
-        elif self.displayFlag == 2:
+        if self.displayFlag == 2:
             return pygame.Rect((self.position), (36,32))
         elif self.displayFlag == 3:
             return pygame.Rect((self.position[0]-1, self.position[1]-1), (10,10))

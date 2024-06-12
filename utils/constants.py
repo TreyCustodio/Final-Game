@@ -18,12 +18,23 @@ Used for a variety of special events.
 FLAGS = [False for i in range(150)]
 for i in range (1, 10):
     FLAGS[i] = True
+
 #FLAGS[62] = True
-#1-10 -> Messages that only display once
+#1-20 -> Pop-up messages and area names
 #1 -> Grand Chapel
 #2 ->
-
-#20 - > Shards first pickup
+#3
+#4
+#5
+#6
+#7
+#8
+#9
+#10
+#17 -> Flame shard first pickup
+#18 -> Ice shard first pickup
+#19 -> Bolt shard first pickup
+#20 - > Gale shard first pickup
 
 ##50-59 -> Respawn/Checkpoints
 #50 -> skip intro (post-death)
@@ -117,8 +128,8 @@ INV = {
     "beer": 8,
     "joint":1,
     "speed":1,
-    "wallet": 20,
-    "money": 0,
+    "wallet": 99,
+    "money": 99,
     "keys": 1,
 
     ##Upgrades
@@ -347,17 +358,37 @@ In wielding your blessings,\n\
 pray, honor them well.\n\
 ",
 
-"flameShard":"You found a flame shard!&&\n\
-Use it in the Grand Chapel\n\
-to upgrade your flame attack!\n\
+"flameShard":"Picked up a [Flame Shard]!&&\n\
+Use them in the Grand Chapel\n\
+to upgrade your flame sword!\n\
 Check how many you have\n\
 on the pause menu.\n",
+
+"frostShard":"Picked up a [Frost Shard]!&&\n\
+Use them in the Grand Chapel\n\
+to upgrade your blizzard!\n\
+Check how many you have\n\
+on the pause menu.\n",
+
+"boltShard":"Picked up a [Bolt Shard]!&&\n\
+Use them in the Grand Chapel\n\
+to upgrade your thunderclap!\n\
+Check how many you have\n\
+on the pause menu.\n",
+
+"galeShard":"Picked up a [Gale Shard]!&&\n\
+Use them in the Grand Chapel\n\
+to upgrade your gale slash!\n\
+Check how many you have\n\
+on the pause menu.\n",
+
 "first_bombo":
-"You've discovered Bombofauns!&&\n\
+"You discovered [Bombofauns]!&&\n\
 Fire these explosive plants\n\
 to destroy rocks and enemies.\n\
 On the pause menu, equip\n\
 them in the [ARR] row.\n\
+See what I did there? ;)&&\n\
 Keep a watchful eye on\n\
 your ammo count!\n",
 
@@ -367,28 +398,28 @@ your ammo count!\n",
     "door_unlocked" : "A door was unlocked.",
     "room_clear":
 "   Room cleared!",
-    "intro_geemer":"You thought I was a monster,\n\
+"intro_geemer":"You thought I was a monster,\n\
 didn't you?\n\
 Don't worry, man,\n\
 I get that a lot.\n\
-What's a guy like you\n\
+What's a dude like you\n\
 doing in here anyway?\n\
-There's only monsters\n\
-in here now, dude.\n\
-What kind of monsters\n\
-you ask?\n\
-You know..........&&\n\
-The undead........&&\n",
+Heh heh heh heh.&&\n\
+You humans always gotta\n\
+satisfy those desires...\n",
 
-    "intro_geemer1": "I'm a Geemer, man.\n\
+"intro_geemer1":
+"I'm a Geemer, man.\n\
 I know all kindsa stuff.\n\
 My bros are around too.&&\n",
 
-    "intro_geemer2": "My name? Oh, dude...\n\
+"intro_geemer2":
+"My name? Oh, dude...&&\n\
 Geemers don't have names,\n\
-man...&&\n",
+brooooo...&&\n",
 
-    "intro_geemer3": "Dude I'm so hungry!\n\
+"intro_geemer3":
+"Dude I'm so hungry!\n\
 Ya got anything to eat,\n\
 mannnnnnnnnn????????????&&\n",
 
@@ -402,40 +433,40 @@ of the four divine guardians.\n\
       Seek their gifts...",
     
     "intro_plantgeemer":
-"Mannnnn, I need energy...\n\
-Green energy...\n\
+"Mannnnn, I need energy...&&\n\
+Green energy...&&\n\
 .............................&&\n\
-Know what I mean?&&\n",
+Know what I mean, dude?&&\n",
 
-    "intro_plantgeemer2":
-"You're giving me this food?&&\n\
+"intro_plantgeemer2":
+"Is that what I think it is?&&\n\
 Oh, dude, you're the best!&&\n",
 
 
-    "intro_plantgeemer3":
+"intro_plantgeemer3":
 "Laaaaaaaaaterrrrr...&&",
 
 
-    "intro_chest":
-"You found a strange plant.&&\n\
-Let's see if anyone\n\
-around here wants it.\n",
+"intro_chest":
+"Picked up a strange plant.&&\n\
+Someone around here\n\
+might want it.\n",
 
-    "intro_entrance":
+"intro_entrance":
 "   Divine forces prevent\n\
     you from leaving.\n",
 
     "intro_switches":
-"Whattup my guy?&&\n\
+"Whattup, my guy?&&\n\
 If ya had a block to push,\n\
 I bet you could keep that\n\
 red switch pressed down, man.&&\n\
-Yeah the one by my bro.&&\n\
+Yeah, the one by my bro.&&\n\
 He must be too light to\n\
 weigh it down...\n\
-He he ha ha...&&\n",
+Ha ha ha ha.&&\n",
 
-    "intro_switches2":
+"intro_switches2":
 "Man, I've been pondering...&&\n\
 The colors on these switches\n\
 define their properties...\n\
@@ -444,26 +475,27 @@ Blue ones are heavy,\n\
 Reds pop back up,\n\
 Green means they're timed.\n",
 
-    "intro_pushableblocks":
+"intro_pushableblocks":
 "Do you know about those\n\
 pushable blocks?\n\
 Dude.&&\n\
 They were actually created\n\
-by the goddess's ice.\n\
-That's why they disappear\n\
-when they touch anything\n\
-they don't wanna touch.&&\n",
+by the goddess's frost.\n\
+When they touch anything\n\
+they don't wanna touch,\n\
+They disappear!&&\n",
 
-    "intro_roomclear":
+
+"intro_roomclear":
 "Looks like orange switches\n\
 unlock when there's no more\n\
 monsters around. Nice.&&\n",
 
-    "intro_combat":
+"intro_combat":
 "Have you tried fighting\n\
 while on the verge of death?\n\
-You should try it sometime.\n\
-Fortune favors the brave.\n",
+They say that fortune\n\
+favors the brave!\n",
 
 "david":
 "There seems to be some\n\
@@ -516,7 +548,7 @@ And who said anything\n\
 about a fourth wall?\n",
 
 "plant":
-"You found another plant.\n\
+"Picked up another plant.\n\
 Feed it to a hungry Geemer.\n",
 
 "fire":
@@ -542,7 +574,8 @@ but enjoy fighting a bunch\n\
 of Davids instead.\n",
 
 "chapel_geemer":
-"Praise be to Majestus.&&",
+"Head west and then south\n\
+to get to Scorching Fields.\n",
 
 "skipping_text":
 "Dude... You can skip\n\
@@ -616,7 +649,7 @@ summa that good good!\n\
 Want me to roll for ya?\n",
 
 "bombo_expansion":
-"You found some fertilizer\n\
+"Picked up some fertilizer\n\
 for those pockets of yours!\n\
 Maximum [Bombofaun] carrying\n\
 capcity increased by 5!\n",

@@ -167,7 +167,10 @@ class ScreenManager(object):
             self.intro.draw(drawSurf)
         else:
             if drawBox:
-                self.game.drawText(drawSurf)
+                if self.textEngine.large:
+                    self.game.drawText(drawSurf)
+                else:
+                    self.game.draw(drawSurf)
             else:
                 self.game.draw(drawSurf)
     
@@ -223,6 +226,8 @@ class ScreenManager(object):
             self.pauseEngine.draw(drawSurf)
 
         elif self.state == "intro":
+            if not self.intro.playingBgm:
+                self.intro.playBgm()
             self.intro.draw(drawSurf)
             if self.intro.textBox:
                 self.state.speakI()
@@ -448,11 +453,22 @@ class ScreenManager(object):
     #Update all states
     def update(self, seconds): 
         if self.state == "game":
-            self.game.update(seconds)
+            if self.returningToMain:
+                self.fade.update(seconds)
+                if self.fade.frame == 8:
+                    self.state.toMain()
+                    self.fadingIn = True
+                return
+            
+            if self.fadingIn:
+                self.game.updatingPlayer = False
+                self.game.update(seconds)
+            else:
+                if not self.game.updatingPlayer:
+                    self.game.updatingPlayer = True
+                self.game.update(seconds)
             if self.game.dead:
-                self.state.die()
-                self.game.deathReset()
-                self.game = None
+                self.returningToMain = True
             
             ##Room transition
             elif self.game.readyToTransition:
@@ -490,7 +506,11 @@ class ScreenManager(object):
             if self.startingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        if FLAGS[51]:
+                        self.intro = Intro_Cut.getInstance()
+                        self.inIntro = True
+                        self.state.toIntro()
+                        self.fadingIn = True
+                        """ if FLAGS[51]:
                             self.game = Grand_Chapel.getInstance()
                             self.game.initializeRoom()
                             self.state.startGame()
@@ -500,13 +520,8 @@ class ScreenManager(object):
                             self.game.initializeRoom()
                             self.state.startGame()
                             
-                        else:
-                            FLAGS[50] = True
-                            self.intro = Intro_Cut.getInstance()
-                            self.inIntro = True
-                            self.state.toIntro()
+                        else: """
                         
-                        self.fadingIn = True
                 else:
                     self.fade.update(seconds)
             
@@ -514,7 +529,7 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Alpha_Flapper.getInstance()
+                        self.game = Flame_4.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()
@@ -528,6 +543,7 @@ class ScreenManager(object):
                 self.fadingIn = True
                 ##Transition to Entrance##
                 self.inIntro = False
+                self.intro.reset()
                 self.game = Entrance.getInstance()
                 self.game.initializeRoom()
                 self.state.toGame()
@@ -553,6 +569,8 @@ class ScreenManager(object):
                     self.startingGame = False
                 elif self.state == "mainMenu":
                     if self.returningToMain:
+                        self.game.deathReset()
+                        self.pauseEngine.resetMenu()
                         self.playTheme()
                         self.fade.setRow()
                         self.returningToMain = False              

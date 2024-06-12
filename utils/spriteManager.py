@@ -37,7 +37,7 @@ class SpriteManager(object):
 
       _ROOM_FOLDER = "images\\levels"
       # Static information about the sprite sizes of particular image sheets.
-      _SPRITE_SIZES = {"Objects.png":(16,16), "element.png":(16,16), "Bullet.png":(16,16), "blizz.png":(32,32), "slash.png": (32,32),"TextBox.png": (244,32), "geemer.png": (22,18),
+      _SPRITE_SIZES = {"npcBopper.png": (16,16), "Objects.png":(16,16), "element.png":(16,16), "Bullet.png":(16,16), "blizz.png":(32,32), "slash.png": (32,32),"TextBox.png": (244,32), "geemer.png": (22,18),
                        "TextBox2.png": (244,64), "indicator.png":(58,32),
                        "icon.png": (32,32), "blockP.png":(16,16), "fire.png":(18,18), "black.png": (304, 208), 
                        "bar.png":(16,16), "ammo.png": (16,16), "torch.png": (16,16), 
@@ -50,7 +50,7 @@ class SpriteManager(object):
                        "numbers.png":(16,16), "cursor.png":(16,16),
                        "mapRooms.png":(8,8), 
                        "knight.png":(32,32),
-                       "boulder.png":(32,32), "alphaflapper.png":(32,32), "fireball.png":(16,16)
+                       "boulder.png":(32,32), "alphaflapper.png":(32,32), "fireball.png":(16,16), "bigcursor.png":(16*8, 32), "promptcursor.png":(36,32)
          
       }
       
@@ -58,14 +58,14 @@ class SpriteManager(object):
       _DEFAULT_SPRITE = (18,26)
       
       # A list of images that require to be loaded with transparency
-      _TRANSPARENCY = ["boulder.png","ammo.png", "title_screen.png", "pointer.png", "portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
+      _TRANSPARENCY = ["npcBopper.png", "boulder.png","ammo.png", "title_screen.png", "pointer.png", "portal.png", "Objects.png", "Pause.png", "KeyCount.png", "numbers.png", "Bullet.png", "null.png", 
                        "icon.png", "TextBox.png", "TextBox2.png", "geemer.png", "item.png", "fire.png", "black.png", "blessing.png",
                        "thunder.png", "energy.png", "gale.png", "indicator.png",
                        "gremlin_blue.png", "mofos.png", "david.png", "flapper.png", "gremlin.png", "dummy.png", "heater.png",#Enemies
                        "exclamation.png", "z.png", "fireIcon.png", "shotsfired.png", "drops.png",
                        "baller.png", "stunner.png", "mage.png", "barrier.png", "pixels.png",
                        "map.png", "mapRooms.png", "bar.png", "cursor.png",
-                       "bopper.png", "stomper.png", "alphaflapper.png", "fireball.png"
+                       "bopper.png", "stomper.png", "alphaflapper.png", "fireball.png", "bigcursor.png", "promptcursor.png"
                        ]
       
       # A list of images that require to be loaded with a color key

@@ -9,7 +9,6 @@ class ScreenManagerFSM(AbstractGameFSM):
     textBox = State()
     intro = State()
     
-    die = game.to(mainMenu)
     toIntro = mainMenu.to(intro)
     toGame = intro.to(game)
     speak =  game.to(textBox) | textBox.to(game) 
