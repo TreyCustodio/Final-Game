@@ -1,18 +1,16 @@
 
 v0.1
 - [ ] finish scorching fields up to lavaKnight
-  - [ ] Town
-    - [ ] Item shop (potion, smoothie, syringe, chance emblem)
     - [ ] Bar (buy beer, 3 or 4 Geemers to talk to)
-    - [ ] Little fountain in the center
-  - [ ] Flame_10, Flame_7, Flame_8, Flame_9, Key, 1 or 2 expansions, 1 health upgrade
 - [ ] Intro cutscene
-- [ ] Bombofaun and Old Reliable particle effects + sounds
+- [ ] Remove del to quit
+- [ ] No frame
 
 
 
 Additions:
 - [ ] Geemer Town
+- [ ] Use the HudImageManager to draw/update npc icons and particle effects
 - [ ] Flame arrow
 - [ ] Frost arrow
 - [ ] Bolt arrow
@@ -32,6 +30,8 @@ Additions:
 
 Fixes:
 - [ ] Fireball movement
+- [ ] Make stompers bounce off each other
+- [ ] placeEnemies doesn't reset position on enemyplacement 0
 - [ ] Heater replaying animation every time you freeze it
 - [ ] Prompt Highlights
 - [ ] Run startup

@@ -1,4 +1,4 @@
-from . import Drawable, Animated, QuestIcon, ZIcon
+from . import Drawable, Animated, QuestIcon, ZIcon, HudImageManager
 from utils import SpriteManager, SCALE, RESOLUTION, vec, rectAdd, SoundManager, FLAGS, SPEECH, ICON, INV
 import pygame
 
@@ -57,7 +57,7 @@ class Chest(NonPlayer):
     Your typical chest. Remains
     opened once opened.
     """
-    def __init__(self, position = vec(0,0), text = "", icon = None):
+    def __init__(self, position = vec(0,0), text = SPEECH["null"], icon = None):
         super().__init__(position, "Objects.png", (0,1))
         self.icon = icon
         #self.interactIcon = QuestIcon((self.position[0], self.position[1] -16))
@@ -90,15 +90,23 @@ class Chest(NonPlayer):
 
 
 class Sign(NonPlayer):
-    def __init__(self, position = vec(0,0), text = ""):
+    def __init__(self, position = vec(0,0), text = SPEECH["null"]):
         super().__init__(position, "Objects.png", (1,2))
         self.text = text
 
     def interact(self, engine):#drawSurface
         engine.displayText(self.text)
 
+class Grave(NonPlayer):
+    def __init__(self, position = vec(0,0), text = SPEECH["null"]):
+        super().__init__(position, "Objects.png", (7,0))
+        self.text = text
+    
+    def interact(self, engine):
+        engine.displayText(self.text)
+
 class NpcBopper(NonPlayer):
-    def __init__(self, position = vec(0,0), text = ""):
+    def __init__(self, position = vec(0,0), text = SPEECH["null"]):
         super().__init__(position, "npcBopper.png", (0,0))
         self.animate = True
         self.nFrames = 8
@@ -184,7 +192,7 @@ class Blessing(NonPlayer):
         engine.displayText(self.text)
 
 class Mage(NonPlayer):
-    def __init__(self, position = vec(0,0), text = "", fps = 1):
+    def __init__(self, position = vec(0,0), text = SPEECH["null"], fps = 1):
         super().__init__(position, "mage.png", (0,0))
         self.animate = True
         self.framesPerSecond = fps
@@ -201,7 +209,7 @@ class Mage(NonPlayer):
         super().update(seconds)
 
 class Geemer(NonPlayer):
-    def __init__(self, position = vec(0,0), text = "", variant = None, maxCount = 0, fps = 16, color = 0, hungry = False, feedText = ""):
+    def __init__(self, position = vec(0,0), text = SPEECH["null"], variant = None, maxCount = 0, fps = 16, color = 0, hungry = False, feedText = ""):
         super().__init__(position, "geemer.png", (0, color))
         self.interactIcon.position = (self.position[0]+3, self.position[1]-16)
         self.vel = vec(0,0)
@@ -487,7 +495,7 @@ class GreenHeart(NonPlayer):
             self.interacted = True
             INV["max_hp"] += 1
             engine.healPlayer(INV["max_hp"])
-            engine.displayText("You got a Green Heart!&&\nMaximum health increased\nby 1!\n")
+            engine.displayText("You got a Green Heart!&&\n  Your maximum HP has\n   increased by 1!\n")
             engine.disappear(self)
     
 
@@ -504,6 +512,8 @@ class Buck(Drop):
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 1
+                if INV["money"] > INV["wallet"]:
+                    INV["money"] = INV["wallet"]
 
 class Buck_R(Drop):
     def __init__(self, position = vec(0,0)):
@@ -518,6 +528,8 @@ class Buck_R(Drop):
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 10
+                if INV["money"] > INV["wallet"]:
+                    INV["money"] = INV["wallet"]
 
 class Buck_B(Drop):
     def __init__(self, position = vec(0,0)):
@@ -532,6 +544,8 @@ class Buck_B(Drop):
             self.interacted = True
             if INV["money"] < INV["wallet"]:
                 INV["money"] += 5
+                if INV["money"] > INV["wallet"]:
+                    INV["money"] = INV["wallet"]
             
 class FireShard(Drop):
     def __init__(self, position = vec(0,0)):
@@ -559,9 +573,7 @@ class Key(Drop):
         if not self.interacted:
             self.interacted = True
             INV["keys"] += 1
-            engine.textBox = True
-            engine.text = self.text
-            player.vel = vec(0,0)
+            engine.displayText(self.text)
     
     def update(self, seconds):
         ##Keys dont disappear after their lifetime
@@ -574,12 +586,74 @@ class Potion(NonPlayer):
     def __init__(self, position):
         super().__init__(position, "Objects.png", (6,0))
     
+    def getInteractionRect(self):
+        return pygame.Rect((self.position[0]-2, self.position[1]), (20, 20))
     def interact(self, engine):
         if INV["money"] < 5:
             engine.displayText("Damn, you're broke, man.&&")
-        elif INV["potion"] <= 2:
+        elif INV["potion"] <= 4:
             engine.displayText("Y/NSmall potion: 5 bucks")
             engine.selectedItem = "potion"
         
         else:
             engine.displayText("Sorry, but you can't carry\nany more of those.\n")
+
+class Smoothie(NonPlayer):
+    """
+    Delectable Smoothie!
+    """
+    def __init__(self, position):
+        super().__init__(position, "Objects.png", (6,1))
+    
+    def getInteractionRect(self):
+        return pygame.Rect((self.position[0]-2, self.position[1]), (20, 18))
+    
+    def interact(self, engine):
+        if INV["money"] < 20:
+            engine.displayText("A smoothie! Don't you\nwish you had 20 bucks?\n")
+        elif INV["smoothie"] <= 4:
+            engine.displayText("Y/NDelectable smoothies!\nStraw lickin' good!\nOnly 20 bucks:\n")
+            engine.selectedItem = "smoothie"
+        
+        else:
+            engine.displayText("Sorry, but you can't carry\nany more of those.\n")
+
+class Syringe(NonPlayer):
+    """
+    Delectable Smoothie!
+    """
+    def __init__(self, position):
+        super().__init__(position, "Objects.png", (6,2))
+    
+    def getInteractionRect(self):
+        return pygame.Rect((self.position[0]-2, self.position[1]), (20, 18))
+    
+    def interact(self, engine):
+        if INV["syringe"]:
+            engine.displayText("Sorry, but you already\nown a syringe.\n")
+        elif INV["money"] < 30:
+            engine.displayText("40 bucks for a syringe?&&\nIt's gotta be useful.&&\n")
+        else:
+            engine.displayText("Y/NIt appears to be some\nsort of syringe.\nYou could probably use it\nto drain your own blood.\nFortune does indeed favor\nthe brave after all...\nHow about it? 40 bucks:\n")
+            engine.selectedItem = "syringe"
+
+class ChanceEmblem(NonPlayer):
+    """
+    Delectable Smoothie!
+    """
+    def __init__(self, position):
+        super().__init__(position, "Objects.png", (6,3))
+    
+    def getInteractionRect(self):
+        return pygame.Rect((self.position[0]-2, self.position[1]), (20, 18))
+    
+    def interact(self, engine):
+        if INV["chanceEmblem"]:
+            engine.displayText("Sorry, but you already\nown a chance emblem.\n")
+        elif INV["money"] < 60:
+            engine.displayText("This sparkling, gold emblem\nprotects those who wear it.\nCome back when you\nhave 60 bucks.\n")
+        else:
+            engine.displayText("Y/NThis emblem will save you\nfrom death, granting you\na second chance at life\nafter taking fatal damage.\nHow bout it? 60 bucks:\n")
+            engine.selectedItem = "emblem"
+            
+    

@@ -715,7 +715,7 @@ class Player(Animated):
 
         elif type(object) == Geemer and object.ignoreCollision:
             return
-        elif issubclass(type(object), Enemy) and type(object) != Dummy:
+        elif issubclass(type(object), Enemy) and object.id != "shot":
             if self.charging:
                 self.shootSlash()
             side = self.calculateSide(object)

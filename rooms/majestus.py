@@ -140,6 +140,7 @@ class Knight(AbstractEngine):
                 Bopper(COORD[16][9]),
             ]
             self.doors = [0]
+            self.trigger1 = Trigger(door = 0)
             self.spawning = [ 
                 #GreenHeart(vec(16*2, 16*10))
                 ]
@@ -148,7 +149,7 @@ class Knight(AbstractEngine):
 
         #override
         def createBlocks(self):
-           return
+           self.blocks.append(self.trigger1)
            
         #override
         def blockCollision(self):
@@ -159,9 +160,8 @@ class Knight(AbstractEngine):
 
                 self.projectilesOnBlocks(b)
                 if self.player.doesCollide(b):
-                    if False:
-                        return
-                        self.transport(Room, 0, keepBGM=True)
+                    if b == self.trigger1:
+                        self.transport(Flame_9, 2, keepBGM=True)
                     else:
                         self.player.handleCollision(b)
 
@@ -180,10 +180,10 @@ class Knight(AbstractEngine):
                 if self.knight.desperate and self.textInt == 1:
                     self.knight.initializing = True
                     self.bsl(self.knight, "None")
-                    self.displayText(SPEECH["lava_knight2"])
+                    self.displayText(SPEECH["lava_knight2"], icon=ICON["knight"])
                     self.textInt += 1
                 elif self.knight.dying and self.textInt == 2:
-                    self.displayText(SPEECH["lava_knight3"])
+                    self.displayText(SPEECH["lava_knight3"], icon=ICON["knight"])
                     self.textInt += 1
                 super().update(seconds)
             elif self.knight.starting:
@@ -197,7 +197,7 @@ class Knight(AbstractEngine):
                     self.player.keyLock()
                     SoundManager.getInstance().fadeoutBGM()
                     self.knight.ignoreCollision = False
-                    self.displayText(SPEECH["lava_knight"])
+                    self.displayText(SPEECH["lava_knight"], icon=ICON["knight"])
                     self.textInt += 1
             else:
                 super().update(seconds)
@@ -1479,7 +1479,7 @@ class Flame_1(AbstractEngine):
                 elif b == self.trigger2:
                     self.transport(Flame_2, 0, keepBGM=True)
                 elif b == self.trigger3:
-                    self.transport(Flame_4, 1, keepBGM=True)
+                    self.transport(Flame_4, 1)
                 else:
                     self.player.handleCollision(b)        
 
@@ -1675,12 +1675,69 @@ class Flame_3(AbstractEngine):
                 if b == self.trigger1:
                    self.transport(Flame_2, 3, keepBGM=True)
                 elif b == self.trigger2:
-                    self.transport(Flame_4, 2, keepBGM=True)
+                    self.transport(Flame_4, 2)
                 else:
                     self.player.handleCollision(b)        
 
         def update(self, seconds):
             super().update(seconds)
+
+class Flame_Store(AbstractEngine):
+        @classmethod
+        def getInstance(cls):
+            if cls._INSTANCE == None:
+                cls._INSTANCE = cls._S()
+        
+            return cls._INSTANCE
+        
+        class _S(AE):
+            def __init__(self):
+                super().__init__()
+                self.bgm = "Nujabes_Decade.mp3"
+                self.ignoreClear = True
+                self.max_enemies = 0
+                self.enemyPlacement = 0
+                self.background = Level("dispensary_flame.png")
+                self.trigger1 = Trigger(vec(16*9, 16*9+8))
+                self.potion = Potion(vec(16*6, 16*7-8))
+                self.smoothie = Smoothie(vec(16*6, 16*4+8))
+                self.emblem = ChanceEmblem(vec(16*12, 16*7 - 8))
+                self.syringe = Syringe(vec(16*12, 16*4+8))
+                self.spawning = [
+                    Geemer(vec(16*9-4, 16*3), text="How's it going, man?&&\nSee anything ya like?&&\n",color = 1),
+                    self.potion,
+                    self.smoothie,
+
+                ]
+            #override
+            def createBlocks(self):
+                self.createStore()
+            
+            def handlePrompt(self):
+                if self.selectedItem == "syringe":
+                    self.spawning.pop(self.spawning.index(self.syringe))
+                elif self.selectedItem == "emblem":
+                    self.spawning.pop(self.spawning.index(self.emblem))
+                self.handleStorePrompt()
+            #override
+            def blockCollision(self):
+                for b in self.blocks:
+                    self.projectilesOnBlocks(b)
+                    self.enemyCollision(b)
+                    if self.player.doesCollide(b):
+                        if b == self.trigger1:
+                            self.transportPos(Flame_4, vec(16*13 + 8, 16*6), keepBGM=True)
+                        else:
+                            self.player.handleCollision(b)
+
+            def initializeRoom(self, player=None, pos=None, keepBGM=False, placeEnemies=True):
+                if not INV["syringe"]:
+                    if self.syringe not in self.spawning:
+                        self.spawning.append(self.syringe)
+                if not INV["chanceEmblem"]:
+                    if self.emblem not in self.spawning:
+                        self.spawning.append(self.emblem)
+                super().initializeRoom(player, pos, keepBGM, placeEnemies)
 
 
 class Flame_4(AbstractEngine):
@@ -1691,10 +1748,14 @@ class Flame_4(AbstractEngine):
       
         return cls._INSTANCE
     
+    
     class _Flame_4(AE):
+        
+        
+        ##class _Flame_4:
         def __init__(self):
             super().__init__()
-            self.bgm = "pun.mp3"
+            self.bgm = "Nujabes_Decade.mp3"
             self.ignoreClear = True
             self.background = Level("flame_4.png")
             self.enemyPlacement = 0
@@ -1705,28 +1766,28 @@ class Flame_4(AbstractEngine):
                          Bopper(COORD[9][5]),
                          Bopper(COORD[9][9]),
                          Bopper(COORD[7][7]),
-                         Bopper(COORD[7][8]),
-                         Bopper(COORD[7][9]),
-                         Bopper(COORD[11][7])
+                         Bopper(COORD[8][8]),
+                         Bopper(COORD[8][6]),
+                         Bopper(COORD[11][7]),
+                         Bopper(COORD[10][8]),
+                         Bopper(COORD[10][6])
                          ]
 
             self.doors = [0, 1, 2]
             
             self.spawning = [
-                NpcBopper((COORD[9][7]), text="Come on! Keep killin' us!&&\nYa can't hate a playa\nfor reproducin' like crazy!\nAin't got no idea\nwhat goes on in this dirt!\n"),
+                NpcBopper((COORD[9][7]), text="Come on! Keep killin' us!&&\nYa can't hate a playa\nfor reproducin' like crazy!\nY'ain't got no idea what\ngoes on in this dirt!\n"),
                 Geemer(),
                 Geemer(),
                 Geemer(),
                 Geemer(),
+                Grave(COORD[2][8], text = "Crushed to dust too soon.\nIn embers and ashes.\nGeemer 5,987&&\n"),
+                Grave(COORD[5][8], text = "An unrivaled reverend,\nGeemer 4,999 stated so:\n\"I fear naught but the\nGods and their choices!\"\n   He was then stomped\n       to death.\n"),
+                Grave(COORD[2][5], text = "Xavier Renegade Angel.\nGo watch that show.\nOh... That's right...&&\n             RIP       &&\n"),
                 Sign(COORD[12][6], text="Stomper threat sale!&&\nBuy your smoothies\nwhile their cheap!\n")
             ]
             self.obstacles = [
             ]
-            for i in range(3):
-                self.obstacles.append(ForceField(COORD[8+i][1], render=False))
-            for i in range(3):
-                self.obstacles.append(ForceField(COORD[2][5+i], render = False))
-            #self.renderObstacles()
            
             self.trigger1 = Trigger(door = 1)
             self.trigger2 = Trigger(door = 0)
@@ -1737,8 +1798,8 @@ class Flame_4(AbstractEngine):
 
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
             super().initializeRoom(player, pos, keepBGM)
-            """ self.vanishObstacles()
-            self.vanishObstacles() """
+
+           
 
         #override
         def createBlocks(self):
@@ -1767,18 +1828,24 @@ class Flame_4(AbstractEngine):
               self.enemyCollision(b)
               if self.player.doesCollide(b):
                 if b == self.trigger1:
-                   self.transport(Flame_1, 3, keepBGM=True)
+                   self.transport(Flame_1, 3)
                 elif b == self.trigger2:
                     self.transport(Flame_6, 2)
                 elif b == self.trigger3:
-                    self.transport(Flame_3, 0, keepBGM=True)
+                    self.transport(Flame_3, 0)
                 elif b == self.barTrigger:
                     pass
+                elif b == self.shopTrigger:
+                    self.transportPos(Flame_Store, COORD[9][8], keepBGM=True)
                 else:
                     self.player.handleCollision(b)       
 
         def update(self, seconds):
             super().update(seconds)
+        
+
+        
+    
 
 class Flame_6(AbstractEngine):
     @classmethod
@@ -1794,9 +1861,9 @@ class Flame_6(AbstractEngine):
             self.bgm = "lava_reef.mp3"
             self.ignoreClear = True
             self.background = Level("flame_6.png")
-            self.enemyPlacement = 4
+            self.enemyPlacement = 0
             self.max_enemies = 1
-            self.stomper = Stomper(boss=True)
+            self.stomper = Stomper(vec(16*9, 16*5),boss=True)
             self.stomper.unPause(position = vec(16*8 - 6, 16*5))
             self.enemies = [
                         self.stomper
@@ -1870,9 +1937,9 @@ class Flame_6(AbstractEngine):
               self.enemyCollision(b)
               if self.player.doesCollide(b):
                 if b == self.trigger1:
-                   self.transport(Flame_10, 1)
+                   self.transport(Flame_10, 1, keepBGM=True)
                 elif b == self.trigger2:
-                    self.transport(Flame_7, 2)
+                    self.transport(Flame_7, 2, keepBGM=True)
                 elif b == self.trigger3:
                     self.transport(Flame_4, 0)
                 else:
@@ -1880,7 +1947,7 @@ class Flame_6(AbstractEngine):
 
         def beginMiniBoss(self):
             self.miniBoss = True
-            self.bsl(self.stomper, "LA_FinalBoss.mp3")
+            self.bsl(self.stomper, "None")
             self.renderObstacles()
             self.stomper.ignoreCollision = False
             self.stomper.frozen = False
@@ -1900,7 +1967,7 @@ class Flame_6(AbstractEngine):
                 if self.stomper.dead:
                     if self.stomperTimer == 0.0:
                         SoundManager.getInstance().fadeoutBGM()
-                        self.displayText("The goddess's ice...&&\nWhy.........&&\nDid she.......&&\nChoose........&&\nYou.......?&&\n")
+                        self.displayText("The goddess's ice...&&\nWhy.........&&\nDid she.......&&\nChoose........&&\nYou.......?&&\n", icon=ICON["stomper"])
                         self.stomperTimer += seconds
                     elif self.stomperTimer >= 0.3:
                         FLAGS[62] = True
@@ -1910,10 +1977,13 @@ class Flame_6(AbstractEngine):
                     return
                 elif self.miniBoss:
                     if self.bossHealthbar.initializing:
+                        if self.textInt == 3:
+                            self.playBgm("8mile.mp3")
+                            self.textInt = 2
                         super().update(seconds, updateEnemies=False)
                     else:
                         if self.stomper.cold and self.textInt == 2:
-                            self.displayText("Blast! I'm C-c-cold\nas s-s-stone!\n")
+                            self.displayText("Blast! I'm C-c-cold\nas s-s-stone!\n", icon=ICON["stomper"])
                             self.textInt += 1
                         super().update(seconds)
                 elif self.player.position[1] >= 20:
@@ -1933,9 +2003,10 @@ class Flame_6(AbstractEngine):
 
                     if self.stomperTimer >= 1.0:
                         if self.textInt == 0:
-                            self.displayText("Whoa, man! Chill out!&&\nPlease, my Goddess Estelle,\nsave me from this fiend!\n")
+                            self.displayText("Whoa, man! Chill out!&&\nPlease, my Goddess Estelle,\nsave me from this fiend!\n", icon=ICON["geemer0"])
+                            self.stomper.pause = False
                         elif self.textInt == 1:
-                            self.displayText("Shutup, ant.&&\nYour Goddess can't save you.&&\nWithout the power of ice,\nyou're a feeble creature!\n")
+                            self.displayText("Shutup, ant.&&\nYour Goddess can't save you.&&\nWithout the power of ice,\nyou're a feeble creature!\n", icon=ICON["stomper"])
                         self.textInt += 1
                         self.stomperTimer = 0.0
                     else:
@@ -1954,7 +2025,8 @@ class Flame_6(AbstractEngine):
 
                     elif self.stomperTimer >= 2.0:
                         self.stomperTimer = 0.0
-                        self.displayText("Ah! Yet another human!&&\nCrushing you is way more\nfun than crushing Geemers!\nThe boss won't even have\nto waste his time with you!\nGood riddance, outsider!&&\n")
+                        self.displayText("Ah! Yet another human!&&\nCrushing you is way more\nfun than crushing Geemers!\nThe boss won't even have\nto waste his time with you!\nGood riddance, outsider!&&\n", icon=ICON["stomper"])
+                        self.textInt = 3
                         self.miniBoss = True
                     else:
                         self.stomperTimer += seconds
@@ -1964,6 +2036,305 @@ class Flame_6(AbstractEngine):
                     self.player.stop()
                     self.player.keyLock()
                     SoundManager.getInstance().fadeoutBGM()
+
+class Flame_10(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame10()
+      
+        return cls._INSTANCE
+    
+    class _Flame10(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "lava_reef.mp3"
+            self.ignoreClear = False
+            self.max_enemies = 4
+            self.enemyPlacement = 1
+            self.background = Level("flame_10.png")
+            self.trigger1 = Trigger(door = 1)
+            self.chest = Key(vec(16*9, 16*9))
+            self.upgrade = Chest(COORD[9][2], text=SPEECH["bombo_expansion"], icon = ICON["bombo"])
+            self.doors = [1]
+            self.enemies = [
+                
+                FireFlapper(),
+                GremlinB(),
+                FireFlapper(),
+                Baller(),
+            ]
+            self.npcs = [
+
+                Heater(vec(16*9-8, 16*5-8))
+            ]
+            self.light = LightSwitch(COORD[15][2])
+            self.switch = LockedSwitch(COORD[3][2], row = 5, locked=False)
+            self.switches = [
+                self.light,
+                self.switch
+            ]
+            self.obstacles = [
+                Boulder(vec(16*15 - 8, 16*2 - 8))
+            ]
+
+        def handleClear(self):
+            self.spawning.append(self.chest)
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                self.projectilesOnBlocks(b)
+                self.enemyCollision(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Flame_6, 3, keepBGM=True)
+                    else:
+                        self.player.handleCollision(b)
+
+        def updateSwitches(self, seconds):
+            self.updateLightSwitch(self.light)
+        
+        def update(self, seconds):
+            super().update(seconds)
+            if self.upgrade not in self.spawning:
+                if self.light.pressed and self.switch.pressed:
+                    self.spawning.append(self.upgrade)
+
+
+class Flame_7(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame7()
+      
+        return cls._INSTANCE
+    
+    class _Flame7(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "lava_reef.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("flame_7.png")
+            self.trigger1 = Trigger(door = 0)
+            self.trigger2 = Trigger(door = 2)
+            self.doors = [0,2]
+            self.block = LockBlock((COORD[9][10]))#Locked block
+            self.yblock1 = Block((COORD[8][11]), (5,5))
+            self.yblock2 = Block((COORD[9][11]), (5,5))
+            self.yblock3 = Block((COORD[10][11]), (5,5))
+            self.blocks.append(self.block)
+            self.blocks.append(self.yblock1)
+            self.blocks.append(self.yblock2)
+            self.blocks.append(self.yblock3)
+            self.bull = Bullshot(COORD[4][3])
+            self.npcs = [
+                self.bull,
+                Bopper(COORD[10][4]),
+                Bopper(COORD[11][3]),
+                Bopper(COORD[11][5]),
+                Bopper(COORD[12][2]),
+                Bopper(COORD[13][3]),
+                Bopper(COORD[14][4]),
+                Bopper(COORD[12][6]),
+                Bopper(COORD[13][5]),
+                Bopper(COORD[15][3]),
+                Bopper(COORD[15][5]),
+                Bopper(COORD[16][2]),
+                Bopper(COORD[16][6]),
+                Bopper(COORD[16][5]),
+                Bopper(COORD[16][4]),
+                Bopper(COORD[16][3]),
+                #Bopper(COORD[13][2]),
+                
+
+            ]
+
+            self.spawning = [
+                NpcBopper(COORD[3][6], SPEECH["flame_7_bopper1"]),
+                NpcBopper(COORD[12][4], SPEECH["flame_7_bopper2"])
+            ]
+
+        def initializeRoom(self, player=None, pos=None, keepBGM=False, placeEnemies=True):
+            if not self.bull.dead:
+                self.bull.hp = 20
+            return super().initializeRoom(player, pos, keepBGM, placeEnemies)
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+        
+        def popBlocks(self):
+            self.playSound("LA_Dungeon_Teleport_Appear.wav")
+            self.blocks.pop(self.blocks.index(self.block))
+            self.blocks.pop(self.blocks.index(self.yblock1))
+            self.blocks.pop(self.blocks.index(self.yblock2))
+            self.blocks.pop(self.blocks.index(self.yblock3))
+
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                self.projectilesOnBlocks(b)
+                self.enemyCollision(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Flame_8, 2, keepBGM=True)
+                    elif b == self.trigger2:
+                        self.transport(Flame_6, 0, keepBGM=True)
+                    elif b == self.block:
+                        if INV["keys"] >= 1:
+                            self.popBlocks()
+                    else:
+                        self.player.handleCollision(b)
+
+class Flame_8(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame8()
+      
+        return cls._INSTANCE
+    
+    class _Flame8(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "lava_reef.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("flame_8.png")
+            self.doors = [1,2]
+            self.trigger1 = Trigger(door = 2)
+            self.trigger2 = Trigger(door = 1)
+            self.firstDead = False
+            self.secondDead = False
+            self.stomper1 = Stomper(vec(16*5, 16*6))
+            self.stomper1.jumpTimer = -0.5
+            self.stomper2 = Stomper(vec(16*13, 16*6))
+            self.stomper2.jumpTimer = -1.0
+            #self.stomper3 = Stomper(vec(16*9, 16*6))
+            self.enemies = [
+                #Flapper(),FireFlapper(),Flapper(),FireFlapper()
+            ]
+            self.npcs = [
+                self.stomper1,
+                self.stomper2,
+                Bopper(COORD[7][1]),
+                Bopper(COORD[11][1]),
+            ]
+            self.lockedSwitch = LockedSwitch(COORD[9][8])
+            self.switches.append(self.lockedSwitch)
+            self.yblock1 = Block((COORD[17][5]), (5,5))
+            self.yblock2 = Block((COORD[17][7]), (5,5))
+            self.yblock3 = Block((COORD[17][6]), (5,5))
+            self.blocks.append(self.yblock1)
+            self.blocks.append(self.yblock2)
+            self.blocks.append(self.yblock3)
+
+        def initializeRoom(self, player=None, pos=None, keepBGM=False, placeEnemies=True):
+            if not self.room_clear:
+                if not self.stomper1.dead:
+                    #self.stomper1.hp = 25
+                    self.stomper1.setPosition(vec(16*5, 16*6))
+                    self.stomper1.jumpTimer = -0.5
+
+                if not self.stomper2.dead:
+                    #self.stomper2.hp = 25
+                    self.stomper2.setPosition(vec(16*13, 16*6))
+                    self.stomper2.jumpTimer = -1.0
+
+            super().initializeRoom(player, pos, keepBGM, placeEnemies)
+
+        def handleClear(self):
+            self.room_clear = True
+            self.lockedSwitch.unlock()
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                self.projectilesOnBlocks(b)
+                self.enemyCollision(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Flame_7, 0, keepBGM=True)
+                    elif b == self.trigger2:
+                        self.transport(Flame_9, 3)
+                    else:
+                        self.player.handleCollision(b)
+        
+        def handleCollision(self):
+            super().handleCollision()
+            self.despawnOnPress(self.yblock1, self.lockedSwitch)
+            if self.yblock1 not in self.blocks:
+                self.disappear(self.yblock2)
+                self.disappear(self.yblock3)
+            
+        
+        def update(self, seconds, updateEnemies=True, updatePlayer=True):
+            if self.room_clear:
+                super().update(seconds, updateEnemies, updatePlayer)
+                return
+
+            if not self.firstDead:
+                if self.stomper1.dead:
+                    self.displayText("Gah! Damn you, outsider!&&\nIf only......&&\nThe boss was here.....&&\n", icon=ICON["stomper"])
+                    self.firstDead = True
+            if not self.secondDead:
+                if self.stomper2.dead:
+                    self.displayText("There was so much...&&\nSo much more...&&\nThat I wanted to see...&&\n", icon=ICON["stomper"])
+                    self.secondDead = True
+            if not self.room_clear:
+                if self.stomper1.dead and self.stomper2.dead:
+                    self.handleClear()
+            super().update(seconds, updateEnemies, updatePlayer)
+
+class Flame_9(AbstractEngine):
+    @classmethod
+    def getInstance(cls):
+        if cls._INSTANCE == None:
+         cls._INSTANCE = cls._Flame9()
+      
+        return cls._INSTANCE
+    
+    class _Flame9(AE):
+        def __init__(self):
+            super().__init__()
+            self.bgm = "tension.mp3"
+            self.ignoreClear = True
+            self.max_enemies = 0
+            self.enemyPlacement = 0
+            self.background = Level("flame_9.png")
+            self.trigger1 = Trigger(door = 3)
+            self.trigger2 = Trigger(door = 2)
+            self.doors = [2,3]
+
+        #override
+        def createBlocks(self):
+           self.blocks.append(self.trigger1)
+           self.blocks.append(self.trigger2)
+           
+        #override
+        def blockCollision(self):
+            for b in self.blocks:
+                self.projectilesOnBlocks(b)
+                self.enemyCollision(b)
+                if self.player.doesCollide(b):
+                    if b == self.trigger1:
+                        self.transport(Flame_8, 1)
+                    elif b == self.trigger2:
+                        self.transport(Knight, 0, keepBGM=True)
+                    else:
+                        self.player.handleCollision(b)
 """
 Thunder
 """

@@ -81,7 +81,7 @@ Indicates what C attack and what type of arrow is equipped
 """
 EQUIPPED = {
 
-    "C": 1,
+    "C": -1,
     #0 -> fire sword, 1 -> blizzard, 2 -> clap, 3 -> slash
     "Arrow": 0,
     #0 -> regular, 1 -> bombo, 
@@ -113,27 +113,27 @@ INV = {
     "galeShard": 0,
     
     ##Maps
-    "map0":True,
+    "map0":False,
     "map1":False,
     "map2":False,
     "map3":False,
     "map4":False,
 
     ##Consumables and key items
-    "plant": 1,
-    "chanceEmblem": True,
-    "syringe":True,
-    "potion": 3,
-    "smoothie": 3,
-    "beer": 8,
-    "joint":1,
-    "speed":1,
+    "plant": 0,
+    "chanceEmblem": False,
+    "syringe":False,
+    "potion": 0,
+    "smoothie": 0,
+    "beer": 0,
+    "joint":0,
+    "speed":0,
     "wallet": 99,
-    "money": 99,
-    "keys": 1,
+    "money": 0,
+    "keys": 0,
 
     ##Upgrades
-    "flameCost": 50,
+    "flameCost": 20,
     "frostCost": 20,
     "boltCost": 20,
     "galeCost": 20,
@@ -264,12 +264,12 @@ INFO = {
 Geemers seem to love it.",
 
 "shoot":
-"Old reliables.\n\
+"[Old Reliable]\n\
 Deal 2 damage.\n\
 Press X to shoot.",
 
 "bombo":
-"Bombofauns.\n\
+"[Bombofauns]\n\
 Deal 5 damage.\n\
 Shoot explosive plants.",
 
@@ -290,8 +290,8 @@ Equip with C.",
 Equip with C.",
 
 "chance":
-"Chance Emblem\n\
-Survive any attack,\n\
+"[Chance Emblem]\n\
+Survive a fatal attack,\n\
 if you have more than 1 HP."
 }
 
@@ -306,7 +306,9 @@ ICON = {
     "plant":(1,0),
     "bombo":(4,0),
     "geemer0":(2,0),
-    "geemer1":(3,0)
+    "geemer1":(3,0),
+    "stomper":(5,0),
+    "knight":(6,0)
 }
 
 
@@ -357,6 +359,21 @@ I've no story to tell.\n\
 In wielding your blessings,\n\
 pray, honor them well.\n\
 ",
+
+"flame_7_bopper1":
+"Y'ever just wanna blow\n\
+everything up?\n\
+And be like, \"the power\n\
+of plant compells you!\"\n\
+And then just blow up\n\
+everything around you?\n",
+
+"flame_7_bopper2":
+"Y'look like a simp!&&\n\
+Y'wouldn't catch me chasing\n\
+a chick in these fields!\n\
+I'm just sayin!&&\n\
+I'm playin!&&\n",
 
 "flameShard":"Picked up a [Flame Shard]!&&\n\
 Use them in the Grand Chapel\n\

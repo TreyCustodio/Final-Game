@@ -233,12 +233,16 @@ class HudImageManager(object):
     MONEY = None
     KEYS = None
     BOMBOS = None
+    OBJECTS = []
 
     def initialize():
         HudImageManager.MONEY = HudImage((0, RESOLUTION[1]-50), offset= (0,1))
         HudImageManager.KEYS = HudImage((0, RESOLUTION[1]-16), offset=(0,3))
         HudImageManager.BOMBOS = HudImage((0, RESOLUTION[1]-34), offset=(0,8))
-
+    
+    def addObject(obj):
+        HudImageManager.OBJECTS.append(obj)
+        
     def getMoney():
         return HudImageManager.MONEY
     
@@ -248,6 +252,14 @@ class HudImageManager(object):
     def getBombos():
         return HudImageManager.BOMBOS
 
+    def getObjects():
+        return HudImageManager.OBJECTS
+
+    def draw(drawSurface):
+        if HudImageManager.OBJECTS:
+            for o in HudImageManager.OBJECTS:
+                o.draw(drawSurface)
+
     def update(seconds):
         if HudImageManager.MONEY != None:
             HudImageManager.MONEY.update(seconds)
@@ -255,6 +267,9 @@ class HudImageManager(object):
             HudImageManager.KEYS.update(seconds)
         if HudImageManager.BOMBOS != None:
             HudImageManager.BOMBOS.update(seconds)
+        if HudImageManager.OBJECTS:
+            for o in HudImageManager.OBJECTS:
+                o.update(seconds)
 
 class Fade():
     """

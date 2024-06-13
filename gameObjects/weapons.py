@@ -246,9 +246,9 @@ class Bullet(AbstractWeapon):
 
     def update(self, seconds, engine):
         if self.hit:
-            super().updateShotParticle(seconds)
-            if self.frame == 6:
-                engine.disappear(self)
+            """ super().updateShotParticle(seconds)
+            if self.frame == 6: """
+            engine.disappear(self)
         else:
             self.vanish(seconds, engine, 16)
 

@@ -142,7 +142,7 @@ class TextEngine(object):
                 self.line = self.text
         
         def setAlpha(self):
-            self.textBox.set_alpha(200)
+            self.textBox.set_alpha(220)
 
         def draw(self, position, drawSurface):
             ##unused
@@ -688,12 +688,12 @@ class PauseEngine(object):
         elif self.highlight.position[0] == 16*4 and self.highlight.position[1] == 16*7:
             if INV["potion"] >= 1:
                 self.promptFlag = "potion"
-                self.text = "Y/NDrink the potion?"
+                self.text = "Y/NA cherry-flavored potion\nthat restores 3 health.\nDrink the potion?\n"
 
         elif self.highlight.position[0] == 16*5 and self.highlight.position[1] == 16*7:
             if INV["smoothie"] >= 1:
                 self.promptFlag = "smoothie"
-                self.text = "Y/NDrink delectable smoothie?"
+                self.text = "Y/NThe best smoothie in town!\nSoothes your woes 5 fold!\nDrink delectable smoothie?\n"
         
         elif self.highlight.position[0] == 16*6 and self.highlight.position[1] == 16*7:
             if INV["beer"] >= 1:

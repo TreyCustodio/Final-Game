@@ -68,6 +68,9 @@ class Enemy(Animated):
         self.type = Element(0)
         self.dying = False
     
+    def increaseCount(self):
+        return True
+    
     def setImage(self):
         self.image = SpriteManager.getInstance().getSprite(self.fileName, (self.frame, self.row))
 
@@ -106,13 +109,15 @@ class Enemy(Animated):
             return Heart((self.position[0]+3, self.position[1]+5))
         elif integer == 1:
             return Buck((self.position[0]+3, self.position[1]+5))
+        elif integer == 2:
+            return Buck_B((self.position[0]+3, self.position[1]+5))
     
     def getMoney(self):
-        integer = randint(0,1)
+        integer = randint(0,10)
         if integer == 1:
             return Buck((self.position[0]+3, self.position[1]+5))
         else:
-            return None
+            return Buck_B((self.position[0]+3, self.position[1]+5))
     
     def getInjury(self):
         return self.injury
@@ -126,6 +131,9 @@ class Enemy(Animated):
         newRect.top = int(self.position[1]+2)
         return newRect
     
+    def setInitialPos(self, vector):
+        self.initialPos = vector
+        
     def respawn(self):
         self.vel = vec(0,0)
         self.dead = False
@@ -136,6 +144,7 @@ class Enemy(Animated):
         self.flashTimer = 0
         self.walkTimer = 0
         self.freezeTimer = 4.2
+        self.frame = 0
         #self.freeze(playSound=False)
         
     def handleEvent(self, event):
@@ -1032,7 +1041,10 @@ class Stomper(Enemy):
         super().__init__(position, "stomper.png")
         self.hurtRow = 1
         self.nFrames = 1
-        self.maxHp = 50
+        if boss:
+            self.maxHp = 50
+        else:
+            self.maxHp = 25
         self.hp = self.maxHp
         self.freezeShield = True
         self.frozen = False
@@ -1054,8 +1066,28 @@ class Stomper(Enemy):
         self.targetPos = vec(0,0)
         self.boss = boss
 
+        self.initialPos = self.position
+
+    def respawn(self):
+        self.vel = vec(0,0)
+        self.cold = False
+        self.jumpTimer = 0.0
+        self.falling = False
+        self.pause = True
+        self.coldTimer = 0.0
+        self.freezeCounter = 5
+        self.dead = False
+        self.walking = False
+        self.row = self.initialDir
+        self.hp = self.maxHp
+        self.flashTimer = 0
+        self.walkTimer = 0
+        self.freezeTimer = 4.2
+        self.setPosition(self.initialPos)
+
     def bounce(self, other):
         return
+    
     def drawTop(self, drawSurface):
         self.shadow.draw(drawSurface)
         super().draw(drawSurface)
@@ -1265,6 +1297,9 @@ class FireBall(Enemy):
     def respawn(self):
         self.vanish = True
 
+    def increaseCount(self):
+        return False
+    
     def getCollisionRect(self):
         return pygame.Rect((self.position[0]+2, self.position[1] + 3), (12,11))
     def bounce(self, other):
@@ -1397,7 +1432,10 @@ class Heater(Enemy):
 
     def freeze(self, playSound = True):
         if self.frozen:
-            self.freezeTimer = 0.0
+            return
+            #self.freezeTimer = 0.01
+            
+
         else:
             self.frozen = True
             self.freezeTimer = 0.0
@@ -1526,6 +1564,12 @@ class Baller(Enemy):
         integer = randint(0,3)
         if integer == 3:
             return FireShard((self.position[0]+3, self.position[1]+5))
+        elif integer == 2:
+            return Heart((self.position[0]+3, self.position[1]+5))
+        elif integer == 1:
+            return Buck((self.position[0]+3, self.position[1]+5))
+        elif integer == 0:
+            return Buck_B((self.position[0]+3, self.position[1]+5))
     
     def bounce(self, other):
         if not self.frozen:
@@ -1688,8 +1732,8 @@ class FireFlapper(Flapper):
             return Buck((self.position[0]+3, self.position[1]+5))
         elif integer == 4:
             return FireShard((self.position[0]+3, self.position[1]+5))
-        else:
-            return None
+        elif integer == 5:
+            return Buck_B((self.position[0]+3, self.position[1]+5))
 class IceFlapper(Flapper):
     def __init__(self, position = vec(0,0), direction = 0):
         super().__init__(position, 2, direction)
@@ -2039,11 +2083,18 @@ class GremlinB(Gremlin):
         super().__init__(position, direction, "gremlin_blue.png")
         self.maxHp = 30
         self.hp = 30
-        self.damage = 3
+        self.damage = 2
         self.speed = 75
 
+    def getMoney(self):
+        return Buck_R((self.position[0]+3, self.position[1]+5))
+    
     def getDrop(self):
-        return BigHeart((self.position[0]+3, self.position[1]+5))
+        integer = randint(0,1)
+        if integer == 0:
+            return BigHeart((self.position[0]+3, self.position[1]+5))
+        elif integer == 1:
+            return Buck_R((self.position[0]+3, self.position[1]+5))
 
 
 """
@@ -2052,6 +2103,7 @@ Dipshots require ranged attacks to be damaged.
 class Dummy(Enemy):
     def __init__(self, position = vec(0,0)):
         super().__init__(position, "dummy.png", 0)
+        self.id = "shot"
         self.indicatorRow = 5
         self.freezeShield = True
         self.nFrames = 1
@@ -2078,6 +2130,69 @@ class Dummy(Enemy):
             self.flashTimer += seconds
             if self.flashTimer >= 1.0:
                 self.row = 0
+
+"""
+Bullshots require 20 Bombofauns to kill.
+"""
+class Bullshot(Enemy):
+    def __init__(self, position = vec(0,0)):
+        super().__init__(position, "bullshot.png")
+        self.id = "shot"
+        self.frozen = False
+        self.freezeShield = True
+        self.maxHp = 20
+        self.hp = self.maxHp
+        self.damage = 0
+        self.vibtick = 0
+    
+    def getDrop(self):
+        return GreenHeart((self.position[0]+8, self.position[1]+16))
+    
+    def getCollisionRect(self):
+        return pygame.Rect((self.position[0]+4, self.position[1]+8), (24,24))
+    
+    def playHurtSound(self):
+        if self.hp > 0: 
+            SoundManager.getInstance().playLowSFX("enemyhit.wav", volume=0.5)
+        else:
+            self.dying = True
+            SoundManager.getInstance().playSFX("LA_Rock_Push.wav")
+            
+
+    def handleCollision(self, other):
+        if other.id == "bombo":
+            self.hp -=1
+            self.hit = True
+            self.playHurtSound()
+            self.injury = self.hp
+    
+    def update(self, seconds, position=None):
+        self.frozen = False
+        if self.dying:
+            if self.frameTimer >= 0.2:
+                self.frame += 1
+                if self.frame == 10:
+                    self.dead = True
+                    SoundManager.getInstance().stopSFX("LA_Rock_Push.wav")
+                    SoundManager.getInstance().playLowSFX("enemydies.wav", volume=0.2)
+                    return
+                else:
+                    self.setImage()
+            else:
+                self.frameTimer += seconds
+
+            if self.vibtick == 0:
+                self.position[0] += 1
+            elif self.vibtick == 1:
+                self.position[0] -= 1
+            elif self.vibtick == 2:
+                self.position[0] -= 1
+            elif self.vibtick == 3:
+                self.position[0] += 1
+            
+            self.vibtick += 1
+            self.vibtick %= 4
+             
 
 
 """

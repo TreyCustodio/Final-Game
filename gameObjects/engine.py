@@ -386,6 +386,21 @@ class AE(object):
         Abstract method
         """
         pass
+    
+    def createStore(self):
+        self.blocks.append(self.trigger1)
+        for i in range(6, 13):
+            if i == 9:
+                pass
+            else:
+                self.blocks.append(IBlock((16*i, 16*9 + 8)))
+
+        for i in range(6, 13):
+            self.blocks.append(IBlock(COORD[i][2]))
+        for i in range(3, 9):
+            self.blocks.append(IBlock(COORD[5][i]))
+        for i in range(3, 9):
+            self.blocks.append(IBlock(COORD[13][i]))
 
     def placeEnemies(self, enemyLst):
         """
@@ -407,10 +422,10 @@ class AE(object):
                 """
                 Four in the center
                 """
-                enemyLst[0].position = COORD[6][3]
-                enemyLst[1].position = COORD[11][3]
-                enemyLst[2].position = COORD[6][7]
-                enemyLst[3].position = COORD[11][7]
+                enemyLst[0].position = vec(16*6, 16*3)
+                enemyLst[1].position = vec(16*11, 16*3)
+                enemyLst[2].position = vec(16*6, 16*7)
+                enemyLst[3].position = vec(16*11, 16*7)
                 refresh()
 
             elif self.enemyPlacement == 2:
@@ -436,7 +451,7 @@ class AE(object):
                 enemyLst[4].position = COORD[6][9]
                 enemyLst[5].position = COORD[11][9]
                 refresh()
-            
+                
             ##1 enemy in the center
             elif self.enemyPlacement == 4:
                 enemyLst[0].setPosition(vec(16*9, 16*5))
@@ -525,22 +540,35 @@ class AE(object):
         """
         Display text
         """
-        self.boxPos = vec(self.player.position[0]-122, self.player.position[1]-32)
-        if self.boxPos[0] < 16:
-            self.boxPos[0] = 16
-        elif self.boxPos[0]+244 > RESOLUTION[0]-16:
-            self.boxPos[0] = (RESOLUTION[0] - 16) - 244
+        if icon != None:
+            self.icon = icon
+            self.boxPos = vec(self.player.position[0]-122, self.player.position[1]-32)
+            if self.boxPos[0] < 16:
+                self.boxPos[0] = 16
+            elif self.boxPos[0]+244 > RESOLUTION[0]-16:
+                self.boxPos[0] = (RESOLUTION[0] - 16) - 244
 
-        if self.boxPos[1] < 16:
-            self.boxPos[1] = 16
-        elif self.boxPos[1]+64 > RESOLUTION[1]-16:
-            self.boxPos[1] = (RESOLUTION[1] - 16)-64
+            if self.boxPos[1] < 32:
+                self.boxPos[1] = 32
+            elif self.boxPos[1]+64 > RESOLUTION[1]-16:
+                self.boxPos[1] = (RESOLUTION[1] - 16)-64
+
+        else:
+            self.boxPos = vec(self.player.position[0]-122, self.player.position[1]-32)
+            if self.boxPos[0] < 16:
+                self.boxPos[0] = 16
+            elif self.boxPos[0]+244 > RESOLUTION[0]-16:
+                self.boxPos[0] = (RESOLUTION[0] - 16) - 244
+
+            if self.boxPos[1] < 16:
+                self.boxPos[1] = 16
+            elif self.boxPos[1]+64 > RESOLUTION[1]-16:
+                self.boxPos[1] = (RESOLUTION[1] - 16)-64
 
         self.textBox = True
         self.text = text
         self.largeText = large
-        if icon != None:
-            self.icon = icon
+        
         if self.player != None:
             self.player.stop()
     
@@ -888,6 +916,10 @@ class AE(object):
     """
     Update methods
     """
+    def updateLightSwitch(self, switch, obj=None):
+        if obj == None:
+            switch.update(self.player)
+
     def update_Enemy(self, seconds, n):
         n.update(seconds, self.player.position)
         if n.id == "spawn":
@@ -902,14 +934,15 @@ class AE(object):
                 if drop != None:
                     if drop.id == "greenHeart":
                         self.spawning.append(drop)
-                    elif drop.id == "heart" and self.player.hp == INV["max_hp"]:
+                    elif (drop.id == "heart" or drop.id == "bigHeart") and self.player.hp == INV["max_hp"]:
                         drop = n.getMoney()
                         if drop != None:
                             self.drops.append(drop)
                     else:
                         self.drops.append(drop)
                     self.dropCount += 1
-            self.enemyCounter += 1
+            if n.increaseCount():
+                self.enemyCounter += 1
         elif n.fakeDead:
             if self.dropCount < 5:
                 drop = n.getDrop()
@@ -1030,6 +1063,31 @@ class AE(object):
     def handlePrompt(self):
         pass
 
+    def handleStorePrompt(self):
+        if self.selectedItem == "potion":
+            INV["money"] -= 5
+            self.displayText("You bought a potion!&&\nDrink it from the [ITM]\nrow in the pause menu!\n")
+            INV["potion"] += 1
+            self.promptResult = False
+            self.selectedItem = ""
+        elif self.selectedItem == "smoothie":
+            INV["money"] -= 20
+            self.displayText("Sweet! A delectable smoothie!&&\nDrink it from the [ITM]\nrow in the pause menu!\n        Delicioso!&&\n")
+            INV["smoothie"] += 1
+            self.promptResult = False
+            self.selectedItem = ""
+        elif self.selectedItem == "emblem":
+            INV["money"] -= 60
+            self.displayText("    You bought the\n    [Chance Emblem]!\nYou'll survive any attack\nas long as you're above 1 HP!\n")
+            INV["chanceEmblem"] = True
+            self.promptResult = False
+            self.selectedItem = ""
+        elif self.selectedItem == "syringe":
+            INV["money"] -= 40
+            self.displayText("      You bought the\n         [Syringe]!\nSap your health away in\nthe pause menu's [ITM] row.\n")
+            INV["syringe"] = True
+            self.promptResult = False
+            self.selectedItem = ""
     def finishFade(self):
         """
         Sets self.readyToTransition to True.
@@ -1239,6 +1297,7 @@ class AE(object):
         self.elementIcon.draw(drawSurface)
         self.indicator.draw(drawSurface)
         self.drawDamage(drawSurface)
+        HudImageManager.draw(drawSurface)
 
         
 

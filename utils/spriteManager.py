@@ -45,11 +45,11 @@ class SpriteManager(object):
                        "energy.png":(16,32), "item.png":(16,16),
                        "bopper.png":(16,16), "flapper.png":(16,16), "dummy.png":(16,16), "david.png":(19,26), "thunderTiles.png":(16,16),
                        "portal.png":(16,16), "exclamation.png":(16,16), "z.png": (16,16), "fireIcon.png":(16,16),
-                       "spinner.png":(32,32), "shotsfired.png":(16,16), "drops.png":(16,16),
+                       "spinner.png":(32,32), "shotsfired.png":(18,18), "drops.png":(16,16),
                        "baller.png":(16,16), "barrier.png":(16,16), "pixels.png":(16,16), "map.png":(240,160),
                        "numbers.png":(16,16), "cursor.png":(16,16),
                        "mapRooms.png":(8,8), 
-                       "knight.png":(32,32),
+                       "knight.png":(32,32), "bullshot.png":(32,32),
                        "boulder.png":(32,32), "alphaflapper.png":(32,32), "fireball.png":(16,16), "bigcursor.png":(16*8, 32), "promptcursor.png":(36,32)
          
       }
@@ -65,7 +65,8 @@ class SpriteManager(object):
                        "exclamation.png", "z.png", "fireIcon.png", "shotsfired.png", "drops.png",
                        "baller.png", "stunner.png", "mage.png", "barrier.png", "pixels.png",
                        "map.png", "mapRooms.png", "bar.png", "cursor.png",
-                       "bopper.png", "stomper.png", "alphaflapper.png", "fireball.png", "bigcursor.png", "promptcursor.png"
+                       "bopper.png", "stomper.png", "alphaflapper.png", "fireball.png", "bigcursor.png", "promptcursor.png",
+                       "bullshot.png"
                        ]
       
       # A list of images that require to be loaded with a color key
