@@ -529,8 +529,7 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Flame_7.getInstance()
-                        #self.game = Intro_1.getInstance()
+                        self.game = Flame_entrance.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()

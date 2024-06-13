@@ -100,7 +100,7 @@ INV = {
     ##Health, elements, arrows, currency
     "max_hp": 3,
     "shoot": True,
-    "hasBombo": True,
+    "hasBombo": False,
     "fire": True,
     "clap": True,
     "slash": True,
@@ -643,8 +643,7 @@ and they slaughter at will!&&\n\
 What a shame...&&\n",
 
 "flame_entrance_geemer2":
-"Oh shit!&&\n\
-You're a human!&&\n\
+"You're a human!&&\n\
 You guys don't eat your\n\
 cheeba like we do, right?\n\
 Humans have to smoke it!\n\

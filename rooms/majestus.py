@@ -1327,7 +1327,8 @@ class Flame_entrance(AbstractEngine):
                     elif b == self.trigger2:
                         self.transport(Grand_Chapel_L, 0)
                     elif b == self.trigger3:
-                        self.transportPos(Flame_dispensary, vec(16*9, 16*8))
+                        pass
+                        #self.transportPos(Flame_dispensary, vec(16*9, 16*8))
                     else:
                         self.player.handleCollision(b)
 

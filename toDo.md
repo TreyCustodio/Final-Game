@@ -1,9 +1,9 @@
 
 v0.1
 - [ ] finish scorching fields up to lavaKnight
-    - [ ] Bar (buy beer, 3 or 4 Geemers to talk to)
 - [ ] Intro cutscene
 - [ ] Remove del to quit
+- [ ] Title screen display bool
 - [ ] No frame
 
 

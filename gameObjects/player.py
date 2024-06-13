@@ -576,18 +576,18 @@ class Player(Animated):
                     else:
                         return
                 elif self.running:
-                    if self.slowing:
-                        if event.key == pygame.K_z:
-                            #Stop running
-                            self.stop()
-                        elif event.key == pygame.K_RIGHT and self.runningDirection == 1:
-                            self.stop()
-                        elif event.key == pygame.K_UP and self.runningDirection == 2:
-                            self.stop()
-                        elif event.key == pygame.K_LEFT and self.runningDirection == 3:
-                            self.stop()
-                        elif event.key == pygame.K_DOWN and self.runningDirection == 0:
-                            self.stop()
+                    
+                    """ if event.key == pygame.K_z:
+                        #Stop running
+                        self.stop() """
+                    if event.key == pygame.K_RIGHT and self.runningDirection == 1:
+                        self.stop()
+                    elif event.key == pygame.K_UP and self.runningDirection == 2:
+                        self.stop()
+                    elif event.key == pygame.K_LEFT and self.runningDirection == 3:
+                        self.stop()
+                    elif event.key == pygame.K_DOWN and self.runningDirection == 0:
+                        self.stop()
                     
 
                 else:
