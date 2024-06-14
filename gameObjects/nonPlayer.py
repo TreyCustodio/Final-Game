@@ -116,6 +116,8 @@ class NpcBopper(NonPlayer):
     def interact(self, engine):
         engine.displayText(self.text)
 
+    def getInteractionRect(self):
+        return pygame.Rect((self.position[0]-2, self.position[1]), (20, 20))
 
 class Barrier(NonPlayer):
     def __init__(self, position = vec(0,0), element = 0):
@@ -632,9 +634,9 @@ class Syringe(NonPlayer):
         if INV["syringe"]:
             engine.displayText("Sorry, but you already\nown a syringe.\n")
         elif INV["money"] < 30:
-            engine.displayText("40 bucks for a syringe?&&\nIt's gotta be useful.&&\n")
+            engine.displayText("30 bucks for a syringe?&&\nIt's gotta be useful...&&\n")
         else:
-            engine.displayText("Y/NIt appears to be some\nsort of syringe.\nYou could probably use it\nto drain your own blood.\nFortune does indeed favor\nthe brave after all...\nHow about it? 40 bucks:\n")
+            engine.displayText("Y/NIt appears to be some\nsort of syringe.\nYou could probably use it\nto drain your own blood.\nFortune does indeed favor\nthe brave after all...\nHow about it? 30 bucks:\n")
             engine.selectedItem = "syringe"
 
 class ChanceEmblem(NonPlayer):

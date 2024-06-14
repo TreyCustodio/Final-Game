@@ -1,5 +1,5 @@
 import pygame
-
+from math import ceil
 from UI import EventManager
 from utils import SpriteManager
 from . import (Drawable, HudImageManager, Slash, Blizzard, HealthBar, ElementIcon, EnergyBar, Blessing, Torch, AmmoBar, Fade, Drop, Heart, Text, Player, Enemy, NonPlayer, Sign, Chest, Key, Geemer, Switch, 
@@ -233,7 +233,7 @@ class AE(object):
         if self.player.hp == INV["max_hp"]:
             return
         amountHealed = self.player.heal(integer)
-        self.healthBar.drawHeal(amountHealed)
+        #self.healthBar.drawHeal(amountHealed)
 
     def getDrunk(self):
         self.player.drink()
@@ -245,20 +245,15 @@ class AE(object):
         self.player.zoom()
     
     def useSyringe(self):
-        #damage = 3/4 of hp
-        damage = (self.player.hp // 4)
-        if damage < 1:
-            damage = 1
-        damage *= 3
-        if damage == self.player.hp:
-            damage -= 1
+        #player's hp = maxHp // 3
+        #so damage is 2/3 of max_hp
+        if self.player.hp == 1:
+            return
+        damage = (ceil((2 * INV["max_hp"])/3))
+        if damage > self.player.hp:
+            damage = self.player.hp - 1
         self.player.hurt(damage)
         self.healthBar.drawHurt(self.player.hp, damage)
-
-        """ if self.player.hp > INV["max_hp"]//4:
-            damage = (INV["max_hp"] // 4) * 3
-            if self.player.hp < 1:
-                self.player.hp = 1 """
 
     def initializeRoom(self, player= None, pos = None, keepBGM = False):
         """
@@ -920,8 +915,26 @@ class AE(object):
         if obj == None:
             switch.update(self.player)
 
+    def outOfBoundsSafety(self, n):
+        if n.boundsSafety():
+            if n.position[0] >= RESOLUTION[0]:
+                n.position[0] = RESOLUTION[0] - 64
+                n.vel[0] = -n.speed
+            elif n.position[0] <= 0:
+                n.position[0] = 64
+                n.vel[0] = n.speed
+
+            if n.position[1] >= RESOLUTION[1]:
+                n.position[1] = RESOLUTION[1] - 64
+                n.vel[1] = -n.speed
+            elif n.position[1] <= 0:
+                n.position[1] = 64
+                n.vel[1] = n.speed
+
     def update_Enemy(self, seconds, n):
         n.update(seconds, self.player.position)
+        self.outOfBoundsSafety(n)
+
         if n.id == "spawn":
             if n.spawning:
                 for i in n.getObjectsToSpawn():
@@ -1083,7 +1096,7 @@ class AE(object):
             self.promptResult = False
             self.selectedItem = ""
         elif self.selectedItem == "syringe":
-            INV["money"] -= 40
+            INV["money"] -= 30
             self.displayText("      You bought the\n         [Syringe]!\nSap your health away in\nthe pause menu's [ITM] row.\n")
             INV["syringe"] = True
             self.promptResult = False

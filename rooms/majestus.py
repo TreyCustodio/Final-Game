@@ -20,7 +20,7 @@ class Intro_Cut(AbstractEngine):
     
     class _Intro_Cut(AE):
         def __init__(self):
-            
+            FLAGS[50] = True
             self.fading = False
             self.player = None
             self.largeText = False
@@ -33,6 +33,12 @@ class Intro_Cut(AbstractEngine):
             self.background = Level("intro_cut.png")
             self.timer = 0
             self.playingBgm = False
+            self.light = Drawable(vec(16*4, 16*3), fileName="light.png", offset=(0,0))
+            self.red = Level(fileName = "introcut_1.png")
+            self.frameTimer = 0.0
+            self.frame = 0
+            self.dark = Drawable(vec(16*12, 16*3), fileName="light.png", offset=(4,0))
+            self.darkFrame = 4
         
         def reset(self):
             self.playingBgm = False
@@ -64,18 +70,25 @@ class Intro_Cut(AbstractEngine):
             if self.fading:
                 Fade.getInstance().draw(drawSurface)
                 return
-
-            elif self.textInt >= 4:
+            elif self.textInt >= 8:
+                Level(fileName="intro_cut.png").draw(drawSurface)
+            elif self.textInt >= 6:
+                Level(fileName="majestus.png").draw(drawSurface)
+            elif self.textInt == 4:
+                Level(fileName="intro_cut.png").draw(drawSurface)
+            elif self.textInt == 3:
                 self.boxPos = vec(32, RESOLUTION[1]-(64+32))
-                Drawable(fileName = "gods.png").draw(drawSurface)
-            elif self.textInt >= 2:
-                self.boxPos = vec(32,7)
-                Level(fileName = "majestus.png").draw(drawSurface)
+                self.red.draw(drawSurface)
+                self.light.draw(drawSurface)
+                self.dark.draw(drawSurface)
+            elif self.textInt == 2:
+                self.boxPos = vec(32, RESOLUTION[1]-(64+32))
+                Level(fileName = "gods.png").draw(drawSurface)
             else:
                 self.background.draw(drawSurface)
 
             if self.textInt < 2:
-                Text(vec(0,0), text = "Press START to skip text").draw(drawSurface)
+                Text(vec(0,0), text = "Press SPACE to skip").draw(drawSurface)
             
         
         
@@ -90,10 +103,37 @@ class Intro_Cut(AbstractEngine):
             Fade within Intro engine,
             ScreenManager fades In after introDone == True
             """
-            if self.textInt > 8:
+            if self.textInt == 3:
+                if self.timer >= 2.0:
+                    self.timer = 0.0
+                    self.textInt += 1
+                    return
+                else:
+                    self.timer += seconds
+                    return
+            
+            elif self.textInt == 5:
+                if self.timer >= 1.0:
+                    self.timer = 0.0
+                    self.textInt += 1
+                    return
+                else:
+                    self.timer += seconds
+                    return
+            elif self.textInt == 7:
+                if self.timer >= 2.0:
+                    self.timer = 0.0
+                    self.textInt += 1
+                    return
+                else:
+                    self.timer += seconds
+                    return
+                
+            elif self.textInt > 10:
                 if Fade.getInstance().frame == 8:
                     self.timer += seconds
                     if self.timer >= 0.5:
+                        self.timer = 0.0
                         SoundManager.getInstance().fadeoutBGM()
                         self.introDone = True
                         return
@@ -129,7 +169,7 @@ class Knight(AbstractEngine):
             self.ignoreClear = True
             self.max_enemies = 0
             self.enemyPlacement = 0
-            self.background = Level("test.png")
+            self.background = Level("knight_boss.png")
             self.knight = LavaKnight(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
             self.knight.ignoreCollision = True
             self.npcs = [
@@ -145,7 +185,18 @@ class Knight(AbstractEngine):
                 #GreenHeart(vec(16*2, 16*10))
                 ]
             self.playingMusic = False
+            self.obstacles = [
+            ]
+            for i in range(3):
+                self.obstacles.append(ForceField(COORD[8+i][11], render = False))
 
+        def reset(self):
+            super().reset()
+            if not FLAGS[111]:
+                self.knight.reset()
+        
+        def initializeRoom(self, player=None, pos=None, keepBGM=False, placeEnemies=True):
+            super().initializeRoom(player, pos, keepBGM, placeEnemies)
 
         #override
         def createBlocks(self):
@@ -165,6 +216,9 @@ class Knight(AbstractEngine):
                     else:
                         self.player.handleCollision(b)
 
+        def bsl(self, enemy, bossTheme):
+            super().bsl(enemy, bossTheme)
+            self.renderObstacles()
         
         def bse(self):
             super().bse()
@@ -183,6 +237,7 @@ class Knight(AbstractEngine):
                     self.displayText(SPEECH["lava_knight2"], icon=ICON["knight"])
                     self.textInt += 1
                 elif self.knight.dying and self.textInt == 2:
+                    self.vanishObstacles()
                     self.displayText(SPEECH["lava_knight3"], icon=ICON["knight"])
                     self.textInt += 1
                 super().update(seconds)
@@ -315,7 +370,11 @@ class Intro_1(AbstractEngine):
             #Background/room
             self.background = Level("test.png")
 
-            
+        def drawText(self, drawSurface):
+            self.draw(drawSurface)
+            image = Drawable(self.boxPos, "TextBox2.png", (0,7))
+            image.draw(drawSurface)
+
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
             
             
@@ -752,7 +811,7 @@ class Alpha_Flapper(AbstractEngine):
         def createBlocks(self):
            self.blocks.append(self.trigger1)
            self.blocks.append(self.trigger2)
-           
+        
         #override
         def blockCollision(self):
             for b in self.blocks:
@@ -1252,11 +1311,12 @@ class Entrance(AbstractEngine):
         def update(self, seconds):
             if self.healthBarLock:
                 self.player.keyLock()
-                self.timer += seconds
-                if self.timer >= 1.0:
+                if self.timer >= 1.3:
                     self.player.keyUnlock()
                     self.healthBarLock = False
                     self.timer = 0
+                else:
+                    self.timer += seconds
             super().update(seconds)
 
 
@@ -1799,6 +1859,8 @@ class Flame_4(AbstractEngine):
 
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
             super().initializeRoom(player, pos, keepBGM)
+            if not FLAGS[52]:
+                FLAGS[52] = True
 
            
 
@@ -1909,13 +1971,16 @@ class Flame_6(AbstractEngine):
         def deathReset(self):
             super().deathReset()
             self.vanishObstacles()
-            self.miniBoss = False
+            if self.miniBoss:
+                self.miniBoss = False
 
         
 
         def initializeRoom(self, player=None, pos=None, keepBGM=False):
             if not FLAGS[62]:
+                
                 super().initializeRoom(player, pos, keepBGM)
+                self.stomper.setPosition(vec(16*9, 16*5))
             else:
                 if len(self.spawning) == 0:
                     self.spawning = [
@@ -1988,6 +2053,7 @@ class Flame_6(AbstractEngine):
                             self.textInt += 1
                         super().update(seconds)
                 elif self.player.position[1] >= 20:
+                    self.player.stop()
                     self.beginMiniBoss()
                 else:
                     super().update(seconds, updateEnemies=False)

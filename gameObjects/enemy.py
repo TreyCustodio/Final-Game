@@ -16,6 +16,7 @@ class Enemy(Animated):
         if fileName != "":
             self.image = SpriteManager.getInstance().getEnemy(fileName, direction)
         
+        self.name = ""
         self.id = ""
         self.spawning = False
         self.vanish = False
@@ -77,6 +78,9 @@ class Enemy(Animated):
     def doesCollideBlock(self, block):
         return self.doesCollide(block)
 
+    def boundsSafety(self):
+        return True
+    
     def doesCollideProjectile(self, projectile):
         return self.doesCollide(projectile)
     
@@ -385,6 +389,7 @@ class LavaKnight(Enemy):
         jumping up or down.
         """
         super().__init__(position, "knight.png", 0)
+        self.name = "LavaKnight"
         self.id = "spawn"
         self.boss = boss
         ##Startup animation
@@ -442,6 +447,8 @@ class LavaKnight(Enemy):
     def getMoney(self):
         return self.getDrop()
     
+    def boundsSafety(self):
+        return False
     def setObjects(self):
         self.objects = [
             FireBall(vec(self.position[0]-8, self.position[1]), 2),
@@ -452,7 +459,52 @@ class LavaKnight(Enemy):
 
     def resetObjects(self):
         self.spawning = False
-        
+    
+    def setPosition(self, vector):
+        vector2 = vec(vector[0], vector[1])
+        self.position = vector
+        self.shadow.position = vector2
+
+    def reset(self):
+        self.frozen = False
+        self.starting = False
+        self.vibrationTick = 0
+        self.startupTimer = 0.0
+        self.fallTimer = 0.0 #timer for off screen
+        self.shaking = False #vibrating bool
+        self.moving = False #done with animation
+        self.respawning = False
+        self.falling = False
+        self.targetPos = vec(0,0)
+        self.desperate = False #True if final phase is active
+        self.hp = self.maxHp
+        self.jumpingUp = False
+        self.jumpingDown = False
+        self.movingLeft = False
+        self.movingRight = False
+        self.movingUp = False
+        self.movingDown = False
+        self.frozen = False
+        self.jumpTimer = 0.5
+        self.pause = True
+        self.freezeCounter = self.maxCount #Once this gets to zero, it becomes vulnerable to Bombofauns
+        self.cold = False #Able to be blown up
+        self.coldTimer = 0.0
+        self.vulnerable = False #Able to be frozen
+        self.iframeTimer = 0.0
+        self.shadow.frame = 4
+        self.xVals = [] #list of possible positions in the collisionRect
+        self.yVals = []
+        self.frameTimer = 0.0
+        self.frameTime = 0.05
+        self.frame = 3
+        self.currentRow = 0
+        self.initializing = True
+        self.objects = []
+        self.dying = False
+        self.setImage()
+        self.setPosition(vec(RESOLUTION[0]//2-16, RESOLUTION[1]//2-16))
+
     #override
     def hurt(self, damage, setHit = True):
         self.hit = setHit
@@ -1298,6 +1350,9 @@ class FireBall(Enemy):
         self.vanish = True
 
     def increaseCount(self):
+        return False
+    
+    def boundsSafety(self):
         return False
     
     def getCollisionRect(self):

@@ -161,7 +161,7 @@ class AmmoBar(object):
             if player.hp == INV["max_hp"]:
                 self.damageId = 1
 
-            elif player.hp <= INV["max_hp"]/4 or player.hp == 1:
+            elif player.hp <= INV["max_hp"]//3 or player.hp == 1:
                 self.damageId = 2
             else:
                 self.damageId = 0
@@ -546,7 +546,7 @@ class HealthBar(object):
         def getHeartImage(self, player):
             if player.hp == INV["max_hp"]:
                 return SpriteManager.getInstance().getSprite(self.fileName, (0,1))
-            elif player.hp <= INV["max_hp"] / 4:
+            elif player.hp <= INV["max_hp"] // 3:
                 return SpriteManager.getInstance().getSprite(self.fileName, (0,3))
             else:
                 return SpriteManager.getInstance().getSprite(self.fileName, (0,2))
@@ -783,7 +783,7 @@ class HealthBar(object):
                 else:
                     self.drawRed(drawSurface, player)
             
-            elif player.hp == 1 or player.hp <= INV["max_hp"] / 4:
+            elif player.hp == 1 or player.hp <= INV["max_hp"] // 3:
                 self.drawRed(drawSurface, player, low = True)
             ##Regular Display
             else:

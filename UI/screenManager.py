@@ -71,6 +71,14 @@ class ScreenManager(object):
     drawSurf -> specific surface for textboxes passed in by main.py
     """
     def drawText(self, drawSurf):
+        if self.inIntro:
+            #image = Drawable(self.boxPos, "TextBox2.png", (0,7))
+            #image.draw(drawSurf)
+            #self.intro.background.draw(drawSurf)
+            if self.intro.textInt == 3:
+                self.intro.light.draw(drawSurf)
+                self.intro.dark.draw(drawSurf)
+
         ##TextEngine finished
         if self.textEngine.done:
             ##Paused
@@ -117,7 +125,7 @@ class ScreenManager(object):
                 self.intro.textBox = False
                 self.intro.text = ""
                 self.intro.icon = None
-                if self.intro.textInt == 9:
+                if self.intro.textInt == 11:
                     self.intro.fading = True
                 self.state.speakI()
             ##Game, evaluate prompt
@@ -164,7 +172,10 @@ class ScreenManager(object):
 
     def drawGame(self, drawSurf, drawBox = False):
         if self.inIntro:
-            self.intro.draw(drawSurf)
+            if drawBox:
+                self.intro.drawText(drawSurf)
+            else:
+                self.intro.draw(drawSurf)
         else:
             if drawBox:
                 if self.textEngine.large:
@@ -226,6 +237,8 @@ class ScreenManager(object):
             self.pauseEngine.draw(drawSurf)
 
         elif self.state == "intro":
+            
+                
             if not self.intro.playingBgm:
                 self.intro.playBgm()
             self.intro.draw(drawSurf)
@@ -285,8 +298,8 @@ class ScreenManager(object):
 
     def handleEvent(self, event):
         ##Quick quit for debugging##
-        if event.type == pygame.KEYDOWN and event.key == K_DELETE:
-            return pygame.quit()
+        """ if event.type == pygame.KEYDOWN and event.key == K_DELETE:
+            return pygame.quit() """
             
         if self.state == "game":
             ##  Pause the game if the window is moved   ##
@@ -314,9 +327,11 @@ class ScreenManager(object):
                             if event.type == KEYDOWN and event.key == K_RETURN:
                                 self.pause()
                                 return
-                                
+                            
+                            
                             elif event.type == KEYDOWN and event.key == K_LSHIFT:
-                                self.openMap()
+                                if INV["map0"]:
+                                    self.openMap()
                                 return
                             
                         self.game.handleEvent(event)
@@ -390,7 +405,7 @@ class ScreenManager(object):
                         self.intro.fading = True
                         self.state.speakI()
                         self.intro.fading = True
-                        self.intro.textInt = 9
+                        self.intro.textInt = 11
                         
                         
                     else:
@@ -416,7 +431,7 @@ class ScreenManager(object):
                         self.intro.fading = True
                         self.state.speakI()
                         self.intro.fading = True
-                        self.intro.textInt = 9
+                        self.intro.textInt = 11
                         
                         
                     else:
@@ -439,11 +454,11 @@ class ScreenManager(object):
             if self.controller == "Controller (Xbox One For Windows)":
                 if event.type == JOYBUTTONDOWN and event.button == 7:
                     self.intro.fading = True
-                    self.intro.textInt = 9
+                    self.intro.textInt = 11
             else:
                 if event.type == KEYDOWN and event.key == K_SPACE:
                     self.intro.fading = True
-                    self.intro.textInt = 9
+                    self.intro.textInt = 11
 
     #Only runs if in game
     def handleCollision(self):
@@ -485,6 +500,7 @@ class ScreenManager(object):
                 self.fadingIn = True
 
         elif self.state == "textBox":
+            #self.updateLight(seconds)
             self.textEngine.update(seconds)
 
         elif self.state == "paused":
@@ -529,15 +545,55 @@ class ScreenManager(object):
             elif self.continuingGame:
                 if self.fade.frame == 8:
                     if not pygame.mixer.get_busy():
-                        self.game = Flame_entrance.getInstance()
+                        self.game = Flame_4.getInstance()
                         self.game.lockHealth()
                         self.game.initializeRoom()
                         self.state.startGame()
                         self.fadingIn = True
+                        return
+                    
+                        if FLAGS[52]:
+                            self.game = Flame_4.getInstance()
+                            self.game.lockHealth()
+                            self.game.initializeRoom()
+                            self.state.startGame()
+                            self.fadingIn = True
+                        elif FLAGS[51]:
+                            self.game = Grand_Chapel.getInstance()
+                            self.game.lockHealth()
+                            self.game.initializeRoom()
+                            self.state.startGame()
+                            self.fadingIn = True
+                        elif FLAGS[110]:
+                            self.game = Alpha_Flapper.getInstance()
+                            self.game.lockHealth()
+                            self.game.initializeRoom()
+                            self.state.startGame()
+                            self.fadingIn = True
+                        elif FLAGS[50]:
+                            self.game = Entrance.getInstance()
+                            self.game.lockHealth()
+                            self.game.initializeRoom()
+                            self.state.startGame()
+                            self.fadingIn = True
+                        else:
+                            self.intro = Intro_Cut.getInstance()
+                            self.inIntro = True
+                            self.state.toIntro()
+                            self.fadingIn = True
+                        
                 else:
                     self.fade.update(seconds)
 
         elif self.state == "intro":
+            #self.updateLight(seconds)
+            """ if self.intro.frameTimer >= 0.8:
+                self.intro.frame += 1
+                self.intro.frame %= 9
+                self.intro.light.image = SpriteManager.getInstance().getSprite("light.png", (self.intro.frame, 0))
+            else:
+                self.intro.frameTimer += seconds """
+
             self.intro.update(seconds)
             if self.intro.introDone:
                 self.fadingIn = True
@@ -573,4 +629,19 @@ class ScreenManager(object):
                         self.pauseEngine.resetMenu()
                         self.playTheme()
                         self.fade.setRow()
-                        self.returningToMain = False              
+                        self.returningToMain = False   
+
+        self.updateLight(seconds)
+    def updateLight(self, seconds):
+        if self.inIntro:
+            if self.intro.textInt == 3:
+                if self.intro.frameTimer >= 0.1:
+                    self.intro.frameTimer = 0.0
+                    self.intro.frame += 1
+                    self.intro.frame %= 9
+                    self.intro.darkFrame += 1
+                    self.intro.darkFrame %=9
+                    self.intro.dark.image = SpriteManager.getInstance().getSprite("light.png", (self.intro.darkFrame, 0))
+                    self.intro.light.image = SpriteManager.getInstance().getSprite("light.png", (self.intro.frame, 0))
+                else:
+                    self.intro.frameTimer += seconds

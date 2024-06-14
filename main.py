@@ -9,13 +9,13 @@ def main():
     pygame.font.init()
 
     ##Set the screen up
-    flags = pygame.SCALED | pygame.NOFRAME
+    flags = pygame.SCALED | pygame.NOFRAME | pygame.FULLSCREEN
     screen = pygame.display.set_mode(list(map(int, UPSCALED)), flags=flags)
     drawSurface = pygame.Surface(list(map(int, RESOLUTION)))
     transparentSurface = drawSurface.subsurface(drawSurface.get_rect())
     textSurface = drawSurface.subsurface(drawSurface.get_rect())
     
-
+    pygame.mouse.set_visible(False)
     rand = randint(0,5)
     if rand == 1:
         pygame.display.set_caption("Majestus: I'll learn pixel art one day...")
@@ -88,8 +88,9 @@ def main():
         gameEngine.moveMenuCursor()
         gameEngine.handleCollision()
         gameClock.tick(60)
-        seconds = gameClock.get_time() / 1000
+        seconds = gameClock.get_time() / 1000     
         gameEngine.update(seconds)
+        #gameEngine.updateLight(seconds)
      
     pygame.quit()
 

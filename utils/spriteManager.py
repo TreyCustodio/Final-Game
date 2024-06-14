@@ -48,7 +48,7 @@ class SpriteManager(object):
                        "spinner.png":(32,32), "shotsfired.png":(18,18), "drops.png":(16,16),
                        "baller.png":(16,16), "barrier.png":(16,16), "pixels.png":(16,16), "map.png":(240,160),
                        "numbers.png":(16,16), "cursor.png":(16,16),
-                       "mapRooms.png":(8,8), 
+                       "mapRooms.png":(8,8), "light.png":(64,64),
                        "knight.png":(32,32), "bullshot.png":(32,32),
                        "boulder.png":(32,32), "alphaflapper.png":(32,32), "fireball.png":(16,16), "bigcursor.png":(16*8, 32), "promptcursor.png":(36,32)
          
@@ -66,7 +66,7 @@ class SpriteManager(object):
                        "baller.png", "stunner.png", "mage.png", "barrier.png", "pixels.png",
                        "map.png", "mapRooms.png", "bar.png", "cursor.png",
                        "bopper.png", "stomper.png", "alphaflapper.png", "fireball.png", "bigcursor.png", "promptcursor.png",
-                       "bullshot.png"
+                       "bullshot.png", "light.png"
                        ]
       
       # A list of images that require to be loaded with a color key

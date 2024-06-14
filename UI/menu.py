@@ -45,7 +45,7 @@ class EventMenu(AbstractMenu):
         super().__init__(background, fontName, color)
 
         ##Display Control for debugging
-        displayBool = True
+        displayBool = False
         self.readyToDisplay = displayBool
         self.initialized = displayBool
 
@@ -95,14 +95,14 @@ class EventMenu(AbstractMenu):
         self.readyToDisplay = True
     
     def drawText(self, drawSurf):
-        if self.titleTimer >= 8:
+        if self.titleTimer >= 9:
                 return
         elif self.titleTimer >= 6.5:
-            Text((16*7-4,16*4+8), "Designed in PyGame", color = (200,170,0)).draw(drawSurf)
+            Text((16*6,16*4+8), "Designed with PyGame", color = (220,190,0)).draw(drawSurf)
         elif self.titleTimer >= 4:
             return
         elif self.titleTimer >= 1.0:
-            Text((16*6-10,16*4+8), "YungTrey Games Presents...", color = (210,0,0)).draw(drawSurf)
+            Text((16*5,16*4+8), "YungTrey Games Presents...", color = (220,0,0)).draw(drawSurf)
         
     def draw(self, drawSurf):
         if self.colorId == 0:
@@ -273,7 +273,7 @@ class EventMenu(AbstractMenu):
             
         elif not self.readyToDisplay:
             self.titleTimer += seconds
-            if self.titleTimer >= 6.8:
+            if self.titleTimer >= 7.2:
                 self.setReady()
                 self.titleTimer = 0.0
             

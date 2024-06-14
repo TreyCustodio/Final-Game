@@ -439,9 +439,9 @@ class PauseEngine(object):
 
         self.menu = Drawable(vec(0,100), "Pause.png")
         self.timer = 0
-        self.highlight = Highlight(COORD[3][4])
+        self.highlight = Highlight(COORD[3][6])
         self.highlightQuit = Highlight(COORD[3][8], flag = 1)
-        self.highlighted = vec(0,0)
+        self.highlighted = vec(0,2)
         self.promptResult = False
         self.promptFlag = ""
 

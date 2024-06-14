@@ -1,10 +1,5 @@
 
 v0.1
-- [ ] finish scorching fields up to lavaKnight
-- [ ] Intro cutscene
-- [ ] Remove del to quit
-- [ ] Title screen display bool
-- [ ] No frame
 
 
 

@@ -39,13 +39,14 @@ class Element(object):
         return (self.type == 1 and otherInt == 2) or (self.type == 2 and otherInt == 1) or (self.type == 3 and otherInt == 4) or (self.type == 4 and otherInt == 3)
     
 class AbstractWeapon(Animated):
-    def __init__(self, position = vec(0,0), fileName = "", column = 0, direction = 0):
+    def __init__(self, position = vec(0,0), fileName = "", column = 0, direction = 0, setid = True):
         super().__init__(position, fileName, (column, direction))
         self.hit = False
         self.direction = direction
         self.vel = vec(0,0)
         self.damage = 0
-        self.id = ""
+        if setid:
+            self.id = ""
 
     def setDrunk(self):
         self.damage = int(self.damage * 1.5)
@@ -111,27 +112,46 @@ class AbstractWeapon(Animated):
         super().updateWeapon(seconds)
         self.vanish(seconds, engine)
 
+    def setArrowProperties(self, hp=0):
+        if self.id == "bombo":
+            if hp == INV["max_hp"]:
+                self.speed = 300
+                damage = 5
+                self.column = 4
+            elif hp <= INV["max_hp"]//3 or hp == 1:
+                self.speed = 175
+                damage = 10
+                self.column = 5
+            else:
+                damage = 5
+                self.speed = 175
+                self.column = 3
+            return damage
+        
+        elif self.id == "arrow":
+            if hp == INV["max_hp"]:
+                self.speed = 900
+                damage = 2
+                self.column = 1
+            elif hp <= INV["max_hp"]//3 or hp == 1:
+                self.speed = 300
+                damage = 6
+                self.column = 2
+            else:
+                damage = 2
+                self.speed = 300
+                self.column = 0
+            return damage
 
 class Bombo(AbstractWeapon):
     def __init__(self, position = vec(0,0), direction = 0, hp = 5):
-        if hp == INV["max_hp"]:
-            self.speed = 300
-            damage = 5
-            column = 4
-        elif hp <= INV["max_hp"]/4 or hp == 1:
-            self.speed = 175
-            damage = 10
-            column = 5
-        else:
-            damage = 5
-            self.speed = 175
-            column = 3
-    
-        super().__init__(position, "Bullet.png", column, direction)
-        self.damage = damage
+        self.id = "bombo"
+        damage = self.setArrowProperties(hp)
+        super().__init__(position, "Bullet.png", self.column, direction, setid = False)
         self.setArrowVelocity(self.direction, self.speed)
         self.type = 0
-        self.id = "bombo"
+        self.damage = damage
+        
 
     def getCollisionRect(self):
         if self.direction == 0:
@@ -181,28 +201,13 @@ class Bullet(AbstractWeapon):
     
     def __init__(self, position = vec(0,0), direction = 0, hp = 5):
 
-
-        if hp == INV["max_hp"]:
-            self.speed = 900
-            damage = 2
-            column = 1
-        elif hp <= INV["max_hp"]/4 or hp == 1:
-            self.speed = 300
-            damage = 6
-            column = 2
-        
-        else:
-            damage = 2
-            self.speed = 300
-            column = 0
-
-        super().__init__(position, "Bullet.png", column, direction)
+        self.id = "arrow"
+        damage = self.setArrowProperties(hp)
+        super().__init__(position, "Bullet.png", self.column, direction, setid=False)
         self.damage = damage
-
         self.setVelocity(self.direction, self.speed)
         self.type = 0
         self.frame = 0
-        self.id = "arrow"
         SoundManager.getInstance().playSFX("shoot.wav")
 
     def setVelocity(self, direction, speed):

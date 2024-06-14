@@ -39,6 +39,7 @@ for i in range (1, 10):
 ##50-59 -> Respawn/Checkpoints
 #50 -> skip intro (post-death)
 #51 -> respawn in Grand Chapel
+#52 -> Flame_4
 
 ##60 - > flame fields flags
 
@@ -192,61 +193,87 @@ these fragments.\n\
 But none who make the\n\
 venture have returned...\n",
 
-0:"This is the story of\n\
-    Majestus.\n",
+0:"Before everything began,\n\
+there was nothing.\n\
+The elements existed in\n\
+the abyss of chaos.\n\
+At the moment when nothing\n\
+transformed into everything,\n\
+the elements split into\n\
+two seperate factions:\n\
+One to lay the foundation\n\
+of the world itself,\n\
+and another to breathe life\n\
+into the infant world.\n",
 
-1:"Twas the mountainous home\n\
-of a tribe of mages:\n\
-      The Naturalites.&&\n",
+1:"In order to build the world,&&\n\
+The elements took on\n\
+the forms of deities:\n\
+Firion, of the Flame,&&\n\
+Estelle, of the Frost,&&\n\
+Vectros, of the Bolt,&&\n\
+Gladius, of the Gale.&&\n\
+Together, the four deities\n\
+gave birth to nature.\n",
 
       
-2:"In paradise, the Naturalites\n\
-prayed to their Gods,\n\
-the four elemental deities:&&\n",
+2:"As for the other elements,\n\
+they birthed perspective.\n\
+They fashioned energy out\n\
+of Light and Darkness,\n\
+illuminating and shrouding\n\
+the world as they saw fit.\n\
+To populate the world,&&\n\
+these elements took the\n\
+forms of humans and beasts.\n\
+Elemental gifts flowed\n\
+within all creatures.\n",
 
-3:"Firion, of the Flame,&&\n\
-Estelle, of the Frost,&&\n\
-Kuwabara, of the Bolt,&&\n\
-Gladius, of the Gale.&&\n",
+4:"As if by a divine prank,&&\n\
+one tribe of humans did\n\
+not receive any blessings.\n\
+These people were called\n\
+the Naturalites.\n\
+When Light and Darkness\n\
+forsook the Naturalites,\n\
+they prayed...          &&\n\
+    to the flames\n\
+they could not quench;\n\
+    to the frost\n\
+they could not melt,\n\
+    to the thunder\n\
+they could not hush,\n\
+    to the winds\n\
+they could not quell.\n\
+The four Gods of nature\n\
+heeded their cries for help,\n\
+showering them in divine\n\
+gifts of power.\n",
 
-4:"The deities granted their\n\
-worshippers with power,\n\
-and the Naturalites lived\n\
-prosperous lives for eons.\n\
-Until one day...&&\n",
+6:"Eternally grateful for\n\
+their prosperous gifts,\n\
+the Naturalites constructed\n\
+a city of worship.\n\
+They named it [Majestus]...&&\n",
 
-5: "Using the blessings of\n\
-the Gods for selfish means,\n\
-the Naturalite King waged\n\
-war on the non-elementals.\n\
-And the unconquerable mages\n\
-tore apart the outside world,\n\
-scorching fields,\n\
-freezing oceans,\n\
-shocking hearts,\n\
-slicing heads.\n",
+8:"...But that city\n\
+now lies in ruin.\n\
+And the few Naturalites\n\
+alive know naught but tales.\n",
 
+9:
+"Majestus attracts the\n\
+most wreckless folk today.\n\
+We each seek knowledge and\n\
+treasure without emotion.\n",
 
-6: "At the war's climax, the\n\
-King, with great audacity,\n\
-asked his Gods to grant\n\
-him more of their power.\n\
-So, the Gods punished his\n\
-unquenchable thirst.\n\
-They sealed the King and\n\
-his people within Majestus,\n\
-never to be seen again.&&\n",
+10:
+"If you ask me...&&\n\
+The secrets of our world\n\
+remain just out of reach,\n\
+sealed behind the lies\n\
+of our ancestors.\n",
 
-7: "As for the Gods...&&\n",
-
-8:"They relinquished their role\n\
-in the mortal realm,\n\
-leaving behind fragments\n\
-of their power in Majestus.\n\
-Today, some search for\n\
-these fragments.\n\
-But none who make the\n\
-venture ever return...\n"
 
 }
 
